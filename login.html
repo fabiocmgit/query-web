@@ -77,24 +77,9 @@
     .logo {
       display: flex;
       align-items: center;
-      gap: 14px;
-      margin-bottom: 36px;
       justify-content: center;
+      margin-bottom: 36px;
     }
-    .logo-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4px;
-      flex-shrink: 0;
-    }
-    .logo-sq {
-      width: 18px; height: 18px;
-      border-radius: 4px;
-    }
-    .logo-sq.r { background: var(--red); }
-    .logo-sq.b { background: var(--blue); }
-    .logo-sq.g { background: var(--green); }
-    .logo-sq.y { background: var(--yellow); }
     .logo-text {
       font-family: 'Syne', sans-serif;
       font-weight: 800;
@@ -252,11 +237,14 @@
 
   <div class="card">
     <div class="logo">
-      <div class="logo-grid">
-        <div class="logo-sq r"></div><div class="logo-sq b"></div>
-        <div class="logo-sq g"></div><div class="logo-sq y"></div>
-      </div>
-      <span class="logo-text">Query</span>
+      <svg xmlns="http://www.w3.org/2000/svg" height="48" viewBox="0 0 420 100">
+        <!-- Barres icône -->
+        <rect x="0"  y="4"  width="68" height="26" rx="8" fill="#3B82F6"/>
+        <rect x="12" y="37" width="68" height="26" rx="8" fill="#3B82F6" opacity="0.75"/>
+        <rect x="24" y="70" width="42" height="26" rx="8" fill="#F59E0B"/>
+        <!-- Texte Query en Syne bold -->
+        <text x="96" y="82" font-family="'Syne','Arial Black',sans-serif" font-weight="800" font-size="82" fill="#0f172a" letter-spacing="-2">Query</text>
+      </svg>
     </div>
 
     <div class="tabs">
@@ -319,8 +307,20 @@
     <p class="tagline">Ta base de connaissance, accessible partout.</p>
   </div>
 
-  <script>
-    function switchTab(tab) {
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+    const supabase = createClient(
+      'https://rujpyxapacsjwpnsvwre.supabase.co',
+      'sb_publishable_SoXuO9BwCXGnpUzzFZAu2w_gbjiJr-R'
+    )
+
+    // Rediriger si déjà connecté
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) window.location.href = 'dashboard.html'
+
+    // ── UI ──
+    window.switchTab = function(tab) {
       document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='register')));
       document.getElementById('form-login').classList.toggle('active', tab==='login');
       document.getElementById('form-register').classList.toggle('active', tab==='register');
@@ -335,33 +335,76 @@
     function hideError() {
       document.getElementById('error-msg').classList.remove('show');
     }
+    function setLoading(btn, loading) {
+      btn.disabled = loading;
+      btn.textContent = loading ? 'Chargement...' : btn.dataset.label;
+    }
 
-    function handleLogin(e) {
+    // ── CONNEXION ──
+    window.handleLogin = async function(e) {
       e.preventDefault();
+      const btn = e.submitter;
+      btn.dataset.label = btn.textContent;
+      setLoading(btn, true);
+      hideError();
+
       const email = document.getElementById('login-email').value;
       const pass  = document.getElementById('login-password').value;
-      // TODO: remplacer par appel Supabase
-      // const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass })
-      // if (error) showError(error.message); else window.location.href = 'dashboard.html';
-      console.log('Login:', email);
-      window.location.href = 'dashboard.html'; // démo
+
+      const { error } = await supabase.auth.signInWithPassword({ email, password: pass })
+
+      if (error) {
+        showError(error.message === 'Invalid login credentials'
+          ? 'Email ou mot de passe incorrect.'
+          : error.message)
+        setLoading(btn, false);
+      } else {
+        window.location.href = 'dashboard.html'
+      }
     }
 
-    function handleRegister(e) {
+    // ── INSCRIPTION ──
+    window.handleRegister = async function(e) {
       e.preventDefault();
-      const name  = document.getElementById('reg-name').value;
+      const btn = e.submitter;
+      btn.dataset.label = btn.textContent;
+      setLoading(btn, true);
+      hideError();
+
+      const name  = document.getElementById('reg-name').value.trim();
       const email = document.getElementById('reg-email').value;
       const pass  = document.getElementById('reg-password').value;
-      // TODO: remplacer par appel Supabase
-      // const { data, error } = await supabase.auth.signUp({ email, password: pass, options: { data: { display_name: name } } })
-      console.log('Register:', name, email);
-      window.location.href = 'dashboard.html'; // démo
+
+      const { error } = await supabase.auth.signUp({
+        email,
+        password: pass,
+        options: { data: { display_name: name } }
+      })
+
+      if (error) {
+        showError(error.message)
+        setLoading(btn, false);
+      } else {
+        // Afficher message de confirmation email
+        document.querySelector('.card').innerHTML = `
+          <div style="text-align:center;padding:20px 0">
+            <div style="font-size:48px;margin-bottom:16px">📬</div>
+            <h2 style="font-family:'Syne',sans-serif;font-size:20px;margin-bottom:10px">Vérifie tes emails !</h2>
+            <p style="color:var(--muted);font-size:14px;line-height:1.6">
+              Un email de confirmation a été envoyé à <strong>${email}</strong>.<br>
+              Clique sur le lien pour activer ton compte.
+            </p>
+          </div>`
+      }
     }
 
-    function handleGoogle() {
-      // TODO: remplacer par appel Supabase
-      // await supabase.auth.signInWithOAuth({ provider: 'google' })
-      alert('Connexion Google — sera connecté à Supabase.');
+    // ── GOOGLE ──
+    window.handleGoogle = async function() {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin + '/dashboard.html' }
+      })
+      if (error) showError(error.message)
     }
   </script>
 </body>
