@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Query — Connexion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red:    #EF4444;
+      --blue:   #3B82F6;
+      --green:  #22C55E;
+      --yellow: #F59E0B;
+      --bg:     #f8fafc;
+      --bg2:    #ffffff;
+      --border: #e2e8f0;
+      --text:   #0f172a;
+      --muted:  #64748b;
+      --radius: 12px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Carrés décoratifs en arrière-plan */
+    .bg-squares {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .bg-sq {
+      position: absolute;
+      border-radius: 9px;
+      opacity: 0.06;
+      animation: float 8s ease-in-out infinite;
+    }
+    .bg-sq:nth-child(1) { width:80px;height:80px; background:var(--red);   top:8%;  left:5%;  animation-delay:0s; }
+    .bg-sq:nth-child(2) { width:60px;height:60px; background:var(--blue);  top:12%; right:8%; animation-delay:1s; }
+    .bg-sq:nth-child(3) { width:50px;height:50px; background:var(--green); bottom:20%; left:10%; animation-delay:2s; }
+    .bg-sq:nth-child(4) { width:70px;height:70px; background:var(--yellow);bottom:15%; right:6%; animation-delay:3s; }
+    .bg-sq:nth-child(5) { width:40px;height:40px; background:var(--blue);  top:45%; left:2%;  animation-delay:1.5s; }
+    .bg-sq:nth-child(6) { width:90px;height:90px; background:var(--red);   top:35%; right:3%; animation-delay:2.5s; }
+
+    @keyframes float {
+      0%,100% { transform: translateY(0) rotate(0deg); }
+      50%      { transform: translateY(-12px) rotate(3deg); }
+    }
+
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 48px 44px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: var(--shadow);
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Logo */
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 36px;
+      justify-content: center;
+    }
+    .logo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .logo-sq {
+      width: 18px; height: 18px;
+      border-radius: 4px;
+    }
+    .logo-sq.r { background: var(--red); }
+    .logo-sq.b { background: var(--blue); }
+    .logo-sq.g { background: var(--green); }
+    .logo-sq.y { background: var(--yellow); }
+    .logo-text {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 28px;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 28px;
+      gap: 4px;
+    }
+    .tab {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      background: transparent;
+      border-radius: 7px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+    .tab.active {
+      background: var(--bg2);
+      color: var(--text);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    /* Forms */
+    .form { display: none; flex-direction: column; gap: 16px; }
+    .form.active { display: flex; }
+
+    label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 6px;
+      display: block;
+    }
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--bg2);
+      transition: all 0.18s ease;
+      outline: none;
+    }
+    input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 10px;
+      background: var(--blue);
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      margin-top: 4px;
+    }
+    .btn-primary:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(59,130,246,0.35);
+    }
+    .btn-primary:active { transform: translateY(0); }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      margin: 4px 0;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .btn-google {
+      width: 100%;
+      padding: 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg2);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.18s ease;
+    }
+    .btn-google:hover {
+      border-color: #aaa;
+      background: var(--bg);
+    }
+
+    .error-msg {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: none;
+    }
+    .error-msg.show { display: block; }
+
+    .tagline {
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 24px;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .card { padding: 32px 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-squares">
+    <div class="bg-sq"></div><div class="bg-sq"></div>
+    <div class="bg-sq"></div><div class="bg-sq"></div>
+    <div class="bg-sq"></div><div class="bg-sq"></div>
+  </div>
+
+  <div class="card">
+    <div class="logo">
+      <div class="logo-grid">
+        <div class="logo-sq r"></div><div class="logo-sq b"></div>
+        <div class="logo-sq g"></div><div class="logo-sq y"></div>
+      </div>
+      <span class="logo-text">Query</span>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('login')">Connexion</button>
+      <button class="tab" onclick="switchTab('register')">Inscription</button>
+    </div>
+
+    <div id="error-msg" class="error-msg"></div>
+
+    <!-- Formulaire connexion -->
+    <form id="form-login" class="form active" onsubmit="handleLogin(event)">
+      <div>
+        <label>Adresse email</label>
+        <input type="email" id="login-email" placeholder="vous@exemple.com" required>
+      </div>
+      <div>
+        <label>Mot de passe</label>
+        <input type="password" id="login-password" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="btn-primary">Se connecter</button>
+      <div class="divider">ou</div>
+      <button type="button" class="btn-google" onclick="handleGoogle()">
+        <svg width="18" height="18" viewBox="0 0 18 18">
+          <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+          <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+          <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
+          <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+        </svg>
+        Continuer avec Google
+      </button>
+    </form>
+
+    <!-- Formulaire inscription -->
+    <form id="form-register" class="form" onsubmit="handleRegister(event)">
+      <div>
+        <label>Nom d'affichage</label>
+        <input type="text" id="reg-name" placeholder="Votre prénom" required>
+      </div>
+      <div>
+        <label>Adresse email</label>
+        <input type="email" id="reg-email" placeholder="vous@exemple.com" required>
+      </div>
+      <div>
+        <label>Mot de passe</label>
+        <input type="password" id="reg-password" placeholder="8 caractères minimum" minlength="8" required>
+      </div>
+      <button type="submit" class="btn-primary">Créer mon compte</button>
+      <div class="divider">ou</div>
+      <button type="button" class="btn-google" onclick="handleGoogle()">
+        <svg width="18" height="18" viewBox="0 0 18 18">
+          <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+          <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+          <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
+          <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+        </svg>
+        Continuer avec Google
+      </button>
+    </form>
+
+    <p class="tagline">Ta base de connaissance, accessible partout.</p>
+  </div>
+
+  <script>
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='register')));
+      document.getElementById('form-login').classList.toggle('active', tab==='login');
+      document.getElementById('form-register').classList.toggle('active', tab==='register');
+      hideError();
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('error-msg');
+      el.textContent = msg;
+      el.classList.add('show');
+    }
+    function hideError() {
+      document.getElementById('error-msg').classList.remove('show');
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const pass  = document.getElementById('login-password').value;
+      // TODO: remplacer par appel Supabase
+      // const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass })
+      // if (error) showError(error.message); else window.location.href = 'dashboard.html';
+      console.log('Login:', email);
+      window.location.href = 'dashboard.html'; // démo
+    }
+
+    function handleRegister(e) {
+      e.preventDefault();
+      const name  = document.getElementById('reg-name').value;
+      const email = document.getElementById('reg-email').value;
+      const pass  = document.getElementById('reg-password').value;
+      // TODO: remplacer par appel Supabase
+      // const { data, error } = await supabase.auth.signUp({ email, password: pass, options: { data: { display_name: name } } })
+      console.log('Register:', name, email);
+      window.location.href = 'dashboard.html'; // démo
+    }
+
+    function handleGoogle() {
+      // TODO: remplacer par appel Supabase
+      // await supabase.auth.signInWithOAuth({ provider: 'google' })
+      alert('Connexion Google — sera connecté à Supabase.');
+    }
+  </script>
+</body>
+</html>
