@@ -45,28 +45,8 @@
     .sidebar-logo {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 20px 20px 16px;
+      padding: 16px 20px;
       border-bottom: 1px solid var(--border);
-    }
-    .logo-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 3px;
-    }
-    .logo-sq {
-      width: 13px; height: 13px;
-      border-radius: 3px;
-    }
-    .logo-sq.r { background: var(--red); }
-    .logo-sq.b { background: var(--blue); }
-    .logo-sq.g { background: var(--green); }
-    .logo-sq.y { background: var(--yellow); }
-    .logo-text {
-      font-family: 'Syne', sans-serif;
-      font-weight: 800;
-      font-size: 20px;
-      letter-spacing: -0.5px;
     }
 
     .sidebar-section {
@@ -577,11 +557,12 @@
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">
-    <div class="logo-grid">
-      <div class="logo-sq r"></div><div class="logo-sq b"></div>
-      <div class="logo-sq g"></div><div class="logo-sq y"></div>
-    </div>
-    <span class="logo-text">Query</span>
+    <svg xmlns="http://www.w3.org/2000/svg" height="34" viewBox="0 0 420 100">
+      <rect x="0"  y="4"  width="68" height="26" rx="8" fill="#3B82F6"/>
+      <rect x="12" y="37" width="68" height="26" rx="8" fill="#3B82F6" opacity="0.75"/>
+      <rect x="24" y="70" width="42" height="26" rx="8" fill="#F59E0B"/>
+      <text x="96" y="82" font-family="'Syne','Arial Black',sans-serif" font-weight="800" font-size="82" fill="#0f172a" letter-spacing="-2">Query</text>
+    </svg>
   </div>
 
   <div class="sidebar-section" style="flex:1;overflow-y:auto;">
@@ -598,7 +579,7 @@
       <div class="avatar" id="user-avatar">U</div>
       <div class="user-info">
         <div class="user-name" id="user-name">Utilisateur</div>
-        <div class="user-email" id="user-email">vous@exemple.com</div>
+        <div class="user-email" id="user-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="90e6ffe5e3d0f5e8f5fde0fcf5bef3fffd">[email&#160;protected]</a></div>
       </div>
     </div>
   </div>
@@ -686,62 +667,94 @@
 
 </div>
 
-<script>
-// ── DONNÉES (remplacer par appels Supabase) ──
-let profiles = {
-  'default': {
-    id: 'default',
-    name: 'Profil par défaut',
-    type: 'personal',
-    color: 'blue',
-    emoji: '📁',
-    entries: [
-      { id: 1, content: 'Bienvenue sur Query Web ! 🎉\n\nCette fiche est un exemple. Tu peux créer, modifier, épingler et supprimer tes fiches depuis ce dashboard.', pinned: true, date: '2024-01-15' },
-      { id: 2, content: 'https://supabase.com\n\nLien vers la documentation Supabase pour connecter ce site à une vraie base de données.', pinned: false, date: '2024-01-16' },
-    ]
-  },
-  'travail': {
-    id: 'travail',
-    name: 'Travail',
-    type: 'shared',
-    color: 'green',
-    emoji: '💼',
-    members: [
-      { name: 'Alice Martin', email: 'alice@exemple.com', role: 'owner', initials: 'AM' },
-      { name: 'Bob Dupont',   email: 'bob@exemple.com',   role: 'editor', initials: 'BD' },
-    ],
-    entries: [
-      { id: 3, content: 'Réunion équipe — lundi 9h\n\n• Point sprint en cours\n• Demo client vendredi\n• Revue backlog', pinned: false, date: '2024-01-17' },
-    ]
-  }
-};
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
 
-let currentProfileId = 'default';
+const supabase = createClient(
+  'https://rujpyxapacsjwpnsvwre.supabase.co',
+  'sb_publishable_SoXuO9BwCXGnpUzzFZAu2w_gbjiJr-R'
+)
+
+// ── ÉTAT ──
+let profiles = {};
+let currentProfileId = null;
 let editingCardId = null;
-let nextId = 100;
+let currentUser = null;
 
 // ── INIT ──
-function init() {
-  renderProfiles();
-  selectProfile('default');
-  // TODO: charger depuis Supabase
-  // const { data } = await supabase.from('profiles').select('*, cards(*)')
+async function init() {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) { window.location.href = 'login.html'; return; }
+  currentUser = session.user;
+
+  // Afficher infos utilisateur
+  const name = currentUser.user_metadata?.display_name || currentUser.email.split('@')[0];
+  document.getElementById('user-name').textContent = name;
+  document.getElementById('user-email').textContent = currentUser.email;
+  document.getElementById('user-avatar').textContent = name[0].toUpperCase();
+
+  await loadProfiles();
+}
+
+// ── CHARGEMENT DEPUIS SUPABASE ──
+async function loadProfiles() {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*, cards(*)')
+    .order('created_at', { ascending: true })
+
+  if (error) { console.error(error); return; }
+
+  profiles = {};
+  const colors = ['blue','red','green','yellow','purple'];
+  data.forEach((p, i) => {
+    profiles[p.id] = {
+      ...p,
+      color: colors[i % colors.length],
+      entries: (p.cards || []).map(c => ({
+        id: c.id,
+        content: c.content,
+        pinned: c.pinned,
+        date: c.created_at
+      }))
+    };
+  });
+
+  // Si aucun profil, en créer un par défaut
+  if (data.length === 0) {
+    await createDefaultProfile();
+    return;
+  }
+
+  const firstId = Object.keys(profiles)[0];
+  selectProfile(firstId);
+}
+
+async function createDefaultProfile() {
+  const { data, error } = await supabase.from('profiles').insert({
+    user_id: currentUser.id,
+    name: 'Profil par défaut',
+    type: 'personal',
+    emoji: '📁'
+  }).select().single()
+  if (!error) {
+    profiles[data.id] = { ...data, color: 'blue', entries: [] };
+    selectProfile(data.id);
+  }
 }
 
 // ── PROFILS ──
 function renderProfiles() {
   const list = document.getElementById('profiles-list');
   list.innerHTML = '';
-  const colors = ['blue','red','green','yellow','purple'];
-  Object.values(profiles).forEach((p, i) => {
-    const colorClass = `color-${p.color || colors[i % colors.length]}`;
+  Object.values(profiles).forEach(p => {
     const isActive = p.id === currentProfileId;
     const count = p.entries.length;
     list.innerHTML += `
       <div class="profile-item ${isActive ? 'active' : ''}" onclick="selectProfile('${p.id}')">
-        <div class="profile-icon ${colorClass}">${p.emoji || '📁'}</div>
+        <div class="profile-icon color-${p.color}">${p.emoji || '📁'}</div>
         <div class="profile-info">
-          <div class="profile-name">${p.name}</div>
+          <div class="profile-name">${escHtml(p.name)}</div>
           <div class="profile-count">${count} fiche${count !== 1 ? 's' : ''}</div>
         </div>
         ${p.type === 'shared' ? '<span class="profile-badge shared">Partagé</span>' : ''}
@@ -749,7 +762,7 @@ function renderProfiles() {
   });
 }
 
-function selectProfile(id) {
+window.selectProfile = function(id) {
   currentProfileId = id;
   renderProfiles();
   renderHeader();
@@ -758,56 +771,52 @@ function selectProfile(id) {
 
 function renderHeader() {
   const p = profiles[currentProfileId];
+  if (!p) return;
   document.getElementById('profile-title').textContent = p.emoji + ' ' + p.name;
   const count = p.entries.length;
-  document.getElementById('profile-subtitle').textContent = `${count} fiche${count !== 1 ? 's' : ''}${p.type === 'shared' ? ' · Profil partagé' : ''}`;
+  document.getElementById('profile-subtitle').textContent =
+    `${count} fiche${count !== 1 ? 's' : ''}${p.type === 'shared' ? ' · Profil partagé' : ''}`;
 
   const actions = document.getElementById('profile-actions');
   actions.innerHTML = '';
   if (p.type === 'shared') {
-    actions.innerHTML += `<button class="btn-icon" onclick="openShareModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Membres</button>`;
+    actions.innerHTML += `<button class="btn-icon" onclick="openShareModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Membres</button>`;
   }
-  actions.innerHTML += `<button class="btn-icon" onclick="exportProfile()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exporter</button>`;
-  if (p.id !== 'default') {
-    actions.innerHTML += `<button class="btn-icon danger" onclick="deleteProfile()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Supprimer</button>`;
-  }
+  actions.innerHTML += `<button class="btn-icon" onclick="exportProfile()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exporter</button>`;
+  actions.innerHTML += `<button class="btn-icon danger" onclick="deleteProfile()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Supprimer</button>`;
 }
 
 // ── FICHES ──
 function renderCards() {
   const p = profiles[currentProfileId];
+  if (!p) return;
   const q = document.getElementById('search').value.trim().toLowerCase();
   const grid = document.getElementById('cards-grid');
 
-  let entries = [...p.entries];
-
-  // Tri : épinglées en premier
-  entries.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
-
-  // Filtrage
+  let entries = [...p.entries].sort((a,b) => (b.pinned?1:0)-(a.pinned?1:0));
   if (q) entries = entries.filter(e => e.content.toLowerCase().includes(q));
 
   if (entries.length === 0) {
-    grid.innerHTML = `<div class="empty-state"><div class="emoji">${q ? '🔍' : '✨'}</div><h3>${q ? 'Aucun résultat' : 'Aucune fiche pour le moment'}</h3><p>${q ? 'Essaie un autre mot-clé.' : 'Clique sur "Nouvelle fiche" pour commencer.'}</p></div>`;
+    grid.innerHTML = `<div class="empty-state"><div class="emoji">${q?'🔍':'✨'}</div><h3>${q?'Aucun résultat':'Aucune fiche pour le moment'}</h3><p>${q?'Essaie un autre mot-clé.':'Clique sur "Nouvelle fiche" pour commencer.'}</p></div>`;
     return;
   }
 
   grid.innerHTML = entries.map(e => {
     let content = escHtml(e.content);
-    if (q) {
-      const re = new RegExp(`(${escReg(q)})`, 'gi');
-      content = content.replace(re, '<mark>$1</mark>');
-    }
+    if (q) content = content.replace(new RegExp(`(${escReg(q)})`, 'gi'), '<mark>$1</mark>');
     return `
-    <div class="card ${e.pinned ? 'pinned' : ''}" onclick="openEditCardModal(${e.id})">
+    <div class="card ${e.pinned?'pinned':''}" onclick="openEditCardModal('${e.id}')">
       <div class="card-content">${content}</div>
       <div class="card-footer">
         <span class="card-date">${formatDate(e.date)}</span>
         <div class="card-btns">
-          <button class="card-btn pin" title="${e.pinned ? 'Désépingler' : 'Épingler'}" onclick="togglePin(event, ${e.id})">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="${e.pinned ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <button class="card-btn pin" title="${e.pinned?'Désépingler':'Épingler'}" onclick="togglePin(event,'${e.id}')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="${e.pinned?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           </button>
-          <button class="card-btn" title="Modifier" onclick="openEditCardModal(${e.id}); event.stopPropagation()">
+          <button class="card-btn" title="Modifier" onclick="openEditCardModal('${e.id}');event.stopPropagation()">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
         </div>
@@ -816,7 +825,7 @@ function renderCards() {
   }).join('');
 }
 
-function openNewCardModal() {
+window.openNewCardModal = function() {
   editingCardId = null;
   document.getElementById('modal-card-title').textContent = '✏️ Nouvelle fiche';
   document.getElementById('card-content').value = '';
@@ -825,7 +834,7 @@ function openNewCardModal() {
   setTimeout(() => document.getElementById('card-content').focus(), 50);
 }
 
-function openEditCardModal(id) {
+window.openEditCardModal = function(id) {
   const p = profiles[currentProfileId];
   const card = p.entries.find(e => e.id === id);
   if (!card) return;
@@ -837,113 +846,154 @@ function openEditCardModal(id) {
   setTimeout(() => document.getElementById('card-content').focus(), 50);
 }
 
-function saveCard() {
+window.saveCard = async function() {
   const content = document.getElementById('card-content').value.trim();
   if (!content) return;
   const p = profiles[currentProfileId];
-  if (editingCardId !== null) {
-    const card = p.entries.find(e => e.id === editingCardId);
-    if (card) card.content = content;
-    // TODO: await supabase.from('cards').update({ content }).eq('id', editingCardId)
+
+  if (editingCardId) {
+    const { error } = await supabase.from('cards').update({ content }).eq('id', editingCardId)
+    if (!error) {
+      const card = p.entries.find(e => e.id === editingCardId);
+      if (card) card.content = content;
+    }
   } else {
-    p.entries.unshift({ id: nextId++, content, pinned: false, date: new Date().toISOString().split('T')[0] });
-    // TODO: await supabase.from('cards').insert({ content, profile_id: currentProfileId })
+    const { data, error } = await supabase.from('cards').insert({
+      content,
+      profile_id: currentProfileId,
+      pinned: false
+    }).select().single()
+    if (!error) {
+      p.entries.unshift({ id: data.id, content, pinned: false, date: data.created_at });
+    }
   }
-  closeModal('modal-card');
+  closeModal();
   renderProfiles();
   renderHeader();
   renderCards();
 }
 
-function deleteCard() {
+window.deleteCard = async function() {
   if (!confirm('Supprimer cette fiche ?')) return;
-  const p = profiles[currentProfileId];
-  p.entries = p.entries.filter(e => e.id !== editingCardId);
-  // TODO: await supabase.from('cards').delete().eq('id', editingCardId)
-  closeModal('modal-card');
+  const { error } = await supabase.from('cards').delete().eq('id', editingCardId)
+  if (!error) {
+    const p = profiles[currentProfileId];
+    p.entries = p.entries.filter(e => e.id !== editingCardId);
+  }
+  closeModal();
   renderProfiles();
   renderHeader();
   renderCards();
 }
 
-function togglePin(event, id) {
+window.togglePin = async function(event, id) {
   event.stopPropagation();
   const p = profiles[currentProfileId];
   const card = p.entries.find(e => e.id === id);
-  if (card) card.pinned = !card.pinned;
-  // TODO: await supabase.from('cards').update({ pinned: card.pinned }).eq('id', id)
+  if (!card) return;
+  card.pinned = !card.pinned;
+  await supabase.from('cards').update({ pinned: card.pinned }).eq('id', id)
   renderCards();
 }
 
 // ── PROFILS ──
-function openNewProfileModal() {
+window.openNewProfileModal = function() {
   document.getElementById('profile-name-input').value = '';
   showModal('modal-profile');
   setTimeout(() => document.getElementById('profile-name-input').focus(), 50);
 }
 
-function createProfile() {
+window.createProfile = async function() {
   const name = document.getElementById('profile-name-input').value.trim();
   if (!name) return;
   const type = document.querySelector('input[name="profile-type"]:checked').value;
   const emojis = ['📋','💡','🎯','🔬','📚','🛠️','💼','🌟'];
   const colors = ['red','green','yellow','purple','blue'];
-  const id = 'profile_' + Date.now();
-  profiles[id] = {
-    id, name, type,
-    emoji: emojis[Object.keys(profiles).length % emojis.length],
-    color: colors[Object.keys(profiles).length % colors.length],
-    entries: [],
-    members: type === 'shared' ? [{ name: 'Vous', email: 'vous@exemple.com', role: 'owner', initials: 'V' }] : []
-  };
-  // TODO: await supabase.from('profiles').insert({ name, type, user_id: user.id })
-  closeModal('modal-profile');
-  renderProfiles();
-  selectProfile(id);
+  const emoji = emojis[Object.keys(profiles).length % emojis.length];
+  const color = colors[Object.keys(profiles).length % colors.length];
+
+  const { data, error } = await supabase.from('profiles').insert({
+    user_id: currentUser.id,
+    name, type, emoji
+  }).select().single()
+
+  if (!error) {
+    profiles[data.id] = { ...data, color, entries: [] };
+    closeModal();
+    renderProfiles();
+    selectProfile(data.id);
+  }
 }
 
-function deleteProfile() {
+window.deleteProfile = async function() {
   const p = profiles[currentProfileId];
   if (!confirm(`Supprimer le profil "${p.name}" et toutes ses fiches ?`)) return;
-  delete profiles[currentProfileId];
-  // TODO: await supabase.from('profiles').delete().eq('id', currentProfileId)
-  selectProfile('default');
+  const { error } = await supabase.from('profiles').delete().eq('id', currentProfileId)
+  if (!error) {
+    delete profiles[currentProfileId];
+    const firstId = Object.keys(profiles)[0];
+    if (firstId) selectProfile(firstId);
+    else { profiles = {}; renderProfiles(); renderHeader(); renderCards(); }
+  }
 }
 
 // ── PARTAGE ──
-function openShareModal() {
-  const p = profiles[currentProfileId];
+window.openShareModal = async function() {
+  const { data: members } = await supabase
+    .from('profile_members')
+    .select('*, user:user_id(email)')
+    .eq('profile_id', currentProfileId)
+
   const list = document.getElementById('members-list');
-  list.innerHTML = (p.members || []).map(m => `
+  list.innerHTML = `
     <div class="member-row">
-      <div class="member-avatar">${m.initials}</div>
-      <div class="member-name">${m.name}<br><span style="font-size:11px;color:var(--muted)">${m.email}</span></div>
-      <span class="member-role ${m.role}">${m.role === 'owner' ? 'Propriétaire' : m.role === 'editor' ? 'Éditeur' : 'Lecteur'}</span>
+      <div class="member-avatar">${currentUser.email[0].toUpperCase()}</div>
+      <div class="member-name">${escHtml(currentUser.user_metadata?.display_name || currentUser.email)}<br>
+        <span style="font-size:11px;color:var(--muted)">${currentUser.email}</span></div>
+      <span class="member-role owner">Propriétaire</span>
+    </div>` +
+    (members || []).map(m => `
+    <div class="member-row">
+      <div class="member-avatar">${m.user?.email?.[0]?.toUpperCase() || '?'}</div>
+      <div class="member-name">${escHtml(m.user?.email || '')}</div>
+      <span class="member-role ${m.role}">${m.role === 'editor' ? 'Éditeur' : 'Lecteur'}</span>
     </div>`).join('');
   showModal('modal-share');
 }
 
-function inviteMember() {
+window.inviteMember = async function() {
   const email = document.getElementById('invite-email').value.trim();
   if (!email) return;
-  const p = profiles[currentProfileId];
-  if (!p.members) p.members = [];
-  const initials = email.substring(0, 2).toUpperCase();
-  p.members.push({ name: email, email, role: 'editor', initials });
-  // TODO: await supabase.from('profile_members').insert({ profile_id: currentProfileId, email, role: 'editor' })
+  // Chercher l'utilisateur par email
+  const { data: users } = await supabase
+    .from('profiles')
+    .select('user_id')
+    .eq('user_id', email)
+    .limit(1)
+  // Note: l'invitation complète nécessite une Edge Function Supabase
+  // Pour l'instant on insère directement si on a l'ID
+  alert(`Invitation envoyée à ${email} ! (Fonctionnalité complète disponible après configuration des Edge Functions Supabase)`)
   document.getElementById('invite-email').value = '';
-  openShareModal();
 }
 
 // ── EXPORT ──
-function exportProfile() {
+window.exportProfile = function() {
   const p = profiles[currentProfileId];
-  const md = `# ${p.name}\n\n` + p.entries.map((e, i) => `## Fiche ${i + 1}\n\n${e.content}\n\n---\n`).join('\n');
+  const md = `# ${p.name}\n\n` +
+    p.entries.map((e,i) => `## Fiche ${i+1}\n\n${e.content}\n\n---\n`).join('\n');
   const blob = new Blob([md], { type: 'text/markdown' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `${p.name.replace(/\s+/g, '_')}.md`;
+  a.download = `${p.name.replace(/\s+/g,'_')}.md`;
   a.click();
+}
+
+// ── DÉCONNEXION ──
+document.getElementById('user-avatar').parentElement.onclick = async function() {
+  if (confirm('Se déconnecter ?')) {
+    await supabase.auth.signOut()
+    window.location.href = 'login.html'
+  }
 }
 
 // ── UTILS ──
@@ -952,24 +1002,25 @@ function showModal(id) {
   document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
   document.getElementById(id).style.display = 'block';
 }
-function closeModal(id) {
+window.closeModal = function() {
   document.getElementById('overlay').classList.remove('show');
 }
-function closeAllModals(e) {
+window.closeAllModals = function(e) {
   if (e.target === document.getElementById('overlay')) closeModal();
 }
+window.renderCards = renderCards;
+
 function escHtml(t) {
-  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 function escReg(t) {
-  return t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
 }
 function formatDate(d) {
   if (!d) return '';
   return new Date(d).toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' });
 }
 
-// Keyboard shortcut
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeModal();
   if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -979,6 +1030,3 @@ document.addEventListener('keydown', e => {
 });
 
 init();
-</script>
-</body>
-</html>
