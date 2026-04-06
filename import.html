@@ -532,14 +532,14 @@ mark{background:var(--yellow-bg);color:var(--yellow-txt);padding:1px 2px;border-
       <img class="sb-logo" src="icon128.png" alt="Query"/>
       <span class="sb-name">Query</span>
     </div>
-    <div class="sb-section">Profils</div>
+    <div class="sb-section" id="sb-profiles-label">Profils</div>
     <div id="profile-list"></div>
     <div class="sb-foot">
       <button class="btn-import" id="btn-add">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
-        Importer un profil en P2P
+        <span id="import-modal-title">Importer un profil</span> en P2P
       </button>
     </div>
   </aside>
@@ -593,7 +593,7 @@ mark{background:var(--yellow-bg);color:var(--yellow-txt);padding:1px 2px;border-
         <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
         <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
       </svg>
-      Profils
+      <span id="tab-profiles-label">Profils</span>
     </button>
     <button class="tab" id="tab-import">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -601,7 +601,7 @@ mark{background:var(--yellow-bg);color:var(--yellow-txt);padding:1px 2px;border-
         <polyline points="17 8 12 3 7 8"/>
         <line x1="12" y1="3" x2="12" y2="15"/>
       </svg>
-      Importer
+      <span id="tab-import-label">Importer</span>
     </button>
   </div>
 </nav>
@@ -621,13 +621,13 @@ mark{background:var(--yellow-bg);color:var(--yellow-txt);padding:1px 2px;border-
     <div class="w-title">Query</div>
 
     <!-- Sous-titre -->
-    <div class="w-desc">Recevez vos profils en P2P directement depuis l'application.</div>
+    <div class="w-desc"><span id="welcome-desc">Recevez vos profils en P2P directement depuis l'application.</span></div>
 
     <!-- Divider -->
     <div class="w-divider"></div>
 
     <!-- Label -->
-    <div class="w-label">Code d'import</div>
+    <div class="w-label"><span id="code-label">Code d'import</span></div>
 
     <!-- Champ code -->
     <input class="code-inp" type="text" id="w-code"
@@ -636,14 +636,14 @@ mark{background:var(--yellow-bg);color:var(--yellow-txt);padding:1px 2px;border-
            autocomplete="off" spellcheck="false"/>
 
     <!-- Bouton -->
-    <button class="btn-main" id="w-btn">Recevoir le profil</button>
+    <button class="btn-main" id="w-btn"><span class="recv-btn-label">Recevoir le profil</span></button>
 
     <!-- Status -->
     <div class="status" id="w-status"></div>
 
   </div>
 
-  <!-- Lien retour (visible uniquement si l'app a déjà des profils) -->
+  <!-- Back link (visible only if profiles exist) -->
   <a class="w-back" id="w-back" href="#" style="display:none">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <polyline points="15 18 9 12 15 6"/>
@@ -663,13 +663,13 @@ mark{background:var(--yellow-bg);color:var(--yellow-txt);padding:1px 2px;border-
     <div class="modal-body">
       <div class="hint">
         <span class="hint-i">📡</span>
-        <span>Extension Query → <strong>Partage P2P</strong> → <strong>Générer le code</strong> → entrez le code ici.</span>
+        <span id="import-instructions">Extension Query → Partage P2P → Générer le code → entrez le code ici.</span>
       </div>
       <input class="code-inp" type="text" id="m-code"
              maxlength="8" placeholder="CODE"
              inputmode="text" autocapitalize="characters"
              autocomplete="off" spellcheck="false"/>
-      <button class="btn-main" id="m-btn">Recevoir le profil</button>
+      <button class="btn-main" id="m-btn"><span class="recv-btn-label">Recevoir le profil</span></button>
       <div class="status" id="m-status"></div>
     </div>
   </div>
@@ -679,6 +679,7 @@ mark{background:var(--yellow-bg);color:var(--yellow-txt);padding:1px 2px;border-
 
 <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script src="i18n.js"></script>
 <script src="app.js"></script>
 
 <!-- Lien retour : visible seulement si des profils existent déjà -->

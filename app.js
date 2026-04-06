@@ -20,7 +20,7 @@ const genId = () => Math.random().toString(36).substring(2,8).toUpperCase();
 
 function formatDate(ts) {
   if (!ts) return '';
-  return new Date(ts).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'});
+  return new Date(ts).toLocaleDateString(navigator.language || 'en', {day:'2-digit',month:'short',year:'numeric'});
 }
 
 const isHTML = s => /<[a-z][\s\S]*>/i.test(s||'');
@@ -58,7 +58,7 @@ async function dbLoadProfiles() {
 
 async function dbSaveProfile(data) {
   const names = S.profiles.map(p=>p.name.toLowerCase());
-  let name = data.name || 'Sans nom';
+  let name = data.name || t('defaultProfileName');
   if (names.includes(name.toLowerCase())) {
     let i=2; while(names.includes(`${name.toLowerCase()} (${i})`)) i++;
     name = `${name} (${i})`;
@@ -66,12 +66,15 @@ async function dbSaveProfile(data) {
   const id  = name.toLowerCase().replace(/[^a-z0-9]/g,'_')+'_'+Date.now();
   const now = Date.now();
   await db.profiles.add({id, name, createdAt:now});
-  const rows = (data.entries||[]).map((e,i)=>({
-    profileId:id,
-    content:  typeof e==='string'?e:(e.content||''),
-    isPinned: typeof e==='object'?!!e.isPinned:false,
-    createdAt:typeof e==='object'&&e.createdAt?e.createdAt:now+i,
-  }));
+  const rows = (data.entries||[]).map((e,i)=>{
+    if (!e && e !== '') return null;
+    return {
+      profileId:id,
+      content:  typeof e==='string' ? e : (e && typeof e==='object' ? (e.content||'') : ''),
+      isPinned: (e && typeof e==='object') ? !!e.isPinned : false,
+      createdAt:(e && typeof e==='object' && e.createdAt) ? e.createdAt : now+i,
+    };
+  }).filter(r=>r!==null);
   if(rows.length) await db.entries.bulkAdd(rows);
   return {id, name};
 }
@@ -98,12 +101,12 @@ function destroyPeer() {
 function connectP2P(rawCode, {onStatus,onSuccess,onError}) {
   destroyPeer();
   const code = rawCode.trim().toUpperCase();
-  if(code.length<4){onError('Code trop court (4 caractères minimum).'); return;}
+  if(code.length<4){onError(t('p2pCodeTooShort')); return;}
 
   const targetId = 'query-ext-'+code;
   const myId     = 'query-recv-'+genId()+genId();
 
-  onStatus('Connexion au serveur P2P…');
+  onStatus(t('p2pConnecting'));
   const peer = new Peer(myId,{host:'0.peerjs.com',port:443,path:'/',secure:true});
   S.peer = peer;
   let done=false;
@@ -111,10 +114,10 @@ function connectP2P(rawCode, {onStatus,onSuccess,onError}) {
   const abort = msg => {
     if(done) return; done=true; clearTimeout(tmt); destroyPeer(); onError(msg);
   };
-  const tmt = setTimeout(()=>abort('Délai dépassé — vérifiez le code et que l\'extension est en attente.'),22000);
+  const tmt = setTimeout(()=>abort(t('p2pTimeout')),22000);
 
   peer.on('open',()=>{
-    onStatus('Connexion à l\'extension…');
+    onStatus(t('p2pConnectingExt'));
     const conn = peer.connect(targetId,{reliable:true});
     conn.on('data', async raw=>{
       if(done) return; done=true; clearTimeout(tmt);
@@ -123,14 +126,14 @@ function connectP2P(rawCode, {onStatus,onSuccess,onError}) {
         if(msg.type!=='query-profile') throw new Error('type inattendu');
         const {id,name} = await dbSaveProfile(msg.payload);
         destroyPeer(); onSuccess(name,id);
-      } catch { destroyPeer(); onError('Erreur lors du traitement des données.'); }
+      } catch { destroyPeer(); onError(t('p2pDataError')); }
     });
-    conn.on('error',()=>abort('Connexion échouée — le code est-il correct ?'));
+    conn.on('error',()=>abort(t('p2pConnFailed')));
   });
   peer.on('error',err=>{
     if(err.type==='peer-unavailable')
-      abort('Extension introuvable — assurez-vous qu\'elle est en attente.');
-    else abort('Erreur réseau : '+(err.message||err.type));
+      abort(t('p2pNotFound'));
+    else abort(t('p2pNetError')+(err.message||err.type));
   });
 }
 
@@ -139,7 +142,7 @@ function renderProfileList() {
   const list=$('profile-list');
   list.innerHTML='';
   if(!S.profiles.length){
-    list.innerHTML=`<div style="padding:12px 14px;font-size:12px;color:var(--text-muted);">Aucun profil — importez-en un via P2P.</div>`;
+    list.innerHTML=`<div style="padding:12px 14px;font-size:12px;color:var(--text-muted);">${t('noProfile')}</div>`;
     return;
   }
   S.profiles.forEach(p=>{
@@ -166,12 +169,12 @@ function renderProfileList() {
     });
     el.querySelector('[data-del]').addEventListener('click',e=>{
       e.stopPropagation();
-      if(!confirm(`Supprimer le profil « ${p.name} » et toutes ses fiches ?`)) return;
+      if(!confirm(t('deleteConfirm', p.name))) return;
       dbDeleteProfile(p.id).then(async()=>{
         await dbLoadProfiles();
         if(S.activeId===p.id){S.activeId=null;S.entries=[];renderCards();}
         renderProfileList();
-        toast(`🗑 Profil « ${p.name} » supprimé`);
+        toast(t('profileDeleted', p.name));
       });
     });
     list.appendChild(el);
@@ -189,7 +192,7 @@ async function selectProfile(id) {
   $('tb-name').textContent=p?p.name:'';
   S.entries=await dbLoadEntries(id);
   const n=S.entries.length;
-  $('tb-sub').textContent=`${n} fiche${n!==1?'s':''}`;
+  $('tb-sub').textContent=t('cardCount', n);
   renderCards();
 }
 
@@ -202,8 +205,8 @@ function renderCards() {
     wrap.innerHTML=`
       <div class="empty">
         <span class="empty-icon">📂</span>
-        <div class="empty-title">Aucun profil sélectionné</div>
-        <div class="empty-sub">Choisissez un profil dans l'onglet <strong>Profils</strong>.</div>
+        <div class="empty-title">${t('noProfileSel')}</div>
+        <div class="empty-sub">${t('noProfileSub')}</div>
       </div>`;
     lbl.textContent=''; return;
   }
@@ -215,14 +218,14 @@ function renderCards() {
       })
     :S.entries;
 
-  lbl.textContent=q?`${list.length} résultat${list.length!==1?'s':''} pour « ${S.query} »`:'';
+  lbl.textContent=q?t('resultCount', list.length, S.query):'';
 
   if(!list.length){
     wrap.innerHTML=`
       <div class="empty">
         <span class="empty-icon">🔍</span>
-        <div class="empty-title">${q?'Aucun résultat':'Profil vide'}</div>
-        <div class="empty-sub">${q?`Aucune fiche ne correspond à « ${escHTML(S.query)} ».`:'Ce profil ne contient encore aucune fiche.'}</div>
+        <div class="empty-title">${q?t('noResult'):t('emptyProfile')}</div>
+        <div class="empty-sub">${q?t('noResultSub', escHTML(S.query)):t('emptyProfileSub')}</div>
       </div>`;
     return;
   }
@@ -251,7 +254,7 @@ function renderCards() {
     // Épingle
     const pinBtn=document.createElement('div');
     pinBtn.className='card-btn'+(entry.isPinned?' pin-on':'');
-    pinBtn.title=entry.isPinned?'Épinglé':'';
+    pinBtn.title=entry.isPinned?t('pinned'):'';
     pinBtn.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="${entry.isPinned?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <line x1="12" y1="17" x2="12" y2="22"/>
       <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/>
@@ -260,7 +263,7 @@ function renderCards() {
 
     // Copier
     const copyBtn=document.createElement('button');
-    copyBtn.className='card-btn'; copyBtn.title='Copier';
+    copyBtn.className='card-btn'; copyBtn.title=t('copy');
     const iconCopy=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
     const iconOk=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
     copyBtn.innerHTML=iconCopy;
@@ -307,7 +310,7 @@ function runP2P(code, statusEl, btnEl, onDone) {
   connectP2P(code,{
     onStatus: msg=>setStatus(statusEl,'⏳ '+msg,'wait'),
     onSuccess: async(name,id)=>{
-      setStatus(statusEl,`✅ Profil « ${name} » importé !`,'ok');
+      setStatus(statusEl, t('profileImported', name), 'ok');
       await dbLoadProfiles(); renderProfileList(); await selectProfile(id);
       onDone(name);
     },
@@ -352,7 +355,7 @@ $('btn-add').addEventListener('click',()=>{ closeSidebar(); openModal(); });
 $('modal-x').addEventListener('click', closeModal);
 $('modal-bg').addEventListener('click',e=>{ if(e.target===$('modal-bg')) closeModal(); });
 const doModal=()=>runP2P($('m-code').value,$('m-status'),$('m-btn'),name=>{
-  setTimeout(closeModal,1600); toast(`✅ Profil « ${name} » ajouté`);
+  setTimeout(closeModal,1600); toast(t('profileAdded', name));
   // Remettre l'onglet cards actif
   ['cards','profiles','import'].forEach(t=>$('tab-'+t)?.classList.remove('active'));
   $('tab-cards')?.classList.add('active');
@@ -366,7 +369,7 @@ const doWelcome=()=>{
   connectP2P($('w-code').value,{
     onStatus: msg=>setStatus($('w-status'),'⏳ '+msg,'wait'),
     onSuccess: async(name,id)=>{
-      setStatus($('w-status'),`✅ Profil « ${name} » importé !`,'ok');
+      setStatus($('w-status'), t('profileImported', name), 'ok');
       await dbLoadProfiles(); hideWelcome(); renderProfileList(); await selectProfile(id);
     },
     onError: msg=>{ setStatus($('w-status'),'❌ '+msg,'err'); $('w-btn').disabled=false; },
