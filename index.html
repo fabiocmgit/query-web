@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Query — Knowledge Base Extension</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  min-height: 100vh;
+  color: #334155;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ── Header ── */
+header {
+  width: 100%; display: flex; align-items: center;
+  padding: 0 32px; height: 56px;
+  background: #fff; border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+}
+.header-brand { display: flex; align-items: center; gap: 10px; }
+.header-brand img { height: 28px; width: 28px; border-radius: 6px; }
+.header-brand span {
+  font-family: 'Syne', 'Arial Black', sans-serif;
+  font-size: 17px; font-weight: 700; color: #0f172a;
+  letter-spacing: -.02em;
+}
+header .hs { flex: 1; }
+header a {
+  font-size: 13px; color: #64748b; text-decoration: none;
+  border: 1px solid #e2e8f0; border-radius: 6px;
+  padding: 6px 14px; transition: all .2s;
+  font-weight: 500;
+}
+header a:hover { border-color: #3b82f6; color: #3b82f6; background: #eff6ff; }
+
+/* ── Hero ── */
+.hero {
+  max-width: 720px; width: 100%;
+  padding: 80px 24px 48px;
+  text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 24px;
+}
+
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #eff6ff; color: #3b82f6;
+  border: 1px solid #bfdbfe; border-radius: 20px;
+  padding: 5px 14px; font-size: 12px; font-weight: 600;
+  letter-spacing: .03em;
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 800; color: #0f172a;
+  letter-spacing: -.03em; line-height: 1.1;
+}
+h1 span { color: #3b82f6; }
+
+.subtitle {
+  font-size: 1.1rem; color: #64748b;
+  line-height: 1.7; max-width: 540px;
+}
+
+.cta-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.cta-or {
+  font-size: 12px; color: #94a3b8; font-weight: 500;
+}
+
+.btn-cta {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 28px; border-radius: 8px;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  text-decoration: none; transition: all .2s;
+  border: none;
+}
+.btn-cta-primary {
+  background: #3b82f6; color: #fff;
+  box-shadow: 0 4px 14px rgba(59,130,246,.4);
+}
+.btn-cta-primary:hover { background: #2563eb; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(59,130,246,.5); }
+.btn-cta-secondary {
+  background: #fff; color: #374151;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.btn-cta-secondary:hover { border-color: #3b82f6; color: #3b82f6; transform: translateY(-1px); }
+
+/* Chrome logo inline */
+.chrome-icon { width: 20px; height: 20px; }
+
+/* ── Extension not found notice ── */
+.notice {
+  background: #fffbeb; border: 1px solid #fde68a;
+  border-radius: 10px; padding: 16px 20px;
+  display: flex; align-items: flex-start; gap: 12px;
+  max-width: 480px; text-align: left; font-size: 13px;
+  color: #92400e; line-height: 1.6;
+}
+.notice-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px; }
+.notice strong { color: #78350f; }
+
+/* ── Features ── */
+.features {
+  max-width: 860px; width: 100%;
+  padding: 0 24px 80px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.feature-card {
+  background: #fff; border: 1px solid #e2e8f0;
+  border-radius: 10px; padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  transition: all .2s;
+}
+.feature-card:hover { border-color: #bfdbfe; box-shadow: 0 4px 12px rgba(59,130,246,.1); transform: translateY(-2px); }
+
+.feature-icon {
+  width: 42px; height: 42px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; margin-bottom: 14px;
+  background: #eff6ff;
+}
+.feature-card h3 { font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
+.feature-card p { font-size: 13px; color: #64748b; line-height: 1.65; }
+
+/* ── Steps ── */
+.steps-section {
+  max-width: 720px; width: 100%;
+  padding: 0 24px 80px; text-align: center;
+}
+.steps-section h2 { font-size: 1.6rem; font-weight: 700; color: #0f172a; margin-bottom: 32px; letter-spacing: -.02em; }
+
+.steps { display: flex; flex-direction: column; gap: 0; }
+.step {
+  display: flex; align-items: flex-start; gap: 20px;
+  padding: 20px 0; border-bottom: 1px solid #f1f5f9;
+  text-align: left;
+}
+.step:last-child { border-bottom: none; }
+.step-num {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: #3b82f6; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; flex-shrink: 0;
+}
+.step-content h4 { font-size: 14px; font-weight: 600; color: #0f172a; margin-bottom: 3px; }
+.step-content p { font-size: 13px; color: #64748b; line-height: 1.6; }
+.step-content code {
+  background: #f1f5f9; color: #3b82f6; padding: 1px 6px;
+  border-radius: 4px; font-family: monospace; font-size: 12px;
+}
+
+/* ── Footer ── */
+footer {
+  width: 100%; text-align: center;
+  padding: 24px; border-top: 1px solid #e2e8f0;
+  font-size: 12px; color: #94a3b8; background: #fff;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-brand">
+    <img src="icon1024.png" alt="Query"/>
+    <span>Query</span>
+  </div>
+  <div class="hs"></div>
+</header>
+
+<div class="hero">
+  <div class="badge">⚡ Chrome Extension</div>
+
+  <h1>Your personal<br><span>knowledge base</span>,<br>always at hand.</h1>
+
+  <p class="subtitle">
+    Query lets you save, organize, and instantly search any text from the web —
+    directly in your browser, no account required, fully local.
+  </p>
+
+  <div class="cta-group">
+    <a class="btn-cta btn-cta-primary"
+       href="https://chromewebstore.google.com/detail/query/ejfjhpgngmaidniobgokmphlcbgfnofg"
+       target="_blank" rel="noopener noreferrer">
+      <svg class="chrome-icon" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" fill="#fff" stroke="#e2e8f0" stroke-width=".5"/>
+        <circle cx="12" cy="12" r="4.2" fill="#4285F4"/>
+        <path d="M12 7.8h8.66a10 10 0 0 0-17.32 0H12z" fill="#EA4335"/>
+        <path d="M7.8 12a4.2 4.2 0 0 0 2.1 3.64L5.57 7.8A10 10 0 0 0 12 22l4.33-7.5A4.2 4.2 0 0 0 12 16.2" fill="#34A853"/>
+        <path d="M16.2 12a4.2 4.2 0 0 1-2.1 3.64L18.43 7.8A10 10 0 0 1 12 22l-4.33-7.5A4.2 4.2 0 0 0 12 7.8h8.66" fill="#FBBC04"/>
+      </svg>
+      Add to Chrome — It's free
+    </a>
+    <span class="cta-or">or</span>
+    <a class="btn-cta btn-cta-secondary" href="import.html">
+      Import a profile 
+    </a>
+  </div>
+</div>
+
+<div class="features">
+  <div class="feature-card">
+    <div class="feature-icon">⚡</div>
+    <h3>Instant capture</h3>
+    <p>Select any text on any page, right-click, and save it to your knowledge base in one click.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">🔒</div>
+    <h3>100% local</h3>
+    <p>All your data stays on your device. No account, no server, no subscription.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">🔍</div>
+    <h3>Lightning search</h3>
+    <p>Find any card instantly across all your profiles with real-time full-text search.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">🔗</div>
+    <h3>P2P sharing</h3>
+    <p>Share profiles with others via direct WebRTC connection — no middleman, no cloud.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">🗂️</div>
+    <h3>Profiles</h3>
+    <p>Organize your cards into profiles — one for work, one for studies, one personal.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">✏️</div>
+    <h3>Rich formatting</h3>
+    <p>Bold, italic, colors, highlights — your cards look exactly as you wrote them.</p>
+  </div>
+</div>
+
+<footer>
+  Query — Your local knowledge base. No account. No cloud. By fabiocm
+</footer>
+
+</body>
+</html>
