@@ -103,26 +103,43 @@ function connectP2P(rawCode, {onStatus,onSuccess,onError}) {
   const code = rawCode.trim().toUpperCase();
   if(code.length<4){onError(t('p2pCodeTooShort')); return;}
 
-  const targetId = code;
+  // FIX: l'extension enregistre ses peers avec le préfixe 'query-ext-'
+  const targetId = 'query-ext-' + code;
   const myId     = 'query-recv-'+genId()+genId();
 
   onStatus(t('p2pConnecting'));
-  const peer = new Peer(myId,{host:'0.peerjs.com',port:443,path:'/',secure:true});
+  const peer = new Peer(myId, {
+    host: '0.peerjs.com', port: 443, path: '/', secure: true,
+    // FIX: serveurs STUN publics pour traverser les NAT/firewalls
+    config: {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun.cloudflare.com:3478' }
+      ]
+    }
+  });
   S.peer = peer;
   let done=false;
 
   const abort = msg => {
     if(done) return; done=true; clearTimeout(tmt); destroyPeer(); onError(msg);
   };
-  const tmt = setTimeout(()=>abort(t('p2pTimeout')),45000);
+  // FIX: timeout aligné avec l'extension (30s)
+  const tmt = setTimeout(()=>abort(t('p2pTimeout')), 30000);
 
   peer.on('open',()=>{
     onStatus(t('p2pConnectingExt'));
-    const conn = peer.connect(targetId,{reliable:true});
+    const conn = peer.connect(targetId, {reliable:true});
+    // FIX: attendre que la connexion soit ouverte avant d'écouter les données
+    conn.on('open', ()=>{
+      onStatus(t('p2pConnectingExt'));
+    });
     conn.on('data', async raw=>{
       if(done) return; done=true; clearTimeout(tmt);
       try {
-        const msg = JSON.parse(raw);
+        // PeerJS peut livrer un string ou un objet selon la sérialisation de l'émetteur
+        const msg = typeof raw === 'string' ? JSON.parse(raw) : (typeof raw === 'object' && raw !== null && raw.type ? raw : JSON.parse(JSON.stringify(raw)));
         if(msg.type!=='query-profile') throw new Error('type inattendu');
         const {id,name} = await dbSaveProfile(msg.payload);
         destroyPeer(); onSuccess(name,id);

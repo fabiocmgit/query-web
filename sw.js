@@ -1,6 +1,6 @@
-const CACHE = 'query-v4';
+const CACHE = 'query-v5';
 const STATIC = [
-  '/', '/index.html', '/import.html', '/app.js', '/i18n.js', '/manifest.json',
+  '/', '/index.html', '/import.html', '/i18n.js', '/manifest.json',
   '/icons/icon16.png', '/icons/icon32.png', '/icons/icon48.png',
   '/icons/icon128.png', '/icons/icon192.png', '/icons/icon512.png',
 ];
@@ -33,7 +33,7 @@ self.addEventListener('fetch', e => {
         }
         return res;
       }).catch(() => {
-        if (e.request.destination === 'document') return caches.match('/index.html');
+        if (e.request.destination === 'document') return caches.match('/import.html');
       });
     })
   );

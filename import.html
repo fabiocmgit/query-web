@@ -200,7 +200,7 @@ body {
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
-  margin: 4px 8px;
+  margin: 4px 0 0 0;
   border-radius: var(--r);
   border: 1px dashed var(--c-border2);
   background: transparent;
@@ -209,7 +209,7 @@ body {
   font-family: 'Geist', sans-serif;
   cursor: pointer;
   transition: all .15s;
-  width: calc(100% - 16px);
+  width: 100%;
   text-align: left;
 }
 .sb-add-profile:hover {
@@ -669,8 +669,13 @@ body.dark .backdrop { background: rgba(0,0,0,.55); }
 .share-status.error   { background: #fee2e2; color: #991b1b; }
 body.dark .share-status.success { background: rgba(22,163,74,.12); color: #4ade80; }
 body.dark .share-status.error   { background: rgba(220,38,38,.12); color: #f87171; }
-.ci-row { display: flex; gap: 8px; }
+.ci-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.ci-row .peer-input { min-width: 100px; }
 .ci-row .share-pbtn { width: auto; flex-shrink: 0; padding: 10px 14px; }
+@media (max-width: 360px) {
+  .ci-row { flex-direction: column; }
+  .ci-row .share-pbtn { width: 100%; }
+}
 .peer-input { flex: 1; padding: 10px 12px; font-size: 18px; font-weight: 700; font-family: 'Geist Mono', monospace; letter-spacing: 5px; text-transform: uppercase; border: 1px solid var(--c-border); border-radius: var(--r); background: var(--c-surf2); color: var(--c-text); text-align: center; outline: none; transition: border-color .15s; }
 .peer-input:focus { border-color: var(--c-accent); }
 
@@ -762,12 +767,12 @@ body.dark .share-status.error   { background: rgba(220,38,38,.12); color: #f8717
 
   <div class="sb-section">
     <div class="sb-sec-label" id="lbl-profiles">Profiles</div>
+    <button class="sb-add-profile" id="newProfileBtn">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span id="lbl-np">New profile</span>
+    </button>
   </div>
   <div id="profileList"></div>
-  <button class="sb-add-profile" id="newProfileBtn">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    <span id="lbl-np">New profile</span>
-  </button>
 
   <div style="flex:1"></div>
   <div class="sb-divider"></div>
@@ -967,7 +972,7 @@ body.dark .share-status.error   { background: rgba(220,38,38,.12); color: #f8717
 /* ════════════════════════════════════════════════════════
    i18n
 ════════════════════════════════════════════════════════ */
-const TR={en:{newCard:"New card",export:"Export",import:"Import",share:"Share",settings:"Settings",newProfile:"New profile",profiles:"Profiles",searchPh:"Search...",emptyTitle:"No cards yet",emptySub:"Click '+ New card' to get started.",noResultTitle:"No results",noResultSub:"Try different keywords.",pin:"Pin",unpin:"Unpin",edit:"Edit",copy:"Copy",copied:"Copied!",resultsN:n=>n===1?"1 result":`${n} results`,allCards:n=>n===1?"1 card":`${n} cards`,newCardTitle:"New card",editCardTitle:"Edit card",edPh:"💡 Write your new card here...",save:"✅ Save",modify:"✅ Modify",delete:"🗑️ Delete",cancel:"Cancel",create:"✅ Create",newProfileTitle:"New profile",profilePh:"Profile name (e.g. Work, Personal…)",welcomeTitle:"Welcome! Create your first profile",firstProfilePh:"Your profile name (e.g. Personal, Work…)",settingsTitle:"Settings",general:"General",statistics:"Statistics",language:"Language",totalCards:"Total cards",errEmpty:"Please enter some content.",errProfileEmpty:"Please enter a profile name.",errDuplicate:n=>`"${n}" already exists.`,errLast:"Can't delete the only profile.",confirmCard:"Delete this card?",confirmProfile:n=>`Delete "${n}" and all its cards?`,confirmImport:(c,i,p)=>`Replace ${c} entries in "${p}" with ${i} from file?`,errImport:"Import failed.",shareTitle:"Share via device",sendInstr:'Click "Generate code" to get a connection code.',genCode:"🔑 Generate code",waitMsg:"⏳ Waiting for connection…",sendOk:"✅ Profile sent!",recvInstr:"Enter the code shown on the other device.",connectBtn:"🔗 Connect",connecting:"⏳ Connecting…",p2pSendErr:"❌ Connection error. Try again.",p2pShort:"Code must be at least 4 characters.",p2pTimeout:"Timed out — check the code and retry.",p2pDataErr:"Error processing received profile.",p2pFail:"Connection failed. Is the code correct?",p2pNotFound:"Device not found. Make sure it's waiting.",p2pRecvOk:n=>`✅ Profile "${n}" imported!`,defaultProfile:"Imported profile",errQuota:"Storage full — delete some cards or profiles.",modeSend:"Send",modeRecv:"Receive",theme:"Theme"},fr:{newCard:"Nouvelle fiche",export:"Exporter",import:"Importer",share:"Partager",settings:"Paramètres",newProfile:"Nouveau profil",profiles:"Profils",searchPh:"Rechercher…",emptyTitle:"Aucune fiche",emptySub:"Cliquez sur '+ Nouvelle fiche' pour commencer.",noResultTitle:"Aucun résultat",noResultSub:"Essayez d'autres mots-clés.",pin:"Épingler",unpin:"Désépingler",edit:"Modifier",copy:"Copier",copied:"Copié !",resultsN:n=>n===1?"1 résultat":`${n} résultats`,allCards:n=>n===1?"1 fiche":`${n} fiches`,newCardTitle:"Nouvelle fiche",editCardTitle:"Modifier la fiche",edPh:"💡 Écrivez votre nouvelle fiche ici…",save:"✅ Sauvegarder",modify:"✅ Modifier",delete:"🗑️ Supprimer",cancel:"Annuler",create:"✅ Créer",newProfileTitle:"Nouveau profil",profilePh:"Nom du profil (ex : Travail, Personnel…)",welcomeTitle:"Bienvenue ! Créez votre premier profil",firstProfilePh:"Nom de votre profil (ex : Personnel, Travail…)",settingsTitle:"Paramètres",general:"Général",statistics:"Statistiques",language:"Langue",totalCards:"Total fiches",errEmpty:"Veuillez entrer du contenu.",errProfileEmpty:"Veuillez entrer un nom de profil.",errDuplicate:n=>`« ${n} » existe déjà.`,errLast:"Impossible de supprimer le seul profil.",confirmCard:"Supprimer cette fiche ?",confirmProfile:n=>`Supprimer « ${n} » et toutes ses fiches ?`,confirmImport:(c,i,p)=>`Remplacer ${c} entrées dans « ${p} » par ${i} du fichier ?`,errImport:"Erreur d'importation.",shareTitle:"Partager via appareil",sendInstr:"Cliquez sur « Générer un code » pour obtenir un code de connexion.",genCode:"🔑 Générer un code",waitMsg:"⏳ En attente de connexion…",sendOk:"✅ Profil envoyé !",recvInstr:"Entrez le code affiché sur l'autre appareil.",connectBtn:"🔗 Connecter",connecting:"⏳ Connexion…",p2pSendErr:"❌ Erreur de connexion.",p2pShort:"Le code doit comporter au moins 4 caractères.",p2pTimeout:"Délai dépassé — vérifiez le code.",p2pDataErr:"Erreur lors du traitement du profil.",p2pFail:"Connexion échouée. Le code est-il correct ?",p2pNotFound:"Appareil introuvable.",p2pRecvOk:n=>`✅ Profil « ${n} » importé !`,defaultProfile:"Profil importé",errQuota:"Stockage plein — supprimez des fiches ou des profils.",modeSend:"Envoyer",modeRecv:"Recevoir",theme:"Thème"}};
+const TR={en:{newCard:"New card",export:"Export",import:"Import",share:"Share",settings:"Settings",newProfile:"New profile",profiles:"Profiles",searchPh:"Search...",emptyTitle:"No cards yet",emptySub:"Click '+ New card' to get started.",noResultTitle:"No results",noResultSub:"Try different keywords.",pin:"Pin",unpin:"Unpin",edit:"Edit",copy:"Copy",copied:"Copied!",resultsN:n=>n===1?"1 result":`${n} results`,allCards:n=>n===1?"1 card":`${n} cards`,newCardTitle:"New card",editCardTitle:"Edit card",edPh:"💡 Write your new card here...",save:"✅ Save",modify:"✅ Modify",delete:"🗑️ Delete",cancel:"Cancel",create:"✅ Create",newProfileTitle:"New profile",profilePh:"Profile name (e.g. Work, Personal…)",welcomeTitle:"Welcome! Create your first profile",firstProfilePh:"Your profile name (e.g. Personal, Work…)",settingsTitle:"Settings",general:"General",statistics:"Statistics",language:"Language",totalCards:"Total cards",errEmpty:"Please enter some content.",errProfileEmpty:"Please enter a profile name.",errDuplicate:n=>`"${n}" already exists.`,errLast:"Can't delete the only profile.",confirmCard:"Delete this card?",confirmProfile:n=>`Delete "${n}" and all its cards?`,confirmImport:(c,i,p)=>`Replace ${c} entries in "${p}" with ${i} from file?`,errImport:"Import failed.",shareTitle:"Share via device",sendInstr:'Click "Generate code" to get a connection code. Keep this window open until the transfer is complete.',genCode:"🔑 Generate code",waitMsg:"⏳ Waiting for connection…",sendOk:"✅ Profile sent!",recvInstr:"Enter the code shown on the other device. ⚠️ May not work on corporate or heavily restricted networks.",connectBtn:"🔗 Connect",connecting:"⏳ Connecting…",p2pSendErr:"❌ Connection error. Try again.",p2pShort:"Code must be at least 4 characters.",p2pTimeout:"Timed out — check the code and retry.",p2pDataErr:"Error processing received profile.",p2pFail:"Connection failed. Is the code correct?",p2pNotFound:"Device not found. Make sure it's waiting.",p2pRecvOk:n=>`✅ Profile "${n}" imported!`,defaultProfile:"Imported profile",errQuota:"Storage full — delete some cards or profiles.",modeSend:"Send",modeRecv:"Receive",theme:"Theme"},fr:{newCard:"Nouvelle fiche",export:"Exporter",import:"Importer",share:"Partager",settings:"Paramètres",newProfile:"Nouveau profil",profiles:"Profils",searchPh:"Rechercher…",emptyTitle:"Aucune fiche",emptySub:"Cliquez sur '+ Nouvelle fiche' pour commencer.",noResultTitle:"Aucun résultat",noResultSub:"Essayez d'autres mots-clés.",pin:"Épingler",unpin:"Désépingler",edit:"Modifier",copy:"Copier",copied:"Copié !",resultsN:n=>n===1?"1 résultat":`${n} résultats`,allCards:n=>n===1?"1 fiche":`${n} fiches`,newCardTitle:"Nouvelle fiche",editCardTitle:"Modifier la fiche",edPh:"💡 Écrivez votre nouvelle fiche ici…",save:"✅ Sauvegarder",modify:"✅ Modifier",delete:"🗑️ Supprimer",cancel:"Annuler",create:"✅ Créer",newProfileTitle:"Nouveau profil",profilePh:"Nom du profil (ex : Travail, Personnel…)",welcomeTitle:"Bienvenue ! Créez votre premier profil",firstProfilePh:"Nom de votre profil (ex : Personnel, Travail…)",settingsTitle:"Paramètres",general:"Général",statistics:"Statistiques",language:"Langue",totalCards:"Total fiches",errEmpty:"Veuillez entrer du contenu.",errProfileEmpty:"Veuillez entrer un nom de profil.",errDuplicate:n=>`« ${n} » existe déjà.`,errLast:"Impossible de supprimer le seul profil.",confirmCard:"Supprimer cette fiche ?",confirmProfile:n=>`Supprimer « ${n} » et toutes ses fiches ?`,confirmImport:(c,i,p)=>`Remplacer ${c} entrées dans « ${p} » par ${i} du fichier ?`,errImport:"Erreur d'importation.",shareTitle:"Partager via appareil",sendInstr:"Cliquez sur « Générer un code » pour obtenir un code de connexion. Gardez cette fenêtre ouverte jusqu'à la fin du transfert.",genCode:"🔑 Générer un code",waitMsg:"⏳ En attente de connexion…",sendOk:"✅ Profil envoyé !",recvInstr:"Entrez le code affiché sur l'autre appareil. ⚠️ Peut ne pas fonctionner sur les réseaux d'entreprise ou très sécurisés.",connectBtn:"🔗 Connecter",connecting:"⏳ Connexion…",p2pSendErr:"❌ Erreur de connexion.",p2pShort:"Le code doit comporter au moins 4 caractères.",p2pTimeout:"Délai dépassé — vérifiez le code.",p2pDataErr:"Erreur lors du traitement du profil.",p2pFail:"Connexion échouée. Le code est-il correct ?",p2pNotFound:"Appareil introuvable.",p2pRecvOk:n=>`✅ Profil « ${n} » importé !`,defaultProfile:"Profil importé",errQuota:"Stockage plein — supprimez des fiches ou des profils.",modeSend:"Envoyer",modeRecv:"Recevoir",theme:"Thème"}};
 let lang='en';
 const t=(k,...a)=>{const v=TR[lang]?.[k]??TR.en[k];return typeof v==='function'?v(...a):v??k;};
 
@@ -976,7 +981,7 @@ const t=(k,...a)=>{const v=TR[lang]?.[k]??TR.en[k];return typeof v==='function'?
 ════════════════════════════════════════════════════════ */
 const SK='query_app_data';
 const load=()=>{try{const r=localStorage.getItem(SK);return r?JSON.parse(r):null;}catch{return null;}};
-const save=d=>{try{localStorage.setItem(SK,JSON.stringify(d));}catch(e){if(e.name==='QuotaExceededError')alert(t('errQuota'));}};
+const save=d=>{try{localStorage.setItem(SK,JSON.stringify(d));return true;}catch(e){if(e.name==='QuotaExceededError')alert(t('errQuota'));return false;}};
 
 /* ════════════════════════════════════════════════════════
    STATE
@@ -1021,7 +1026,7 @@ const setTheme=m=>{themeMode=m;applyTheme(m);persist();};
 /* ════════════════════════════════════════════════════════
    PERSIST
 ════════════════════════════════════════════════════════ */
-function persist(){const d=load()||{};d.profiles=profiles;d.currentPid=currentPid;d.themeMode=themeMode;d.customColor=customColor;d.language=lang;if(!d.searches)d.searches={};save(d);}
+function persist(){const d=load()||{};d.profiles=profiles;d.currentPid=currentPid;d.themeMode=themeMode;d.customColor=customColor;d.language=lang;if(!d.searches)d.searches={};return save(d);}
 function saveSearch(){const d=load()||{};if(!d.searches)d.searches={};d.searches[currentPid]=$('search').value;save(d);}
 
 /* ════════════════════════════════════════════════════════
@@ -1322,7 +1327,7 @@ document.addEventListener('keydown',e=>{
   let peer=null;
 
   const genShort=()=>Math.random().toString(36).substring(2,8).toUpperCase();
-  const PEER_CFG={host:'0.peerjs.com',port:443,path:'/',secure:true};
+  const PEER_CFG={host:'0.peerjs.com',port:443,path:'/',secure:true,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'}]}};
   const destroy=()=>{if(peer){try{peer.destroy();}catch(_){}peer=null;}};
 
   /* ── Send panel UI ── */
@@ -1393,17 +1398,16 @@ document.addEventListener('keydown',e=>{
       setSendStatus(t('p2pSendErr'),'error');
     });
 
+    let sent=false;
     peer.on('connection',conn=>{
+      if(sent) return; // ignorer les connexions multiples
       conn.on('open',()=>{
-        const payload=JSON.stringify({
-          type:'query-profile',
-          payload:{name:profiles[currentPid].name,entries:profiles[currentPid].entries}
-        });
-        conn.send(payload);
+        if(sent) return; sent=true;
+        conn.send({type:'query-profile',payload:{name:profiles[currentPid].name,entries:profiles[currentPid].entries}});
         addClass($('waitMsg'),'off');
         remClass($('sendOk'),'off');
         conn.on('close',destroy);
-        setTimeout(destroy,5000);
+        setTimeout(destroy,15000);
       });
       conn.on('error',err=>console.error('conn error:',err));
     });
@@ -1427,7 +1431,7 @@ document.addEventListener('keydown',e=>{
       setRecvStatus(t('p2pTimeout'),'error');
       $('connectBtn').disabled=false;
       destroy();
-    },22000);
+    },30000);
 
     peer.on('open',()=>{
       const conn=peer.connect(targetPeerId,{reliable:true});
@@ -1439,7 +1443,8 @@ document.addEventListener('keydown',e=>{
       conn.on('data',rawData=>{
         clearTimeout(recvTimeout);
         try{
-          const msg=JSON.parse(rawData);
+          // PeerJS peut livrer un objet direct ou une string selon l'émetteur
+          const msg=typeof rawData==='string'?JSON.parse(rawData):(rawData&&rawData.type?rawData:JSON.parse(JSON.stringify(rawData)));
           if(msg.type!=='query-profile')throw new Error('bad type');
           const rec=msg.payload,now=Date.now();
           const safe=(Array.isArray(rec.entries)?rec.entries:[]).map((e,i)=>{
@@ -1448,10 +1453,17 @@ document.addEventListener('keydown',e=>{
             return{content:e.content||'',isPinned:!!e.isPinned,createdAt:e.createdAt||now+i};
           }).filter(Boolean);
           const ex=Object.values(profiles).map(p=>p.name.toLowerCase());
-          let nn=rec.name||t('defaultProfile');let c=1;
-          while(ex.includes(nn.toLowerCase()))nn=`${rec.name} (${c++})`;
+          const baseName=rec.name||t('defaultProfile');let nn=baseName;let c=1;
+          while(ex.includes(nn.toLowerCase()))nn=`${baseName} (${c++})`;
           const nid=`${nn.toLowerCase().replace(/[^a-z0-9]/g,'_')}_${now}`;
-          profiles[nid]={name:nn,entries:safe};persist();
+          profiles[nid]={name:nn,entries:safe};
+          const saved=persist();
+          if(!saved){
+            delete profiles[nid];
+            setRecvStatus(t('errQuota'),'error');
+            $('connectBtn').disabled=false;
+            destroy(); return;
+          }
           setRecvStatus(t('p2pRecvOk',nn),'success');
           renderSidebar();switchProfile(nid);destroy();
         }catch(e){
