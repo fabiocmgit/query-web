@@ -103,7 +103,7 @@ function connectP2P(rawCode, {onStatus,onSuccess,onError}) {
   const code = rawCode.trim().toUpperCase();
   if(code.length<4){onError(t('p2pCodeTooShort')); return;}
 
-  const targetId = 'query-ext-'+code;
+  const targetId = code;
   const myId     = 'query-recv-'+genId()+genId();
 
   onStatus(t('p2pConnecting'));
@@ -114,7 +114,7 @@ function connectP2P(rawCode, {onStatus,onSuccess,onError}) {
   const abort = msg => {
     if(done) return; done=true; clearTimeout(tmt); destroyPeer(); onError(msg);
   };
-  const tmt = setTimeout(()=>abort(t('p2pTimeout')),22000);
+  const tmt = setTimeout(()=>abort(t('p2pTimeout')),45000);
 
   peer.on('open',()=>{
     onStatus(t('p2pConnectingExt'));
