@@ -3,7 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Query</title>
+<title>Query — Knowledge Base</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ffffff">
+<!-- PWA iOS -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Query">
+<link rel="apple-touch-icon" href="icons/icon180.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon180.png">
+<!-- Favicon -->
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon192.png">
 <link rel="icon" type="image/png" href="query_icon_1024.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1070,23 +1081,13 @@ function deleteProfile(pid){
   delete profiles[pid];persist();switchProfile(Object.keys(profiles)[0]);renderSidebar();
 }
 
+let _isFirstProfile=false;
 function startFirstProfile(){
+  _isFirstProfile=true;
   $('profileModal-title').textContent=t('welcomeTitle');$('profileName').placeholder=t('firstProfilePh');
   $('cancelProfile').style.display='none';$('cancelProfile2').style.display='none';
   remClass($('profileModal'),'off');showBackdrop();
   setTimeout(()=>$('profileName').focus(),100);
-  const go=()=>{
-    const name=$('profileName').value.trim();if(!name){alert(t('errProfileEmpty'));return;}
-    const pid=`${name.toLowerCase().replace(/[^a-z0-9]/g,'_')}_${Date.now()}`;
-    profiles={[pid]:{name,entries:[]}};currentPid=pid;persist();
-    addClass($('profileModal'),'off');hideBackdrop();
-    $('profileModal-title').textContent=t('newProfileTitle');$('profileName').placeholder=t('profilePh');$('profileName').value='';
-    $('cancelProfile').style.display='';$('cancelProfile2').style.display='';
-    $('createProfile').removeEventListener('click',go);$('profileName').removeEventListener('keydown',ke);
-    init();
-  };
-  const ke=e=>{if(e.key==='Enter')go();};
-  $('createProfile').addEventListener('click',go);$('profileName').addEventListener('keydown',ke);
 }
 
 /* ════════════════════════════════════════════════════════
@@ -1219,6 +1220,17 @@ $('cancelProfile2').addEventListener('click',closeProfileModal);
 $('profileName').addEventListener('keydown',e=>{if(e.key==='Enter')$('createProfile').click();});
 $('createProfile').addEventListener('click',()=>{
   const name=$('profileName').value.trim();if(!name){alert(t('errProfileEmpty'));return;}
+  if(_isFirstProfile){
+    // Création du tout premier profil
+    _isFirstProfile=false;
+    const pid=`${name.toLowerCase().replace(/[^a-z0-9]/g,'_')}_${Date.now()}`;
+    profiles={[pid]:{name,entries:[]}};currentPid=pid;persist();
+    addClass($('profileModal'),'off');hideBackdrop();
+    $('profileModal-title').textContent=t('newProfileTitle');$('profileName').placeholder=t('profilePh');$('profileName').value='';
+    $('cancelProfile').style.display='';$('cancelProfile2').style.display='';
+    init();
+    return;
+  }
   if(Object.values(profiles).some(p=>p.name.toLowerCase()===name.toLowerCase())){alert(t('errDuplicate',name));$('profileName').focus();return;}
   const pid=`${name.toLowerCase().replace(/[^a-z0-9]/g,'_')}_${Date.now()}`;
   profiles[pid]={name,entries:[]};persist();renderSidebar();switchProfile(pid);closeProfileModal();

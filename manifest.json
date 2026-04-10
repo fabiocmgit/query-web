@@ -1,11 +1,12 @@
 {
   "name": "Query – Knowledge Base",
   "short_name": "Query",
-  "description": "Visualisez vos profils et fiches Query",
-  "start_url": "/",
+  "description": "Save, organize and search your personal knowledge base",
+  "start_url": "/import.html",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#f8fafc",
-  "theme_color": "#f8fafc",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "orientation": "portrait-primary",
   "icons": [
     { "src": "icons/icon16.png",  "sizes": "16x16",   "type": "image/png" },
