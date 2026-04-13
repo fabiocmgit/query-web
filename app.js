@@ -113,9 +113,22 @@ function connectP2P(rawCode, {onStatus,onSuccess,onError}) {
     // FIX: serveurs STUN publics pour traverser les NAT/firewalls
     config: {
       iceServers: [
+        // STUN : connexion directe (réseaux classiques, mobile, domicile)
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun.cloudflare.com:3478' }
+        { urls: 'stun:stun.cloudflare.com:3478' },
+        // TURN : relais de secours (réseaux entreprise, NAT symétrique, pare-feux stricts)
+        // Si le serveur TURN est indisponible, le navigateur retombe automatiquement sur STUN
+        {
+          urls: [
+            'turn:openrelay.metered.ca:80',
+            'turn:openrelay.metered.ca:443',
+            'turn:openrelay.metered.ca:443?transport=tcp',
+            'turns:openrelay.metered.ca:443'
+          ],
+          username: 'openrelayproject',
+          credential: 'openrelayproject'
+        }
       ]
     }
   });

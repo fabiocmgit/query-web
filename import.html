@@ -800,7 +800,7 @@ body.dark .share-status.error   { background: rgba(220,38,38,.12); color: #f8717
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 10 12 15 7 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       <span id="lbl-import">Import</span>
     </button>
-    <input type="file" id="importFile" style="display:none" accept=".txt,.md">
+    <input type="file" id="importFile" style="display:none" accept=".json">
     <button class="sb-btn" id="shareBtn">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
       <span id="lbl-share">Share</span>
@@ -1262,15 +1262,19 @@ $('deleteEntry').addEventListener('click',()=>{if(editIdx<0)return;if(!confirm(t
 // Export
 $('exportBtn').addEventListener('click',()=>{
   const name=profiles[currentPid].name;
-  const content=entries.map(e=>{if(isRich(e.content)){const t=document.createElement('div');t.innerHTML=e.content;return t.innerText;}return e.content;}).join('\n\n\n////\n\n\n');
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:'text/markdown'}));a.download=`${name}.md`;a.click();
+  const exportData={profile:name,exportedAt:new Date().toISOString(),entries:entries.map(e=>({content:e.content,isPinned:e.isPinned||false,createdAt:e.createdAt}))};
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(exportData,null,2)],{type:'application/json'}));a.download=`${name}.json`;a.click();
 });
 
 // Import
 $('importBtn').addEventListener('click',()=>$('importFile').click());
 $('importFile').addEventListener('change',async e=>{
   const f=e.target.files[0];if(!f)return;
-  try{const txt=await f.text();const now=Date.now();const imp=txt.split(/(?:\/{4,})|(?:\n-{3,}\n)/).map(x=>x.trim()).filter(Boolean).map((x,i)=>({content:x,isPinned:false,createdAt:now+i}));
+  try{const txt=await f.text();const now=Date.now();
+  const parsed=JSON.parse(txt);let imp;
+  if(parsed.entries&&Array.isArray(parsed.entries)){imp=parsed.entries.map((x,i)=>({content:x.content||'',isPinned:x.isPinned||false,createdAt:x.createdAt||now+i}));}
+  else if(Array.isArray(parsed)){imp=parsed.map((x,i)=>({content:typeof x==='string'?x:(x.content||''),isPinned:x.isPinned||false,createdAt:x.createdAt||now+i}));}
+  else{throw new Error('Invalid JSON');}
   if(!confirm(t('confirmImport',entries.length,imp.length,profiles[currentPid].name))){e.target.value='';return;}
   entries=imp;profiles[currentPid].entries=entries;persist();render($('search').value);renderSidebar();e.target.value='';}
   catch{alert(t('errImport'));}
