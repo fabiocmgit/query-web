@@ -25,6 +25,133 @@ function formatDate(ts) {
 
 const isHTML = s => /<[a-z][\s\S]*>/i.test(s||'');
 
+/* ── Sync Extension Chrome ──────────────────── */
+
+// ID de l'extension Query — à remplacer par votre ID réel après publication
+// Pendant le dev, récupérez-le dans chrome://extensions
+const QUERY_EXTENSION_ID = 'ejfjhpgngmaidniobgokmphlcbgfnofg';
+
+/**
+ * Convertit les profils du format extension → format Dexie (site)
+ * Extension : { profileId: { name, entries: [{content, isPinned, createdAt}] } }
+ * Site      : profiles table + entries table séparées
+ */
+async function importFromExtension(extProfiles) {
+  if (!extProfiles || typeof extProfiles !== 'object') return;
+  const profileIds = Object.keys(extProfiles);
+  if (!profileIds.length) return;
+
+  for (const pid of profileIds) {
+    const extP = extProfiles[pid];
+    // Vérifier si ce profil existe déjà (par nom)
+    const existing = await db.profiles.where('id').equals(pid).first();
+    if (existing) {
+      // Mettre à jour les entrées existantes
+      await db.entries.where('profileId').equals(pid).delete();
+      const rows = (extP.entries || []).map((e, i) => ({
+        profileId: pid,
+        content:   typeof e === 'string' ? e : (e.content || ''),
+        isPinned:  e.isPinned || false,
+        createdAt: e.createdAt || Date.now() + i,
+      }));
+      if (rows.length) await db.entries.bulkAdd(rows);
+    } else {
+      // Nouveau profil
+      await db.profiles.add({ id: pid, name: extP.name, createdAt: Date.now() });
+      const rows = (extP.entries || []).map((e, i) => ({
+        profileId: pid,
+        content:   typeof e === 'string' ? e : (e.content || ''),
+        isPinned:  e.isPinned || false,
+        createdAt: e.createdAt || Date.now() + i,
+      }));
+      if (rows.length) await db.entries.bulkAdd(rows);
+    }
+  }
+}
+
+/**
+ * Convertit les profils du format Dexie → format extension
+ * et les envoie à l'extension.
+ */
+async function syncToExtension() {
+  if (!isExtensionAvailable()) return;
+  const profiles = await db.profiles.toArray();
+  const extProfiles = {};
+  for (const p of profiles) {
+    const entries = await db.entries.where('profileId').equals(p.id).toArray();
+    extProfiles[p.id] = {
+      name: p.name,
+      entries: entries.map(e => ({
+        content:   e.content,
+        isPinned:  e.isPinned,
+        createdAt: e.createdAt,
+      }))
+    };
+  }
+  chrome.runtime.sendMessage(
+    QUERY_EXTENSION_ID,
+    { type: 'SYNC_PROFILES', payload: { profiles: extProfiles } },
+    () => { if (chrome.runtime.lastError) { /* extension indisponible */ } }
+  );
+}
+
+/**
+ * Vérifie si l'API extension Chrome est disponible dans ce contexte.
+ */
+function isExtensionAvailable() {
+  return typeof chrome !== 'undefined'
+      && chrome.runtime
+      && typeof chrome.runtime.sendMessage === 'function';
+}
+
+/**
+ * Au démarrage du site : pull les données de l'extension
+ * pour récupérer les modifications faites hors site.
+ */
+async function syncFromExtensionOnBoot() {
+  if (!isExtensionAvailable()) return;
+  chrome.runtime.sendMessage(
+    QUERY_EXTENSION_ID,
+    { type: 'GET_PROFILES' },
+    async (response) => {
+      if (chrome.runtime.lastError || !response?.ok) return;
+      const extProfiles = response.data?.profiles;
+      if (!extProfiles) return;
+      await importFromExtension(extProfiles);
+      // Recharger l'UI avec les données fraîches
+      await dbLoadProfiles();
+      renderProfileList();
+      if (S.activeId) {
+        S.entries = await dbLoadEntries(S.activeId);
+        renderCards();
+      } else if (S.profiles.length) {
+        await selectProfile(S.profiles[0].id);
+      }
+    }
+  );
+}
+
+/**
+ * Écoute les mises à jour en temps réel venant de l'extension
+ * (quand l'utilisateur modifie dans la popup pendant que le site est ouvert).
+ */
+if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+  chrome.runtime.onMessage.addListener(async (message) => {
+    if (message.type === 'PROFILES_UPDATED' && message.profiles) {
+      await importFromExtension(message.profiles);
+      await dbLoadProfiles();
+      renderProfileList();
+      if (S.activeId) {
+        S.entries = await dbLoadEntries(S.activeId);
+        renderCards();
+      }
+      toast('🔄 Sync depuis l\'extension');
+    }
+  });
+}
+
+
+
 function escHTML(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -76,12 +203,16 @@ async function dbSaveProfile(data) {
     };
   }).filter(r=>r!==null);
   if(rows.length) await db.entries.bulkAdd(rows);
+  // Sync vers l'extension
+  syncToExtension();
   return {id, name};
 }
 
 async function dbDeleteProfile(id) {
   await db.entries.where('profileId').equals(id).delete();
   await db.profiles.delete(id);
+  // Sync vers l'extension
+  syncToExtension();
 }
 
 async function dbLoadEntries(pid) {
@@ -438,5 +569,7 @@ async function boot() {
   hideWelcome();
   renderProfileList();
   await selectProfile(S.profiles[0].id);
+  // Synchroniser depuis l'extension (rattrape les modifs faites hors site)
+  syncFromExtensionOnBoot();
 }
 boot();
