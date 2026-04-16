@@ -1026,7 +1026,7 @@ const setTheme=m=>{themeMode=m;applyTheme(m);persist();};
 /* ════════════════════════════════════════════════════════
    PERSIST
 ════════════════════════════════════════════════════════ */
-function persist(){const d=load()||{};d.profiles=profiles;d.currentPid=currentPid;d.themeMode=themeMode;d.customColor=customColor;d.language=lang;if(!d.searches)d.searches={};return save(d);}
+function persist(){const d=load()||{};d.profiles=profiles;d.currentPid=currentPid;d.themeMode=themeMode;d.customColor=customColor;d.language=lang;if(!d.searches)d.searches={};const ok=save(d);pushToExtension();return ok;}
 function saveSearch(){const d=load()||{};if(!d.searches)d.searches={};d.searches[currentPid]=$('search').value;save(d);}
 
 /* ════════════════════════════════════════════════════════
@@ -1096,9 +1096,132 @@ function startFirstProfile(){
 }
 
 /* ════════════════════════════════════════════════════════
+   SYNC EXTENSION CHROME
+════════════════════════════════════════════════════════ */
+let QUERY_EXTENSION_ID = 'ejfjhpgngmaidniobgokmphlcbgfnofg';
+
+// Promise qui se résout quand le content script de l'extension signale son ID.
+// Permet d'utiliser le bon ID (utile en dev local où l'ID est aléatoire).
+const _extensionReadyPromise = new Promise((resolve) => {
+  // Si l'event a déjà été dispatché avant notre listener, on le rate.
+  // Donc on écoute ET on timeout après 500ms (assez pour document_idle).
+  const listener = (e) => {
+    if (e.detail && e.detail.extensionId) {
+      QUERY_EXTENSION_ID = e.detail.extensionId;
+      console.log('[Query sync] ID mis à jour via content script:', QUERY_EXTENSION_ID);
+    }
+    window.removeEventListener('query-extension-ready', listener);
+    resolve();
+  };
+  window.addEventListener('query-extension-ready', listener);
+  // Timeout : si le content script ne répond pas, on utilise l'ID codé en dur
+  setTimeout(() => {
+    window.removeEventListener('query-extension-ready', listener);
+    resolve();
+  }, 800);
+});
+
+function isExtensionAvailable() {
+  return typeof chrome !== 'undefined'
+      && chrome.runtime
+      && typeof chrome.runtime.sendMessage === 'function';
+}
+
+/**
+ * Pull depuis l'extension au démarrage.
+ * Retourne true si des profils ont été importés.
+ */
+function pullFromExtension() {
+  return new Promise((resolve) => {
+    if (!isExtensionAvailable()) {
+      console.log('[Query sync] chrome.runtime indisponible');
+      return resolve(false);
+    }
+    console.log('[Query sync] GET_PROFILES →', QUERY_EXTENSION_ID);
+    try {
+      chrome.runtime.sendMessage(
+        QUERY_EXTENSION_ID,
+        { type: 'GET_PROFILES' },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            console.warn('[Query sync] Erreur:', chrome.runtime.lastError.message);
+            return resolve(false);
+          }
+          if (!response || !response.ok) {
+            console.warn('[Query sync] Réponse invalide:', response);
+            return resolve(false);
+          }
+          const extProfiles = response.data && response.data.profiles;
+          if (!extProfiles || !Object.keys(extProfiles).length) {
+            console.log('[Query sync] Aucun profil dans l\'extension');
+            return resolve(false);
+          }
+          // Fusionner avec les profils existants (l'extension gagne)
+          const d = load() || {};
+          d.profiles = Object.assign({}, d.profiles || {}, extProfiles);
+          if (response.data.currentProfile) d.currentPid = response.data.currentProfile;
+          save(d);
+          console.log('[Query sync]', Object.keys(extProfiles).length, 'profil(s) synchronisé(s)');
+          resolve(true);
+        }
+      );
+    } catch (e) {
+      console.warn('[Query sync] Exception:', e);
+      resolve(false);
+    }
+  });
+}
+
+/**
+ * Push vers l'extension après chaque modification locale.
+ */
+function pushToExtension() {
+  if (!isExtensionAvailable()) return;
+  try {
+    chrome.runtime.sendMessage(
+      QUERY_EXTENSION_ID,
+      { type: 'SYNC_PROFILES', payload: { profiles, currentProfile: currentPid } },
+      () => { void chrome.runtime.lastError; }
+    );
+  } catch (e) { /* ignore */ }
+}
+
+// Écoute les mises à jour en temps réel via le content script
+window.addEventListener('message', (event) => {
+  if (event.source !== window) return;
+  if (!event.data || event.data.source !== 'query-extension') return;
+  if (event.data.type === 'PROFILES_UPDATED' && event.data.profiles) {
+    console.log('[Query sync] Mise à jour reçue de l\'extension');
+    profiles = event.data.profiles;
+    // Normaliser les entries
+    Object.keys(profiles).forEach(pid => {
+      if (!Array.isArray(profiles[pid].entries)) profiles[pid].entries = [];
+    });
+    if (profiles[currentPid]) {
+      entries = profiles[currentPid].entries;
+    } else {
+      currentPid = Object.keys(profiles)[0] || '';
+      entries = profiles[currentPid] ? profiles[currentPid].entries : [];
+    }
+    const d = load() || {};
+    d.profiles = profiles;
+    d.currentPid = currentPid;
+    save(d);
+    renderSidebar();
+    updateTopbar();
+    render($('search').value);
+  }
+});
+
+/* ════════════════════════════════════════════════════════
    INIT
 ════════════════════════════════════════════════════════ */
-function init(){
+async function init(){
+  // Attendre que le content script ait signalé l'ID (max 800ms)
+  await _extensionReadyPromise;
+  // Puis sync depuis l'extension
+  try { await pullFromExtension(); } catch(e) { console.warn('[Query sync] Pull error:', e); }
+
   const d=load();
   // Logo init
   $('logo-light').classList.remove('on');$('logo-dark').classList.remove('on');
@@ -1513,7 +1636,7 @@ document.addEventListener('keydown',e=>{
 })();
 
 // Kick off
-init();
+init().catch(console.error);
 </script>
 </body>
 </html>
