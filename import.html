@@ -683,6 +683,77 @@ body.dark mark { background: #422006; color: #fef3c7; }
 /* Slightly different pin-label position in edit mode to avoid overlap */
 #results.edit-mode .card .card-pin-label { right: 34px; }
 
+/* Drag handle (6-dot grip) — only visible in edit mode */
+.card-drag-handle {
+  display: none;
+  position: absolute;
+  left: -2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 36px;
+  border-radius: 5px;
+  cursor: grab;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-text3);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  z-index: 6;
+  user-select: none;
+  touch-action: none;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.card-drag-handle:hover {
+  background: var(--c-accent-l);
+  border-color: var(--c-accent);
+  color: var(--c-accent);
+}
+.card-drag-handle:active { cursor: grabbing; }
+.card-drag-handle svg { width: 10px; height: 10px; pointer-events: none; }
+#results.edit-mode .card .card-drag-handle { display: flex; }
+/* Hide the handle while a search filter is active — reordering hidden items is confusing */
+#results.edit-mode.filtered .card .card-drag-handle { display: none; }
+#results.edit-mode .card .card-pin-label { left: auto; }
+
+/* Smooth slide animation for cards shifting around to make room for the dragged one.
+   Duration is exposed as a CSS variable so JS can shorten it for very large profiles.
+   We deliberately do NOT set `will-change` here: with hundreds of cards, that would
+   create a layer per card and consume a lot of GPU memory for no win. */
+#results.dragging-active > .card:not(.dragging) {
+  transition: transform var(--drag-tx-dur, .22s) cubic-bezier(.2,.8,.2,1);
+}
+#results.dragging-active > .card-drop-placeholder {
+  transition: transform var(--drag-tx-dur, .22s) cubic-bezier(.2,.8,.2,1);
+}
+
+/* The card actually being dragged — floats above everything, follows the cursor */
+.card.dragging {
+  position: fixed !important;
+  z-index: 100;
+  pointer-events: none;
+  cursor: grabbing !important;
+  box-shadow: 0 16px 40px rgba(0,0,0,.18), 0 4px 12px rgba(0,0,0,.1);
+  outline: 2px solid var(--c-accent) !important;
+  outline-offset: 2px;
+  transform: rotate(1.2deg);
+  transition: none !important;
+  opacity: .96;
+  margin: 0 !important;
+}
+
+/* Placeholder slot — same dimensions as the dragged card, holds its spot in the flow */
+.card-drop-placeholder {
+  background: var(--c-accent-l, rgba(59,130,246,.08));
+  border: 2px dashed var(--c-accent);
+  border-radius: var(--r2);
+  box-sizing: border-box;
+  flex: 0 0 auto;
+}
+
+body.dragging-card,
+body.dragging-card * { cursor: grabbing !important; user-select: none !important; }
+
 /* While resizing, disable selection and hover effects everywhere */
 body.resizing-card,
 body.resizing-card * {
@@ -1202,11 +1273,15 @@ body.dark .share-status.error   { background: rgba(220,38,38,.12); color: #f8717
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       <span id="lbl-export">Export</span>
     </button>
+    <button class="sb-btn" id="exportAllBtn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/><rect x="9" y="3" width="6" height="3" rx="0.5" fill="currentColor" opacity="0.25" stroke="none"/></svg>
+      <span id="lbl-export-all">Export all</span>
+    </button>
     <button class="sb-btn" id="importBtn">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 10 12 15 7 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       <span id="lbl-import">Import</span>
     </button>
-    <input type="file" id="importFile" style="display:none" accept=".json">
+    <input type="file" id="importFile" style="display:none" accept=".json" multiple>
     <button class="sb-btn" id="shareBtn">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
       <span id="lbl-share">Share</span>
@@ -1434,7 +1509,7 @@ body.dark .share-status.error   { background: rgba(220,38,38,.12); color: #f8717
 /* ════════════════════════════════════════════════════════
    i18n
 ════════════════════════════════════════════════════════ */
-const TR={en:{newCard:"New card",export:"Export",import:"Import",share:"Share",settings:"Settings",newProfile:"New profile",profiles:"Profiles",searchPh:"Search...",emptyTitle:"No cards yet",emptySub:"Click '+ New card' to get started.",noResultTitle:"No results",noResultSub:"Try different keywords.",pin:"Pin",unpin:"Unpin",edit:"Edit",copy:"Copy",copied:"Copied!",resultsN:n=>n===1?"1 result":`${n} results`,allCards:n=>n===1?"1 card":`${n} cards`,newCardTitle:"New card",editCardTitle:"Edit card",edPh:"💡 Write your new card here...",save:"✅ Save",modify:"✅ Modify",delete:"🗑️ Delete",cancel:"Cancel",create:"✅ Create",newProfileTitle:"New profile",profilePh:"Profile name (e.g. Work, Personal…)",welcomeTitle:"Welcome! Create your first profile",firstProfilePh:"Your profile name (e.g. Personal, Work…)",settingsTitle:"Settings",general:"General",statistics:"Statistics",language:"Language",totalCards:"Total cards",errEmpty:"Please enter some content.",errProfileEmpty:"Please enter a profile name.",errDuplicate:n=>`"${n}" already exists.`,errLast:"Can't delete the only profile.",confirmCard:"Delete this card?",confirmProfile:n=>`Delete "${n}" and all its cards?`,confirmImport:(c,i,p)=>`Replace ${c} entries in "${p}" with ${i} from file?`,errImport:"Import failed.",shareTitle:"Share via device",sendInstr:'Click "Generate code" to get a connection code. Keep this window open until the transfer is complete.',genCode:"🔑 Generate code",waitMsg:"⏳ Waiting for connection…",sendOk:"✅ Profile sent!",recvInstr:"Enter the code shown on the other device. ⚠️ May not work on corporate or heavily restricted networks.",connectBtn:"🔗 Connect",connecting:"⏳ Connecting…",p2pSendErr:"❌ Connection error. Try again.",p2pShort:"Code must be at least 4 characters.",p2pTimeout:"Timed out — check the code and retry.",p2pDataErr:"Error processing received profile.",p2pFail:"Connection failed. Is the code correct?",p2pNotFound:"Device not found. Make sure it's waiting.",p2pRecvOk:n=>`✅ Profile "${n}" imported!`,defaultProfile:"Imported profile",errQuota:"Storage full — delete some cards or profiles.",modeSend:"Send",modeRecv:"Receive",theme:"Theme",editMode:"Edit",editModeExit:"Done",resetSize:"Reset size",cardColor:"Color"},fr:{newCard:"Nouvelle fiche",export:"Exporter",import:"Importer",share:"Partager",settings:"Paramètres",newProfile:"Nouveau profil",profiles:"Profils",searchPh:"Rechercher…",emptyTitle:"Aucune fiche",emptySub:"Cliquez sur '+ Nouvelle fiche' pour commencer.",noResultTitle:"Aucun résultat",noResultSub:"Essayez d'autres mots-clés.",pin:"Épingler",unpin:"Désépingler",edit:"Modifier",copy:"Copier",copied:"Copié !",resultsN:n=>n===1?"1 résultat":`${n} résultats`,allCards:n=>n===1?"1 fiche":`${n} fiches`,newCardTitle:"Nouvelle fiche",editCardTitle:"Modifier la fiche",edPh:"💡 Écrivez votre nouvelle fiche ici…",save:"✅ Sauvegarder",modify:"✅ Modifier",delete:"🗑️ Supprimer",cancel:"Annuler",create:"✅ Créer",newProfileTitle:"Nouveau profil",profilePh:"Nom du profil (ex : Travail, Personnel…)",welcomeTitle:"Bienvenue ! Créez votre premier profil",firstProfilePh:"Nom de votre profil (ex : Personnel, Travail…)",settingsTitle:"Paramètres",general:"Général",statistics:"Statistiques",language:"Langue",totalCards:"Total fiches",errEmpty:"Veuillez entrer du contenu.",errProfileEmpty:"Veuillez entrer un nom de profil.",errDuplicate:n=>`« ${n} » existe déjà.`,errLast:"Impossible de supprimer le seul profil.",confirmCard:"Supprimer cette fiche ?",confirmProfile:n=>`Supprimer « ${n} » et toutes ses fiches ?`,confirmImport:(c,i,p)=>`Remplacer ${c} entrées dans « ${p} » par ${i} du fichier ?`,errImport:"Erreur d'importation.",shareTitle:"Partager via appareil",sendInstr:"Cliquez sur « Générer un code » pour obtenir un code de connexion. Gardez cette fenêtre ouverte jusqu'à la fin du transfert.",genCode:"🔑 Générer un code",waitMsg:"⏳ En attente de connexion…",sendOk:"✅ Profil envoyé !",recvInstr:"Entrez le code affiché sur l'autre appareil. ⚠️ Peut ne pas fonctionner sur les réseaux d'entreprise ou très sécurisés.",connectBtn:"🔗 Connecter",connecting:"⏳ Connexion…",p2pSendErr:"❌ Erreur de connexion.",p2pShort:"Le code doit comporter au moins 4 caractères.",p2pTimeout:"Délai dépassé — vérifiez le code.",p2pDataErr:"Erreur lors du traitement du profil.",p2pFail:"Connexion échouée. Le code est-il correct ?",p2pNotFound:"Appareil introuvable.",p2pRecvOk:n=>`✅ Profil « ${n} » importé !`,defaultProfile:"Profil importé",errQuota:"Stockage plein — supprimez des fiches ou des profils.",modeSend:"Envoyer",modeRecv:"Recevoir",theme:"Thème",editMode:"Éditer",editModeExit:"Terminer",resetSize:"Taille par défaut",cardColor:"Couleur"}};
+const TR={en:{newCard:"New card",export:"Export",exportAll:"Export all",import:"Import",importMulti:(n,t)=>`Import ${n} profile(s) from ${t} file(s)?`,importDone:(n)=>`✅ ${n} profile(s) imported.`,importPartial:(ok,fail)=>`✅ ${ok} imported, ⚠️ ${fail} failed.`,share:"Share",settings:"Settings",newProfile:"New profile",profiles:"Profiles",searchPh:"Search...",emptyTitle:"No cards yet",emptySub:"Click '+ New card' to get started.",noResultTitle:"No results",noResultSub:"Try different keywords.",pin:"Pin",unpin:"Unpin",edit:"Edit",copy:"Copy",copied:"Copied!",resultsN:n=>n===1?"1 result":`${n} results`,allCards:n=>n===1?"1 card":`${n} cards`,newCardTitle:"New card",editCardTitle:"Edit card",edPh:"💡 Write your new card here...",save:"✅ Save",modify:"✅ Modify",delete:"🗑️ Delete",cancel:"Cancel",create:"✅ Create",newProfileTitle:"New profile",profilePh:"Profile name (e.g. Work, Personal…)",welcomeTitle:"Welcome! Create your first profile",firstProfilePh:"Your profile name (e.g. Personal, Work…)",settingsTitle:"Settings",general:"General",statistics:"Statistics",language:"Language",totalCards:"Total cards",errEmpty:"Please enter some content.",errProfileEmpty:"Please enter a profile name.",errDuplicate:n=>`"${n}" already exists.`,errLast:"Can't delete the only profile.",confirmCard:"Delete this card?",confirmProfile:n=>`Delete "${n}" and all its cards?`,confirmImport:(c,i,p)=>`Replace ${c} entries in "${p}" with ${i} from file?`,errImport:"Import failed.",shareTitle:"Share via device",sendInstr:'Click "Generate code" to get a connection code. Keep this window open until the transfer is complete.',genCode:"🔑 Generate code",waitMsg:"⏳ Waiting for connection…",sendOk:"✅ Profile sent!",recvInstr:"Enter the code shown on the other device. ⚠️ May not work on corporate or heavily restricted networks.",connectBtn:"🔗 Connect",connecting:"⏳ Connecting…",p2pSendErr:"❌ Connection error. Try again.",p2pShort:"Code must be at least 4 characters.",p2pTimeout:"Timed out — check the code and retry.",p2pDataErr:"Error processing received profile.",p2pFail:"Connection failed. Is the code correct?",p2pNotFound:"Device not found. Make sure it's waiting.",p2pRecvOk:n=>`✅ Profile "${n}" imported!`,defaultProfile:"Imported profile",errQuota:"Storage full — delete some cards or profiles.",modeSend:"Send",modeRecv:"Receive",theme:"Theme",editMode:"Edit",editModeExit:"Done",resetSize:"Reset size",cardColor:"Color",dragHandle:"Drag to reorder"},fr:{newCard:"Nouvelle fiche",export:"Exporter",exportAll:"Tout exporter",import:"Importer",importMulti:(n,t)=>`Importer ${n} profil(s) depuis ${t} fichier(s) ?`,importDone:(n)=>`✅ ${n} profil(s) importé(s).`,importPartial:(ok,fail)=>`✅ ${ok} importé(s), ⚠️ ${fail} échec(s).`,share:"Partager",settings:"Paramètres",newProfile:"Nouveau profil",profiles:"Profils",searchPh:"Rechercher…",emptyTitle:"Aucune fiche",emptySub:"Cliquez sur '+ Nouvelle fiche' pour commencer.",noResultTitle:"Aucun résultat",noResultSub:"Essayez d'autres mots-clés.",pin:"Épingler",unpin:"Désépingler",edit:"Modifier",copy:"Copier",copied:"Copié !",resultsN:n=>n===1?"1 résultat":`${n} résultats`,allCards:n=>n===1?"1 fiche":`${n} fiches`,newCardTitle:"Nouvelle fiche",editCardTitle:"Modifier la fiche",edPh:"💡 Écrivez votre nouvelle fiche ici…",save:"✅ Sauvegarder",modify:"✅ Modifier",delete:"🗑️ Supprimer",cancel:"Annuler",create:"✅ Créer",newProfileTitle:"Nouveau profil",profilePh:"Nom du profil (ex : Travail, Personnel…)",welcomeTitle:"Bienvenue ! Créez votre premier profil",firstProfilePh:"Nom de votre profil (ex : Personnel, Travail…)",settingsTitle:"Paramètres",general:"Général",statistics:"Statistiques",language:"Langue",totalCards:"Total fiches",errEmpty:"Veuillez entrer du contenu.",errProfileEmpty:"Veuillez entrer un nom de profil.",errDuplicate:n=>`« ${n} » existe déjà.`,errLast:"Impossible de supprimer le seul profil.",confirmCard:"Supprimer cette fiche ?",confirmProfile:n=>`Supprimer « ${n} » et toutes ses fiches ?`,confirmImport:(c,i,p)=>`Remplacer ${c} entrées dans « ${p} » par ${i} du fichier ?`,errImport:"Erreur d'importation.",shareTitle:"Partager via appareil",sendInstr:"Cliquez sur « Générer un code » pour obtenir un code de connexion. Gardez cette fenêtre ouverte jusqu'à la fin du transfert.",genCode:"🔑 Générer un code",waitMsg:"⏳ En attente de connexion…",sendOk:"✅ Profil envoyé !",recvInstr:"Entrez le code affiché sur l'autre appareil. ⚠️ Peut ne pas fonctionner sur les réseaux d'entreprise ou très sécurisés.",connectBtn:"🔗 Connecter",connecting:"⏳ Connexion…",p2pSendErr:"❌ Erreur de connexion.",p2pShort:"Le code doit comporter au moins 4 caractères.",p2pTimeout:"Délai dépassé — vérifiez le code.",p2pDataErr:"Erreur lors du traitement du profil.",p2pFail:"Connexion échouée. Le code est-il correct ?",p2pNotFound:"Appareil introuvable.",p2pRecvOk:n=>`✅ Profil « ${n} » importé !`,defaultProfile:"Profil importé",errQuota:"Stockage plein — supprimez des fiches ou des profils.",modeSend:"Envoyer",modeRecv:"Recevoir",theme:"Thème",editMode:"Éditer",editModeExit:"Terminer",resetSize:"Taille par défaut",cardColor:"Couleur",dragHandle:"Glisser pour déplacer"}};
 let lang='en';
 const t=(k,...a)=>{const v=TR[lang]?.[k]??TR.en[k];return typeof v==='function'?v(...a):v??k;};
 
@@ -1721,6 +1796,8 @@ function render(filter=''){
   const res=$('results'),ctr=$('resultsCounter');res.innerHTML='';
   // Preserve edit-mode class on results container
   if(editMode)res.classList.add('edit-mode');else res.classList.remove('edit-mode');
+  // Mark when a filter is active so drag handles can hide (reordering hidden items is confusing)
+  if(filter)res.classList.add('filtered');else res.classList.remove('filtered');
   if(entries.length===0){res.innerHTML=`<div class="empty-state"><div class="empty-state-icon">🗒️</div><div class="empty-state-title">${t('emptyTitle')}</div><div class="empty-state-sub">${t('emptySub')}</div></div>`;addClass(ctr,'off');updateCount();return;}
   let n=0;
   entries.forEach((entry,idx)=>{
@@ -1739,6 +1816,7 @@ function render(filter=''){
       if(entry.h)card.style.height=entry.h+'px';
     }
     card.innerHTML=`<div class="card-pin-label">📌 Pinned</div>
+    <div class="card-drag-handle" data-r="drag" title="${t('dragHandle')}"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></div>
     <button class="card-reset-size" data-r="reset-size" title="${t('resetSize')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 3 3 9 9 9"/></svg></button>
     <div class="card-body rich-content${isRich(ct)?'':' plain-text'}">${processContent(ct,filter)}</div><div class="card-footer"><span class="card-date">${fmtDate(entry.createdAt)}</span><div class="card-actions">
     <button class="card-btn${entry.isPinned?' pin-on':''}" data-r="pin" title="${entry.isPinned?t('unpin'):t('pin')}"><svg viewBox="0 0 24 24" fill="${entry.isPinned?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg></button>
@@ -1755,6 +1833,7 @@ function render(filter=''){
     card.querySelector('[data-r="resize-r"]').addEventListener('pointerdown',ev=>startResize(ev,card,idx,'w'));
     card.querySelector('[data-r="resize-b"]').addEventListener('pointerdown',ev=>startResize(ev,card,idx,'h'));
     card.querySelector('[data-r="resize-br"]').addEventListener('pointerdown',ev=>startResize(ev,card,idx,'wh'));
+    wireDragHandle(card,idx);
     res.appendChild(card);
   });
   if(filter){remClass(ctr,'off');ctr.textContent=t('resultsN',n);}else{addClass(ctr,'off');}
@@ -1881,6 +1960,261 @@ function startResize(ev,card,idx,axis){
 }
 
 /* ════════════════════════════════════════════════════════
+   EDIT MODE — DRAG TO REORDER CARDS (live animation, optimized)
+   - Activated by the 6-dot grip handle on the left of each card (edit mode only)
+   - Uses pointer events (not HTML5 Drag API) so we can animate siblings live
+   - Optimizations for large profiles:
+     * pointermove handler is throttled to one update per animation frame (rAF)
+     * sibling rectangles are cached at drag start and only re-read when the
+       placeholder actually changes slot (not on every pixel of cursor movement)
+     * if the cursor moves but the target slot is unchanged, the DOM is not touched
+     * hit-test uses a binary search over the row containing the cursor
+   - Pinned cards stay in the pinned group, unpinned in the unpinned group
+   - Disabled while a search filter is active (some cards are hidden)
+════════════════════════════════════════════════════════ */
+const _drag={active:false};
+
+function wireDragHandle(card,idx){
+  const handle=card.querySelector('[data-r="drag"]');
+  if(!handle)return;
+  handle.addEventListener('pointerdown',ev=>startCardDrag(ev,card,idx));
+  handle.addEventListener('click',e=>{e.stopPropagation();e.preventDefault();});
+}
+
+function startCardDrag(ev,card,idx){
+  if(!editMode)return;
+  if(ev.button!==undefined&&ev.button!==0)return;
+  if($('results').classList.contains('filtered'))return;
+  ev.preventDefault();ev.stopPropagation();
+
+  const container=$('results');
+  const srcEntry=entries[idx];if(!srcEntry)return;
+  const srcPinned=!!srcEntry.isPinned;
+
+  // Snapshot starting geometry of the dragged card
+  const rect=card.getBoundingClientRect();
+  const offsetX=ev.clientX-rect.left;
+  const offsetY=ev.clientY-rect.top;
+
+  // Build placeholder
+  const placeholder=document.createElement('div');
+  placeholder.className='card-drop-placeholder';
+  placeholder.style.width=rect.width+'px';
+  placeholder.style.height=rect.height+'px';
+  placeholder.style.flex=card.dataset.sized==='1' ? '0 0 auto' : '0 0 '+rect.width+'px';
+  card.parentNode.insertBefore(placeholder,card);
+
+  // Lift the card out of flow
+  const startLeft=rect.left,startTop=rect.top;
+  card.classList.add('dragging');
+  card.style.width=rect.width+'px';
+  card.style.height=rect.height+'px';
+  card.style.left=startLeft+'px';
+  card.style.top=startTop+'px';
+  document.body.appendChild(card);
+  container.classList.add('dragging-active');
+  document.body.classList.add('dragging-card');
+  _drag.active=true;
+
+  // Build the eligible-slots list ONCE (it never changes during a drag — same bucket)
+  // Plus the placeholder, which is the moving piece in this list.
+  const allChildren=Array.from(container.children);
+  const eligible=allChildren.filter(n=>{
+    if(n===placeholder)return true;
+    if(!n.classList.contains('card'))return false;
+    return n.classList.contains('pinned')===srcPinned;
+  });
+  // Map: each non-placeholder eligible card → its source entries index
+  const eligibleIdx=eligible.map(n=>n===placeholder?-1:parseInt(n.dataset.idx,10));
+
+  // Cache initial rectangles of every eligible slot (placeholder + cards).
+  // We refresh this map only when the slot order actually changes.
+  let rectCache=new Map();
+  const refreshRects=()=>{
+    rectCache.clear();
+    for(const n of eligible)rectCache.set(n,n.getBoundingClientRect());
+  };
+  refreshRects();
+
+  // For very large lists, shorten the slide animation so it doesn't pile up
+  if(eligible.length>80){
+    container.style.setProperty('--drag-tx-dur','.14s');
+  }
+
+  // The "current" position of the placeholder among non-placeholder eligible cards
+  const candidatesNow=()=>eligible.filter(n=>n!==placeholder);
+  let lastInsertIdx=candidatesNow().indexOf(card); // where the placeholder is right now
+
+  // Find target insert index (position among CANDIDATES, i.e. excluding placeholder)
+  // using the cached rectangles.
+  const findInsertIndex=(clientX,clientY)=>{
+    const cands=candidatesNow();
+    if(!cands.length)return 0;
+    // Build per-row buckets from cached rects (cheap — no DOM reads)
+    // We approximate "same row" as "vertical overlap with the candidate".
+    // First pass: find candidates whose vertical span contains clientY.
+    let rowFirst=-1,rowLast=-1;
+    for(let i=0;i<cands.length;i++){
+      const r=rectCache.get(cands[i]);
+      if(!r)continue;
+      if(clientY>=r.top&&clientY<=r.bottom){
+        if(rowFirst===-1)rowFirst=i;
+        rowLast=i;
+      }
+    }
+    // If no row matched (cursor between rows or outside), fall back to nearest row
+    if(rowFirst===-1){
+      // Find the candidate whose vertical center is closest
+      let best=0,bestDist=Infinity;
+      for(let i=0;i<cands.length;i++){
+        const r=rectCache.get(cands[i]);if(!r)continue;
+        const cy=(r.top+r.bottom)/2;
+        const d=Math.abs(cy-clientY);
+        if(d<bestDist){bestDist=d;best=i;}
+      }
+      // Snap to nearest row, then decide left/right
+      const r=rectCache.get(cands[best]);
+      if(!r)return cands.length;
+      // Expand to the row containing `best`
+      rowFirst=best;rowLast=best;
+      for(let i=best-1;i>=0;i--){
+        const ri=rectCache.get(cands[i]);if(!ri)break;
+        if(Math.abs((ri.top+ri.bottom)/2 - (r.top+r.bottom)/2) < r.height*0.6) rowFirst=i; else break;
+      }
+      for(let i=best+1;i<cands.length;i++){
+        const ri=rectCache.get(cands[i]);if(!ri)break;
+        if(Math.abs((ri.top+ri.bottom)/2 - (r.top+r.bottom)/2) < r.height*0.6) rowLast=i; else break;
+      }
+      // If cursor is below the matched row entirely, target the start of next row
+      if(clientY>r.bottom)return rowLast+1;
+      if(clientY<r.top)return rowFirst;
+    }
+    // Within the row, binary-search by horizontal midpoint
+    let lo=rowFirst,hi=rowLast;
+    while(lo<=hi){
+      const mid=(lo+hi)>>1;
+      const r=rectCache.get(cands[mid]);
+      const midX=r.left+r.width/2;
+      if(clientX<midX)hi=mid-1;else lo=mid+1;
+    }
+    return lo;
+  };
+
+  // Move placeholder to target slot (no-op if already there) and re-animate siblings
+  const movePlaceholderTo=(targetIdx)=>{
+    if(targetIdx===lastInsertIdx)return false; // nothing to do
+    // FLIP step 1: capture old positions of all eligible nodes
+    const oldRects=new Map();
+    for(const n of eligible)oldRects.set(n,rectCache.get(n));
+
+    // Step 2: mutate DOM
+    const cands=candidatesNow();
+    if(targetIdx>=cands.length){
+      const last=cands[cands.length-1];
+      if(last&&last.nextSibling!==placeholder)container.insertBefore(placeholder,last.nextSibling);
+    }else{
+      const ref=cands[targetIdx];
+      if(ref&&ref!==placeholder.nextSibling)container.insertBefore(placeholder,ref);
+    }
+    lastInsertIdx=targetIdx;
+
+    // Step 3: read NEW positions, compute deltas, apply inverse-then-animate
+    refreshRects();
+    for(const n of eligible){
+      const oldR=oldRects.get(n);
+      const newR=rectCache.get(n);
+      if(!oldR||!newR)continue;
+      const dx=oldR.left-newR.left;
+      const dy=oldR.top-newR.top;
+      if(dx===0&&dy===0){
+        // Make sure no leftover transform stays on this node
+        if(n.style.transform){n.style.transition='none';n.style.transform='';n.getBoundingClientRect();n.style.transition='';}
+        continue;
+      }
+      n.style.transition='none';
+      n.style.transform=`translate(${dx}px,${dy}px)`;
+      n.getBoundingClientRect(); // flush
+      n.style.transition='';     // re-enable CSS transition (defined in stylesheet)
+      n.style.transform='';      // animate back to identity
+    }
+    return true;
+  };
+
+  // pointermove → store latest cursor pos, do real work in rAF
+  let pendingX=ev.clientX,pendingY=ev.clientY,rafId=0,scrolling=false;
+  const tick=()=>{
+    rafId=0;
+    // 1) Update floating card position (cheap — just two style writes)
+    card.style.left=(pendingX-offsetX)+'px';
+    card.style.top=(pendingY-offsetY)+'px';
+    // 2) Auto-scroll near edges of viewport
+    const SCROLL_ZONE=60,SCROLL_SPEED=14,vh=window.innerHeight;
+    let scrolled=0;
+    if(pendingY<SCROLL_ZONE){scrolled=-SCROLL_SPEED;window.scrollBy(0,scrolled);}
+    else if(pendingY>vh-SCROLL_ZONE){scrolled=SCROLL_SPEED;window.scrollBy(0,scrolled);}
+    // If the page scrolled, our cached rects are now stale → refresh once
+    if(scrolled!==0){refreshRects();scrolling=true;}else if(scrolling){scrolling=false;}
+    // 3) Compute target slot and reorder if needed
+    const target=findInsertIndex(pendingX,pendingY);
+    movePlaceholderTo(target);
+  };
+  const onMove=(e)=>{
+    pendingX=e.clientX;pendingY=e.clientY;
+    if(!rafId)rafId=requestAnimationFrame(tick);
+  };
+
+  const onUp=()=>{
+    if(rafId){cancelAnimationFrame(rafId);rafId=0;}
+    document.removeEventListener('pointermove',onMove);
+    document.removeEventListener('pointerup',onUp);
+    document.removeEventListener('pointercancel',onUp);
+    document.body.classList.remove('dragging-card');
+    container.classList.remove('dragging-active');
+    container.style.removeProperty('--drag-tx-dur');
+    _drag.active=false;
+
+    // Determine the final entries-index where the dragged item should go.
+    // Look at the next .card sibling after the placeholder in the FULL container
+    // (not just in the same bucket — the answer must be a real entries[] position).
+    const children=Array.from(container.children);
+    const phPos=children.indexOf(placeholder);
+    let nextCard=null;
+    for(let i=phPos+1;i<children.length;i++){
+      if(children[i].classList&&children[i].classList.contains('card')){nextCard=children[i];break;}
+    }
+    const insertEntryIdx=nextCard?parseInt(nextCard.dataset.idx,10):entries.length;
+
+    // Cleanup DOM
+    placeholder.remove();
+    card.classList.remove('dragging');
+    card.style.cssText='';
+    if(card.parentNode===document.body)document.body.removeChild(card);
+    // Wipe any residual transforms
+    for(const n of eligible){if(n.style){n.style.transition='';n.style.transform='';}}
+
+    // Apply reorder to entries[]
+    const from=idx;
+    let to=insertEntryIdx;
+    if(from<to)to--;
+    if(to!==from&&to>=0&&to<=entries.length){
+      const [moved]=entries.splice(from,1);
+      entries.splice(to,0,moved);
+      profiles[currentPid].entries=entries;
+      persist();
+    }
+    render($('search').value);
+  };
+
+  document.addEventListener('pointermove',onMove,{passive:true});
+  document.addEventListener('pointerup',onUp);
+  document.addEventListener('pointercancel',onUp);
+
+  // First frame: just place the floating card under the cursor (no slot search yet)
+  card.style.left=(ev.clientX-offsetX)+'px';
+  card.style.top=(ev.clientY-offsetY)+'px';
+}
+
+/* ════════════════════════════════════════════════════════
    CARD MODAL
 ════════════════════════════════════════════════════════ */
 let editColor='';  // Currently selected color in modal (''=default)
@@ -1908,7 +2242,7 @@ function editCard(idx){
 ════════════════════════════════════════════════════════ */
 function applyTr(){
   const s=(id,k)=>{const el=$(id);if(el)el.textContent=t(k);};
-  s('lbl-newcard','newCard');s('lbl-export','export');s('lbl-import','import');s('lbl-share','share');s('lbl-settings','settings');s('lbl-np','newProfile');s('lbl-profiles','profiles');s('lbl-theme','theme');s('lbl-send','modeSend');s('lbl-recv','modeRecv');s('lbl-settings-title','settingsTitle');s('lbl-general','general');s('lbl-statistics','statistics');s('lbl-language','language');s('lbl-cardColor','cardColor');
+  s('lbl-newcard','newCard');s('lbl-export','export');s('lbl-export-all','exportAll');s('lbl-import','import');s('lbl-share','share');s('lbl-settings','settings');s('lbl-np','newProfile');s('lbl-profiles','profiles');s('lbl-theme','theme');s('lbl-send','modeSend');s('lbl-recv','modeRecv');s('lbl-settings-title','settingsTitle');s('lbl-general','general');s('lbl-statistics','statistics');s('lbl-language','language');s('lbl-cardColor','cardColor');
   s('lbl-editmode',editMode?'editModeExit':'editMode');
   $('search').placeholder=t('searchPh');
   $('profileModal-title').textContent=t('newProfileTitle');$('profileName').placeholder=t('profilePh');$('createProfile').textContent=t('create');$('cancelProfile2').textContent=t('cancel');
@@ -2018,13 +2352,39 @@ $('exportBtn').addEventListener('click',()=>{
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(exportData,null,2)],{type:'application/json'}));a.download=`${name}.json`;a.click();
 });
 
-// Import
+// Export all — one JSON file per profile (same format as single Export)
+$('exportAllBtn').addEventListener('click',()=>{
+  const list=Object.values(profiles);
+  if(!list.length)return;
+  const stamp=new Date().toISOString();
+  // Slight stagger between downloads so the browser doesn't drop any of them
+  list.forEach((p,i)=>{
+    setTimeout(()=>{
+      const exportData={profile:p.name,exportedAt:stamp,entries:(p.entries||[]).map(e=>{
+        const o={content:e.content,isPinned:e.isPinned||false,createdAt:e.createdAt};
+        if(typeof e.w==='number'&&e.w>0)o.w=e.w;
+        if(typeof e.h==='number'&&e.h>0)o.h=e.h;
+        if(typeof e.color==='string'&&e.color)o.color=e.color;
+        return o;
+      })};
+      const a=document.createElement('a');
+      const url=URL.createObjectURL(new Blob([JSON.stringify(exportData,null,2)],{type:'application/json'}));
+      a.href=url;a.download=`${p.name}.json`;
+      document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+    },i*150);
+  });
+});
+
+// Import — supports multiple files; for each file:
+//   - if a profile with the same name exists → replace its entries
+//   - otherwise → create a new profile
 $('importBtn').addEventListener('click',()=>$('importFile').click());
 $('importFile').addEventListener('change',async e=>{
-  const f=e.target.files[0];if(!f)return;
-  try{const txt=await f.text();const now=Date.now();
-  const parsed=JSON.parse(txt);let imp;
-  const normalize=(x,i)=>{
+  const files=Array.from(e.target.files||[]);if(!files.length)return;
+  const now=Date.now();
+  // Normalize a single entry (string or object) into the canonical entry shape
+  const normalizeEntry=(x,i)=>{
     if(x==null)return null;
     if(typeof x==='string')return{content:x,isPinned:false,createdAt:now+i};
     if(typeof x!=='object')return null;
@@ -2034,12 +2394,73 @@ $('importFile').addEventListener('change',async e=>{
     if(typeof x.color==='string'&&x.color)o.color=x.color;
     return o;
   };
-  if(parsed.entries&&Array.isArray(parsed.entries)){imp=parsed.entries.map(normalize).filter(Boolean);}
-  else if(Array.isArray(parsed)){imp=parsed.map(normalize).filter(Boolean);}
-  else{throw new Error('Invalid JSON');}
-  if(!confirm(t('confirmImport',entries.length,imp.length,profiles[currentPid].name))){e.target.value='';return;}
-  entries=imp;profiles[currentPid].entries=entries;persist();render($('search').value);renderSidebar();e.target.value='';}
-  catch{alert(t('errImport'));}
+  // Find an existing profile id by case-insensitive name match
+  const findPidByName=(name)=>{
+    const ln=name.toLowerCase();
+    return Object.keys(profiles).find(pid=>profiles[pid].name.toLowerCase()===ln)||null;
+  };
+  // Make a fresh profile id from a name
+  const makePid=(name)=>{
+    let pid=`${name.toLowerCase().replace(/[^a-z0-9]/g,'_')}_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+    while(profiles[pid])pid=`${pid}_x`;
+    return pid;
+  };
+  // Parse one file → list of {name, entries} candidate profiles
+  const parseFile=async(file)=>{
+    const txt=await file.text();
+    const parsed=JSON.parse(txt);
+    const baseName=(file.name||'').replace(/\.json$/i,'')||t('defaultProfile');
+    // Single-profile export ({profile, entries})
+    if(parsed&&Array.isArray(parsed.entries)){
+      return [{
+        name:(parsed.profile||baseName).toString().slice(0,60),
+        entries:parsed.entries.map(normalizeEntry).filter(Boolean)
+      }];
+    }
+    // Bare array of entries → use filename as profile name
+    if(Array.isArray(parsed)){
+      return [{name:baseName.slice(0,60),entries:parsed.map(normalizeEntry).filter(Boolean)}];
+    }
+    throw new Error('Invalid JSON');
+  };
+
+  // Parse every file first so we can show a single confirm with the totals
+  const candidates=[];const failed=[];
+  for(const f of files){
+    try{const arr=await parseFile(f);candidates.push(...arr);}
+    catch{failed.push(f.name);}
+  }
+  if(!candidates.length){
+    alert(t('errImport')+(failed.length?`\n(${failed.join(', ')})`:''));
+    e.target.value='';return;
+  }
+  if(!confirm(t('importMulti',candidates.length,files.length))){e.target.value='';return;}
+
+  // Apply each candidate: replace if name exists, else create
+  const replaced=[],created=[];let lastPid=currentPid;
+  for(const c of candidates){
+    const existingPid=findPidByName(c.name);
+    if(existingPid){
+      profiles[existingPid].entries=c.entries;
+      lastPid=existingPid;
+      replaced.push(c.name);
+    }else{
+      const pid=makePid(c.name);
+      profiles[pid]={name:c.name,entries:c.entries};
+      lastPid=pid;
+      created.push(c.name);
+    }
+  }
+  persist();
+  // Switch to the last imported profile so the user sees the result
+  switchProfile(lastPid);
+  renderSidebar();
+  e.target.value='';
+
+  // Friendly summary
+  const okCount=candidates.length,failCount=failed.length;
+  const msg=failCount?t('importPartial',okCount,failCount):t('importDone',okCount);
+  alert(msg);
 });
 
 // Settings
@@ -2276,7 +2697,16 @@ document.addEventListener('keydown',e=>{
       if(sent) return; // ignorer les connexions multiples
       conn.on('open',()=>{
         if(sent) return; sent=true;
-        conn.send({type:'query-profile',payload:{name:profiles[currentPid].name,entries:profiles[currentPid].entries}});
+        // Normaliser les entrées avec exactement le même format que l'export fichier
+        // (content, isPinned, createdAt, et w/h/color si présents)
+        const entriesOut=(profiles[currentPid].entries||[]).map(e=>{
+          const o={content:e.content||'',isPinned:!!e.isPinned,createdAt:e.createdAt};
+          if(typeof e.w==='number'&&e.w>0)o.w=e.w;
+          if(typeof e.h==='number'&&e.h>0)o.h=e.h;
+          if(typeof e.color==='string'&&e.color)o.color=e.color;
+          return o;
+        });
+        conn.send({type:'query-profile',payload:{name:profiles[currentPid].name,entries:entriesOut}});
         addClass($('waitMsg'),'off');
         remClass($('sendOk'),'off');
         conn.on('close',destroy);
@@ -2326,6 +2756,7 @@ document.addEventListener('keydown',e=>{
             const o={content:e.content||'',isPinned:!!e.isPinned,createdAt:e.createdAt||now+i};
             if(typeof e.w==='number'&&e.w>0)o.w=e.w;
             if(typeof e.h==='number'&&e.h>0)o.h=e.h;
+            if(typeof e.color==='string'&&e.color)o.color=e.color;
             return o;
           }).filter(Boolean);
           const ex=Object.values(profiles).map(p=>p.name.toLowerCase());
