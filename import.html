@@ -211,6 +211,17 @@ body {
 .p-row-del:hover { background: #fee2e2; color: var(--c-err); transform: none; box-shadow: none; }
 .p-row-del svg { width: 10px; height: 10px; pointer-events: none; }
 
+/* Profile drag-to-reorder handle — only visible in edit mode */
+.p-row-drag { display: none; flex-shrink: 0; width: 14px; height: 14px; align-items: center; justify-content: center; cursor: grab; color: var(--c-text3); border-radius: 3px; opacity: 0; transition: opacity .12s; }
+.p-row-drag svg { width: 10px; height: 10px; pointer-events: none; }
+.p-row-drag:active { cursor: grabbing; }
+#profileList.edit-mode .p-row-drag { display: flex; }
+#profileList.edit-mode .p-row:hover .p-row-drag { opacity: 0.7; }
+#profileList.edit-mode .p-row-drag:hover { opacity: 1; background: var(--c-surf2); }
+.p-row.dragging-profile { opacity: 0.35; }
+.p-row.drag-over-before { border-top: 2px solid var(--c-accent) !important; }
+.p-row.drag-over-after { border-bottom: 2px solid var(--c-accent) !important; }
+
 .sb-add-profile {
   display: flex;
   align-items: center;
@@ -1615,12 +1626,14 @@ function processContent(content,filter){
 function renderSidebar(){
   const list=$('profileList');list.innerHTML='';
   Object.entries(profiles).forEach(([pid,p])=>{
-    const row=document.createElement('div');row.className='p-row'+(pid===currentPid?' active':'');
-    row.innerHTML=`<span class="p-row-icon">📁</span><span class="p-row-name">${esc(p.name)}</span><span class="p-row-count">${p.entries.length}</span><button class="p-row-del" data-pid="${pid}" title="Delete profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
+    const row=document.createElement('div');row.className='p-row'+(pid===currentPid?' active':'');row.dataset.pid=pid;
+    row.innerHTML=`<span class="p-row-drag" title="Réordonner"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></span><span class="p-row-icon">📁</span><span class="p-row-name">${esc(p.name)}</span><span class="p-row-count">${p.entries.length}</span><button class="p-row-del" data-pid="${pid}" title="Delete profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
     row.querySelector('.p-row-del').addEventListener('click',e=>{e.stopPropagation();deleteProfile(pid);});
-    row.addEventListener('click',()=>switchProfile(pid));
+    row.querySelector('.p-row-drag').addEventListener('pointerdown',e=>{e.stopPropagation();startProfileDrag(e,pid,row);});
+    row.addEventListener('click',e=>{if(!e.target.closest('.p-row-drag'))switchProfile(pid);});
     list.appendChild(row);
   });
+  if(editMode)list.classList.add('edit-mode');
 }
 
 function updateTopbar(){
@@ -1892,10 +1905,47 @@ function copyCard(entry,card){
 ════════════════════════════════════════════════════════ */
 function toggleEditMode(){
   editMode=!editMode;
-  const btn=$('editModeBtn'),lbl=$('lbl-editmode'),res=$('results');
-  if(editMode){btn.classList.add('active');res.classList.add('edit-mode');if(lbl)lbl.textContent=t('editModeExit');}
-  else{btn.classList.remove('active');res.classList.remove('edit-mode');if(lbl)lbl.textContent=t('editMode');}
+  const btn=$('editModeBtn'),lbl=$('lbl-editmode'),res=$('results'),plist=$('profileList');
+  if(editMode){btn.classList.add('active');res.classList.add('edit-mode');plist.classList.add('edit-mode');if(lbl)lbl.textContent=t('editModeExit');}
+  else{btn.classList.remove('active');res.classList.remove('edit-mode');plist.classList.remove('edit-mode');if(lbl)lbl.textContent=t('editMode');}
   // No re-render: just toggle the class. All cards & handles already exist in the DOM.
+}
+
+function startProfileDrag(ev,pid,row){
+  if(!editMode)return;
+  ev.preventDefault();
+  const list=$('profileList');
+  let targetRow=null,insertBefore=true;
+  row.classList.add('dragging-profile');
+  const onMove=e=>{
+    list.querySelectorAll('.p-row').forEach(r=>r.classList.remove('drag-over-before','drag-over-after'));
+    const el=document.elementFromPoint(e.clientX,e.clientY)?.closest('.p-row');
+    if(el&&el!==row&&list.contains(el)){
+      const rect=el.getBoundingClientRect();
+      insertBefore=e.clientY<rect.top+rect.height/2;
+      el.classList.add(insertBefore?'drag-over-before':'drag-over-after');
+      targetRow=el;
+    }else{targetRow=null;}
+  };
+  const onUp=()=>{
+    document.removeEventListener('pointermove',onMove);
+    document.removeEventListener('pointerup',onUp);
+    row.classList.remove('dragging-profile');
+    list.querySelectorAll('.p-row').forEach(r=>r.classList.remove('drag-over-before','drag-over-after'));
+    if(targetRow){const tpid=targetRow.dataset.pid;if(tpid&&tpid!==pid)reorderProfiles(pid,tpid,insertBefore);}
+  };
+  document.addEventListener('pointermove',onMove);
+  document.addEventListener('pointerup',onUp);
+}
+
+function reorderProfiles(draggedPid,targetPid,insertBefore){
+  const keys=Object.keys(profiles);
+  const fromIdx=keys.indexOf(draggedPid);if(fromIdx===-1)return;
+  keys.splice(fromIdx,1);
+  const toIdx=keys.indexOf(targetPid);if(toIdx===-1)return;
+  keys.splice(insertBefore?toIdx:toIdx+1,0,draggedPid);
+  const reordered={};keys.forEach(k=>{reordered[k]=profiles[k];});
+  profiles=reordered;persist();renderSidebar();
 }
 
 function resetCardSize(idx){
