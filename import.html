@@ -999,6 +999,12 @@ body.dark .p-row.active .p-row-count {
 
 .rich-content s, .rich-content strike, .rich-content del { text-decoration: line-through; }
 
+.rich-content hr {
+  border: none;
+  border-top: 2px solid var(--c-border);
+  margin: 0.75em 0;
+}
+
 /* Alignment applied via inline styles from execCommand('justify*') */
 .rich-content [style*="text-align"] { display: block; }
 
@@ -1457,6 +1463,7 @@ body.dark .share-status.error   { background: rgba(220,38,38,.12); color: #f8717
     <div class="et-group">
       <button class="et-btn" data-block="blockquote" title="Quote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9h4v6H6a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2z"/><path d="M14 9h4v6h-4a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2z"/></svg></button>
       <button class="et-btn" id="etCode" title="Code (inline if one line, block if multi-line)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></button>
+      <button class="et-btn" id="etHr" title="Separator line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"/></svg></button>
     </div>
     <div class="et-sep"></div>
     <!-- Alignment -->
@@ -2849,6 +2856,9 @@ document.addEventListener('keydown',e=>{
 
   // Code button
   $('etCode')?.addEventListener('mousedown',e=>{e.preventDefault();toggleCode();});
+
+  // Separator line (HR) button
+  $('etHr')?.addEventListener('mousedown',e=>{e.preventDefault();ed.focus();restSel();document.execCommand('insertHTML',false,'<hr><p><br></p>');saveSel();updateActiveState();});
 
   // Text color swatches
   tb.querySelectorAll('.et-sw:not(.et-sw-reset)').forEach(s=>s.addEventListener('mousedown',e=>{e.preventDefault();runCmd('foreColor',s.dataset.color||'inherit');}));
