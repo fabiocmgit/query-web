@@ -1005,6 +1005,41 @@ body.dark .p-row.active .p-row-count {
   margin: 0.75em 0;
 }
 
+.rich-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  display: block;
+  cursor: pointer;
+}
+.rich-content img.img-sel {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+}
+
+#imgResizeOverlay {
+  position: fixed;
+  border: 2px solid var(--c-accent);
+  pointer-events: none;
+  z-index: 10000;
+  display: none;
+  box-sizing: border-box;
+}
+#imgResizeOverlay.active { display: block; }
+.img-handle {
+  position: absolute;
+  width: 10px; height: 10px;
+  background: #fff;
+  border: 2px solid var(--c-accent);
+  border-radius: 2px;
+  pointer-events: all;
+  box-sizing: border-box;
+}
+.img-handle-nw { top: -5px; left: -5px; cursor: nw-resize; }
+.img-handle-ne { top: -5px; right: -5px; cursor: ne-resize; }
+.img-handle-se { bottom: -5px; right: -5px; cursor: se-resize; }
+.img-handle-sw { bottom: -5px; left: -5px; cursor: sw-resize; }
+
 /* Alignment applied via inline styles from execCommand('justify*') */
 .rich-content [style*="text-align"] { display: block; }
 
@@ -1464,6 +1499,7 @@ body.dark .share-status.error   { background: rgba(220,38,38,.12); color: #f8717
       <button class="et-btn" data-block="blockquote" title="Quote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9h4v6H6a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2z"/><path d="M14 9h4v6h-4a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2z"/></svg></button>
       <button class="et-btn" id="etCode" title="Code (inline if one line, block if multi-line)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></button>
       <button class="et-btn" id="etHr" title="Separator line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"/></svg></button>
+      <button class="et-btn" id="etImg" title="Insert image"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
     </div>
     <div class="et-sep"></div>
     <!-- Alignment -->
@@ -2577,7 +2613,7 @@ $('cancelEntry').addEventListener('click',closeCardModal);
 $('cancelEntry2').addEventListener('click',closeCardModal);
 $('saveEntry').addEventListener('click',()=>{
   const ed=$('newEntry'),val=ed.innerHTML.trim(),plain=ed.textContent.replace(/\u00A0/g,' ').trim();
-  if(!plain){alert(t('errEmpty'));return;}
+  if(!plain && !ed.querySelector('img')){alert(t('errEmpty'));return;}
   if(editIdx>=0){
     entries[editIdx].content=val;
     invalidateSearchText(entries[editIdx]);
@@ -2860,6 +2896,129 @@ document.addEventListener('keydown',e=>{
   // Separator line (HR) button
   $('etHr')?.addEventListener('mousedown',e=>{e.preventDefault();ed.focus();restSel();document.execCommand('insertHTML',false,'<hr><p><br></p>');saveSel();updateActiveState();});
 
+  // ── Image support ────────────────────────────────────────────────────────
+  const compressImg=file=>new Promise(resolve=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const img=new Image();
+      img.onload=()=>{
+        const MAX=1200,c=document.createElement('canvas');
+        let w=img.width,h=img.height;
+        if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+        c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(c.toDataURL(file.type==='image/png'?'image/png':'image/jpeg',0.85));
+      };
+      img.src=ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  const insertImg=async file=>{
+    const url=await compressImg(file);
+    ed.focus();restSel();
+    document.execCommand('insertHTML',false,`<img src="${url}" style="max-width:100%;height:auto"><p><br></p>`);
+    saveSel();
+  };
+
+  // Hidden file input for toolbar button
+  const imgInput=document.createElement('input');
+  imgInput.type='file';imgInput.accept='image/*';imgInput.style.display='none';
+  document.body.appendChild(imgInput);
+  imgInput.addEventListener('change',e=>{const f=e.target.files[0];if(f)insertImg(f);imgInput.value='';});
+  $('etImg')?.addEventListener('mousedown',e=>{e.preventDefault();imgInput.click();});
+
+  // ── Image resize overlay ──────────────────────────────────────────────────
+  const ov=document.createElement('div');ov.id='imgResizeOverlay';
+  ['nw','ne','se','sw'].forEach(p=>{const h=document.createElement('div');h.className='img-handle img-handle-'+p;h.dataset.pos=p;ov.appendChild(h);});
+  document.body.appendChild(ov);
+
+  let _si=null,_dr=false,_dp='',_dx=0,_dw=0,_dh=0;
+
+  const syncOv=()=>{if(!_si)return;const r=_si.getBoundingClientRect();ov.style.cssText='left:'+r.left+'px;top:'+r.top+'px;width:'+r.width+'px;height:'+r.height+'px;';};
+
+  // Apply alignment to selected image
+  const alignImg=cmd=>{
+    if(!_si)return;
+    _si.style.display='block';
+    if(cmd==='justifyLeft'){_si.style.marginLeft='0';_si.style.marginRight='auto';}
+    else if(cmd==='justifyCenter'){_si.style.marginLeft='auto';_si.style.marginRight='auto';}
+    else if(cmd==='justifyRight'){_si.style.marginLeft='auto';_si.style.marginRight='0';}
+    syncOv();syncImgAlign();saveSel();
+  };
+
+  // Reflect image alignment state on toolbar buttons
+  const syncImgAlign=()=>{
+    const cmds=['justifyLeft','justifyCenter','justifyRight'];
+    if(!_si){updateActiveState();return;}
+    const ml=_si.style.marginLeft,mr=_si.style.marginRight;
+    cmds.forEach(cmd=>{
+      const btn=tb.querySelector('[data-cmd="'+cmd+'"]');if(!btn)return;
+      let on=false;
+      if(cmd==='justifyLeft')on=ml===''||ml==='0px'||ml==='0';
+      else if(cmd==='justifyCenter')on=ml==='auto'&&mr==='auto';
+      else if(cmd==='justifyRight')on=ml==='auto'&&(mr==='0px'||mr==='0'||mr==='');
+      toggleClass(btn,'on',on);
+    });
+  };
+
+  const selImg=img=>{
+    if(_si)_si.classList.remove('img-sel');
+    _si=img;
+    if(img){img.classList.add('img-sel');ov.classList.add('active');syncOv();syncImgAlign();}
+    else{ov.classList.remove('active');updateActiveState();}
+  };
+
+  // Click on image in editor → show overlay; click elsewhere → hide
+  ed.addEventListener('click',e=>{
+    if(e.target.tagName==='IMG'){selImg(e.target);}
+    else if(!ov.contains(e.target)){selImg(null);}
+  });
+
+  // Delete selected image with Backspace/Delete
+  ed.addEventListener('keydown',e=>{
+    if(_si&&(e.key==='Delete'||e.key==='Backspace')){
+      e.preventDefault();
+      const p=document.createElement('p');p.innerHTML='<br>';
+      _si.after(p);_si.remove();selImg(null);
+      const nr=document.createRange();nr.setStart(p,0);nr.collapse(true);
+      const s=window.getSelection();s.removeAllRanges();s.addRange(nr);
+      saveSel();
+    }
+  });
+
+  // Hide overlay when modal closes
+  new MutationObserver(()=>{if($('addModal').classList.contains('off'))selImg(null);}).observe($('addModal'),{attributes:true,attributeFilter:['class']});
+
+  // Intercept alignment buttons in capture phase: apply to image when one is selected
+  ['justifyLeft','justifyCenter','justifyRight'].forEach(cmd=>{
+    const btn=tb.querySelector('[data-cmd="'+cmd+'"]');if(!btn)return;
+    btn.addEventListener('mousedown',e=>{if(!_si)return;e.preventDefault();e.stopImmediatePropagation();alignImg(cmd);},true);
+  });
+
+  // Drag handles to resize
+  ov.addEventListener('mousedown',e=>{
+    const h=e.target.closest('.img-handle');
+    if(!h||!_si)return;
+    e.preventDefault();
+    _dr=true;_dp=h.dataset.pos;_dx=e.clientX;_dw=_si.offsetWidth;_dh=_si.offsetHeight;
+  });
+
+  document.addEventListener('mousemove',e=>{
+    if(!_dr||!_si)return;
+    const d=e.clientX-_dx;
+    const nw=Math.max(50,_dp.includes('w')?_dw-d:_dw+d);
+    const nh=Math.round(nw*(_dh/_dw));
+    _si.style.width=nw+'px';_si.style.height=nh+'px';
+    syncOv();
+  });
+
+  document.addEventListener('mouseup',()=>{if(_dr){_dr=false;saveSel();}});
+
+  // Keep overlay aligned on scroll/resize
+  document.querySelector('#addModal .m-body')?.addEventListener('scroll',syncOv);
+  window.addEventListener('resize',syncOv);
+
   // Text color swatches
   tb.querySelectorAll('.et-sw:not(.et-sw-reset)').forEach(s=>s.addEventListener('mousedown',e=>{e.preventDefault();runCmd('foreColor',s.dataset.color||'inherit');}));
   tb.querySelector('.et-sw-reset')?.addEventListener('mousedown',e=>{e.preventDefault();ed.focus();restSel();document.execCommand('styleWithCSS',false,true);document.execCommand('foreColor',false,'inherit');document.execCommand('styleWithCSS',false,false);saveSel();updateActiveState();});
@@ -2876,8 +3035,12 @@ document.addEventListener('keydown',e=>{
   // Keyboard shortcuts sync
   ed.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&['b','i','u'].includes(e.key.toLowerCase()))setTimeout(updateActiveState,10);});
 
-  // Paste as plain text (keeps behavior consistent)
-  ed.addEventListener('paste',e=>{e.preventDefault();document.execCommand('insertText',false,e.clipboardData.getData('text/plain'));});
+  // Paste: image-aware, falls back to plain text
+  ed.addEventListener('paste',e=>{
+    const img=[...e.clipboardData.items].find(i=>i.type.startsWith('image/'));
+    if(img){e.preventDefault();insertImg(img.getAsFile());return;}
+    e.preventDefault();document.execCommand('insertText',false,e.clipboardData.getData('text/plain'));
+  });
 })();
 
 /* ════════════════════════════════════════════════════════
