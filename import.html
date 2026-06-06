@@ -464,15 +464,6 @@ body {
   flex: 0 0 auto;      /* don't grow/shrink; respect inline width exactly */
   max-width: none;
 }
-/* Freely positioned card — lifted out of the flex flow, placed at absolute x/y */
-#results > .card[data-positioned="1"] {
-  position: absolute;
-  z-index: 2;
-  flex: none;
-  max-width: none;
-  width: 300px;        /* fallback width; overridden by entry.w inline style */
-  box-shadow: var(--s-md);
-}
 
 .card {
   background: var(--c-surface);
@@ -494,6 +485,53 @@ body {
   transform: translateY(-2px);
 }
 .card.pinned { border-left: 3px solid var(--c-pin); }
+
+/* ── Image-only card: no border, no background, image floats on the canvas ── */
+.card.img-only {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+.card.img-only:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0,0,0,.18) !important;
+  border-color: transparent !important;
+}
+.card.img-only .card-body { padding: 0; display: flex; align-items: flex-start; }
+.card.img-only .card-body img {
+  width: 100%; height: auto;
+  display: block;
+  border-radius: var(--r2);
+}
+.card.img-only[data-sized="1"] .card-body { height: 100%; overflow: hidden; }
+.card.img-only[data-sized="1"] .card-body img { height: 100%; object-fit: contain; border-radius: var(--r2); }
+.card.img-only .card-footer {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 18px 10px 8px;
+  margin: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,.52));
+  border-radius: 0 0 var(--r2) var(--r2);
+  opacity: 0;
+  transition: opacity .18s;
+  pointer-events: none;
+}
+.card.img-only:hover .card-footer { opacity: 1; pointer-events: auto; }
+.card.img-only .card-date { color: rgba(255,255,255,.8); }
+.card.img-only .card-actions { opacity: 1 !important; }
+.card.img-only .card-actions .card-btn {
+  color: rgba(255,255,255,.9);
+  background: rgba(0,0,0,.35);
+  border-color: rgba(255,255,255,.2);
+  backdrop-filter: blur(4px);
+}
+.card.img-only .card-actions .card-btn:hover { color: #fff; background: rgba(0,0,0,.6); border-color: rgba(255,255,255,.45); }
+/* Edit mode: subtle outline to reveal card boundaries */
+#results.edit-mode .card.img-only { box-shadow: 0 0 0 2px var(--c-accent-b) !important; border-radius: var(--r2); }
+#results.edit-mode .card.img-only:hover { box-shadow: 0 0 0 2px var(--c-accent) !important; }
 
 /* Card colors (pastel backgrounds) */
 .card.color-yellow { background: var(--cc-yellow-bg); border-color: var(--cc-yellow-bd); }
@@ -609,214 +647,156 @@ body.dark mark { background: #78350f; color: #fef08a; }
 .link:hover { text-decoration: underline; }
 
 /* ════════════════════════════════════════════════════════
-   EDIT MODE — RESIZE CARDS (OneNote-like)
+   EDIT MODE
 ════════════════════════════════════════════════════════ */
 
-/* Active edit mode button — makes it look "toggled on" */
+/* Edit mode button — active state */
 #editModeBtn.active {
   background: var(--c-accent);
   border-color: var(--c-accent);
   color: #fff;
   box-shadow: 0 1px 3px rgba(37,99,235,.3);
 }
-#editModeBtn.active:hover {
-  background: var(--c-accent-h);
-  border-color: var(--c-accent-h);
-  color: #fff;
-}
+#editModeBtn.active:hover { background: var(--c-accent-h); border-color: var(--c-accent-h); color: #fff; }
 
-/* Edit mode: just visual indicators (dashed outline) + enable handles.
-   The layout is already flex-wrap in normal mode, so no layout switch needed. */
+/* Cards in edit mode: kill transitions/animations, show left accent, no hover lift */
 #results.edit-mode .card {
-  outline: 1.5px dashed var(--c-accent-b);
-  outline-offset: 2px;
-  cursor: default;
-  /* Kill expensive transitions & animations during edit mode — drag must feel instant */
+  cursor: grab;
   transition: none !important;
   animation: none !important;
 }
-/* Neutralize hover lift that would otherwise fight with the drag */
 #results.edit-mode .card:hover {
-  outline-color: var(--c-accent);
   transform: none;
-  box-shadow: var(--s-sm);
   border-color: var(--c-border);
 }
-
-/* Prevent hover actions from hiding while interacting with handles */
+#results.edit-mode .card:active { cursor: grabbing; }
 #results.edit-mode .card-actions { opacity: 1; }
-
-/* Also kill button hover transforms in edit mode so hovering over cards mid-drag is cheap */
 #results.edit-mode .card-btn,
-#results.edit-mode .card-btn:hover {
-  transition: none !important;
-  transform: none !important;
-}
+#results.edit-mode .card-btn:hover { transition: none !important; transform: none !important; }
 
-/* Sizing behavior (applies always when inline size is set — even in normal view) */
-.card[data-sized="1"] {
-  min-width: 180px;
-  min-height: 120px;
-  overflow: hidden;
-}
-.card[data-sized="1"] .card-body {
-  overflow: auto;
-  max-height: 100%;
-}
+/* Card custom size */
+.card[data-sized="1"] { min-width: 180px; min-height: 120px; overflow: hidden; }
+.card[data-sized="1"] .card-body { overflow: auto; max-height: 100%; }
 
-/* Resize handles (only shown in edit mode) */
+/* ── Resize handles ── */
 .card-resize-handle {
   position: absolute;
   background: transparent;
   z-index: 5;
   display: none;
   touch-action: none;
+  transition: background .12s;
 }
 #results.edit-mode .card-resize-handle { display: block; }
 
-/* While a card is being resized, it's position:absolute (lifted out of flex flow).
-   Its real width/height change → content stays crisp, no distortion.
-   Siblings don't reflow because a placeholder holds the slot. */
-.card.resizing {
-  transition: none !important;
-  box-shadow: var(--s-lg);
-  z-index: 10;
-}
-#results.edit-mode .card.resizing { outline-color: var(--c-accent); }
+.card.resizing { transition: none !important; box-shadow: var(--s-lg); z-index: 10; }
 
+/* Right edge — width resize */
 .card-resize-handle.rh-r {
-  right: -4px; top: 8px; bottom: 8px;
-  width: 8px;
+  right: 0; top: 0; bottom: 0;
+  width: 6px;
   cursor: ew-resize;
+  border-radius: 0 var(--r2) var(--r2) 0;
 }
+#results.edit-mode .card:hover .card-resize-handle.rh-r,
+#results.edit-mode .card-resize-handle.rh-r:hover,
+.card.resizing .card-resize-handle.rh-r {
+  background: linear-gradient(to left, var(--c-accent-b) 2px, transparent 2px);
+}
+
+/* Bottom edge — height resize */
 .card-resize-handle.rh-b {
-  left: 8px; right: 8px; bottom: -4px;
-  height: 8px;
+  left: 0; right: 0; bottom: 0;
+  height: 6px;
   cursor: ns-resize;
+  border-radius: 0 0 var(--r2) var(--r2);
 }
+#results.edit-mode .card:hover .card-resize-handle.rh-b,
+#results.edit-mode .card-resize-handle.rh-b:hover,
+.card.resizing .card-resize-handle.rh-b {
+  background: linear-gradient(to top, var(--c-accent-b) 2px, transparent 2px);
+}
+
+/* Corner — both axes */
 .card-resize-handle.rh-br {
-  right: -2px; bottom: -2px;
-  width: 16px; height: 16px;
+  right: 0; bottom: 0;
+  width: 20px; height: 20px;
   cursor: nwse-resize;
-  border-right: 2px solid var(--c-accent);
-  border-bottom: 2px solid var(--c-accent);
-  border-bottom-right-radius: 6px;
+  border-right: 2.5px solid transparent;
+  border-bottom: 2.5px solid transparent;
+  border-bottom-right-radius: var(--r2);
   opacity: 0;
-  transition: opacity .12s;
+  transition: opacity .15s, border-color .15s;
 }
 #results.edit-mode .card:hover .card-resize-handle.rh-br,
 #results.edit-mode .card-resize-handle.rh-br:hover,
-.card.resizing .card-resize-handle.rh-br { opacity: 1; }
+.card.resizing .card-resize-handle.rh-br {
+  opacity: 1;
+  border-right-color: var(--c-accent);
+  border-bottom-color: var(--c-accent);
+}
 
-/* "Reset size" button — only visible in edit mode, when card has custom size */
+/* Reset size button */
 .card-reset-size {
   display: none;
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 6px; right: 6px;
   width: 22px; height: 22px;
   border-radius: 6px;
   border: 1px solid var(--c-border);
   background: var(--c-surface);
   color: var(--c-text3);
   cursor: pointer;
-  align-items: center;
-  justify-content: center;
-  z-index: 6;
-  padding: 0;
+  align-items: center; justify-content: center;
+  z-index: 6; padding: 0;
   transition: all .12s;
 }
-.card-reset-size:hover {
-  border-color: var(--c-accent);
-  color: var(--c-accent);
-  background: var(--c-accent-l);
-}
+.card-reset-size:hover { border-color: var(--c-accent); color: var(--c-accent); background: var(--c-accent-l); }
 .card-reset-size svg { width: 11px; height: 11px; pointer-events: none; }
-#results.edit-mode .card[data-sized="1"] .card-reset-size,
-#results.edit-mode .card[data-positioned="1"] .card-reset-size { display: flex; }
+#results.edit-mode .card[data-sized="1"] .card-reset-size { display: flex; }
 
-/* Slightly different pin-label position in edit mode to avoid overlap */
-#results.edit-mode .card .card-pin-label { right: 34px; }
 
-/* Drag handle (6-dot grip) — only visible in edit mode */
-.card-drag-handle {
-  display: none;
-  position: absolute;
-  left: -2px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 18px;
-  height: 36px;
-  border-radius: 5px;
-  cursor: grab;
-  align-items: center;
-  justify-content: center;
-  color: var(--c-text3);
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  z-index: 6;
-  user-select: none;
-  touch-action: none;
-  transition: background .12s, color .12s, border-color .12s;
-}
-.card-drag-handle:hover {
-  background: var(--c-accent-l);
-  border-color: var(--c-accent);
-  color: var(--c-accent);
-}
-.card-drag-handle:active { cursor: grabbing; }
-.card-drag-handle svg { width: 10px; height: 10px; pointer-events: none; }
-#results.edit-mode .card .card-drag-handle { display: flex; }
-/* Hide the handle while a search filter is active — reordering hidden items is confusing */
-#results.edit-mode.filtered .card .card-drag-handle { display: none; }
-#results.edit-mode .card .card-pin-label { left: auto; }
-
-/* Smooth slide animation for cards shifting around to make room for the dragged one.
-   Duration is exposed as a CSS variable so JS can shorten it for very large profiles.
-   We deliberately do NOT set `will-change` here: with hundreds of cards, that would
-   create a layer per card and consume a lot of GPU memory for no win. */
+/* ── Dragging active state ── */
 #results.dragging-active > .card:not(.dragging) {
-  transition: transform var(--drag-tx-dur, .22s) cubic-bezier(.2,.8,.2,1);
+  transition: none;
 }
-#results.dragging-active > .card-drop-placeholder {
-  transition: transform var(--drag-tx-dur, .22s) cubic-bezier(.2,.8,.2,1);
-}
-
-/* The card actually being dragged — floats above everything, follows the cursor */
 .card.dragging {
   position: fixed !important;
-  z-index: 100;
+  z-index: 1000;
   pointer-events: none;
   cursor: grabbing !important;
-  box-shadow: 0 16px 40px rgba(0,0,0,.18), 0 4px 12px rgba(0,0,0,.1);
+  box-shadow: 0 20px 60px rgba(0,0,0,.22), 0 6px 16px rgba(0,0,0,.12);
   outline: 2px solid var(--c-accent) !important;
-  outline-offset: 2px;
-  transform: rotate(1.2deg);
+  outline-offset: 3px;
+  transform: rotate(1.5deg) scale(1.02);
   transition: none !important;
-  opacity: .96;
+  opacity: .95;
   margin: 0 !important;
+  border-radius: var(--r2);
 }
 
-/* Placeholder slot — same dimensions as the dragged card, holds its spot in the flow */
+/* ── Placeholder ── */
 .card-drop-placeholder {
-  background: var(--c-accent-l, rgba(59,130,246,.08));
+  background: var(--c-accent-l);
   border: 2px dashed var(--c-accent);
   border-radius: var(--r2);
   box-sizing: border-box;
   flex: 0 0 auto;
+  animation: phPulse 1s ease-in-out infinite alternate;
+}
+@keyframes phPulse {
+  from { opacity: .55; }
+  to   { opacity: 1; }
 }
 
 body.dragging-card,
 body.dragging-card * { cursor: grabbing !important; user-select: none !important; }
 
-/* While resizing, disable selection and hover effects everywhere */
 body.resizing-card,
-body.resizing-card * {
-  user-select: none !important;
-  cursor: nwse-resize !important;
-}
+body.resizing-card * { user-select: none !important; cursor: nwse-resize !important; }
 body.resizing-card.resizing-w, body.resizing-card.resizing-w * { cursor: ew-resize !important; }
 body.resizing-card.resizing-h, body.resizing-card.resizing-h * { cursor: ns-resize !important; }
+
 
 /* Empty states */
 .empty-state {
@@ -1362,7 +1342,6 @@ body.dark .share-status.error   { background: rgba(220,38,38,.12); color: #f8717
   </div>
   <div id="profileList"></div>
 
-  <div style="flex:1"></div>
   <div class="sb-divider"></div>
   <div class="sb-bottom">
     <div class="theme-row">
@@ -1423,6 +1402,10 @@ body.dark .share-status.error   { background: rgba(220,38,38,.12); color: #f8717
 
     <div class="topbar-right">
       <div id="resultsCounter" class="off"></div>
+      <button id="resetAllSizesBtn" class="tb-btn off" title="Reset all card sizes">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 3 3 9 9 9"/></svg>
+        <span class="btn-label" id="lbl-reset-all-sizes">Reset all sizes</span>
+      </button>
       <button id="editModeBtn" class="tb-btn" title="Edit layout">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3h-6v6"/><path d="M3 21h6v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
         <span class="btn-label" id="lbl-editmode">Edit</span>
@@ -1445,6 +1428,8 @@ body.dark .share-status.error   { background: rgba(220,38,38,.12); color: #f8717
 </div><!-- /#main -->
 
 </div><!-- /#app -->
+
+<!-- EDIT MODE BANNER -->
 
 <!-- CARD MODAL -->
 <div id="addModal" class="modal off">
@@ -1621,7 +1606,7 @@ body.dark .share-status.error   { background: rgba(220,38,38,.12); color: #f8717
 /* ════════════════════════════════════════════════════════
    i18n
 ════════════════════════════════════════════════════════ */
-const TR={en:{newCard:"New card",export:"Export",exportAll:"Export all",import:"Import",importMulti:(n,t)=>`Import ${n} profile(s) from ${t} file(s)?`,importDone:(n)=>`✅ ${n} profile(s) imported.`,importPartial:(ok,fail)=>`✅ ${ok} imported, ⚠️ ${fail} failed.`,share:"Share",settings:"Settings",newProfile:"New profile",profiles:"Profiles",searchPh:"Search... (use / for all profiles)",emptyTitle:"No cards yet",emptySub:"Click '+ New card' to get started.",noResultTitle:"No results",noResultSub:"Try different keywords.",pin:"Pin",unpin:"Unpin",edit:"Edit",copy:"Copy",copied:"Copied!",resultsN:n=>n===1?"1 result":`${n} results`,allCards:n=>n===1?"1 card":`${n} cards`,newCardTitle:"New card",editCardTitle:"Edit card",edPh:"💡 Write your new card here...",save:"✅ Save",modify:"✅ Modify",delete:"🗑️ Delete",cancel:"Cancel",create:"✅ Create",newProfileTitle:"New profile",profilePh:"Profile name (e.g. Work, Personal…)",welcomeTitle:"Welcome! Create your first profile",firstProfilePh:"Your profile name (e.g. Personal, Work…)",settingsTitle:"Settings",general:"General",statistics:"Statistics",language:"Language",totalCards:"Total cards",errEmpty:"Please enter some content.",errProfileEmpty:"Please enter a profile name.",errDuplicate:n=>`"${n}" already exists.`,errLast:"Can't delete the only profile.",confirmCard:"Delete this card?",confirmProfile:n=>`Delete "${n}" and all its cards?`,confirmImport:(c,i,p)=>`Replace ${c} entries in "${p}" with ${i} from file?`,errImport:"Import failed.",shareTitle:"Share via device",sendInstr:'Click "Generate code" to get a connection code. Keep this window open until the transfer is complete.',genCode:"🔑 Generate code",waitMsg:"⏳ Waiting for connection…",sendOk:"✅ Profile sent!",recvInstr:"Enter the code shown on the other device. ⚠️ May not work on corporate or heavily restricted networks.",connectBtn:"🔗 Connect",connecting:"⏳ Connecting…",p2pSendErr:"❌ Connection error. Try again.",p2pShort:"Code must be at least 4 characters.",p2pTimeout:"Timed out — check the code and retry.",p2pDataErr:"Error processing received profile.",p2pFail:"Connection failed. Is the code correct?",p2pNotFound:"Device not found. Make sure it's waiting.",p2pRecvOk:n=>`✅ Profile "${n}" imported!`,defaultProfile:"Imported profile",errQuota:"Storage full — delete some cards or profiles.",modeSend:"Send",modeRecv:"Receive",theme:"Theme",editMode:"Edit",editModeExit:"Done",resetSize:"Reset size & position",cardColor:"Color",dragHandle:"Drag to position freely"},fr:{newCard:"Nouvelle fiche",export:"Exporter",exportAll:"Tout exporter",import:"Importer",importMulti:(n,t)=>`Importer ${n} profil(s) depuis ${t} fichier(s) ?`,importDone:(n)=>`✅ ${n} profil(s) importé(s).`,importPartial:(ok,fail)=>`✅ ${ok} importé(s), ⚠️ ${fail} échec(s).`,share:"Partager",settings:"Paramètres",newProfile:"Nouveau profil",profiles:"Profils",searchPh:"Rechercher… (« / » pour tous les profils)",emptyTitle:"Aucune fiche",emptySub:"Cliquez sur '+ Nouvelle fiche' pour commencer.",noResultTitle:"Aucun résultat",noResultSub:"Essayez d'autres mots-clés.",pin:"Épingler",unpin:"Désépingler",edit:"Modifier",copy:"Copier",copied:"Copié !",resultsN:n=>n===1?"1 résultat":`${n} résultats`,allCards:n=>n===1?"1 fiche":`${n} fiches`,newCardTitle:"Nouvelle fiche",editCardTitle:"Modifier la fiche",edPh:"💡 Écrivez votre nouvelle fiche ici…",save:"✅ Sauvegarder",modify:"✅ Modifier",delete:"🗑️ Supprimer",cancel:"Annuler",create:"✅ Créer",newProfileTitle:"Nouveau profil",profilePh:"Nom du profil (ex : Travail, Personnel…)",welcomeTitle:"Bienvenue ! Créez votre premier profil",firstProfilePh:"Nom de votre profil (ex : Personnel, Travail…)",settingsTitle:"Paramètres",general:"Général",statistics:"Statistiques",language:"Langue",totalCards:"Total fiches",errEmpty:"Veuillez entrer du contenu.",errProfileEmpty:"Veuillez entrer un nom de profil.",errDuplicate:n=>`« ${n} » existe déjà.`,errLast:"Impossible de supprimer le seul profil.",confirmCard:"Supprimer cette fiche ?",confirmProfile:n=>`Supprimer « ${n} » et toutes ses fiches ?`,confirmImport:(c,i,p)=>`Remplacer ${c} entrées dans « ${p} » par ${i} du fichier ?`,errImport:"Erreur d'importation.",shareTitle:"Partager via appareil",sendInstr:"Cliquez sur « Générer un code » pour obtenir un code de connexion. Gardez cette fenêtre ouverte jusqu'à la fin du transfert.",genCode:"🔑 Générer un code",waitMsg:"⏳ En attente de connexion…",sendOk:"✅ Profil envoyé !",recvInstr:"Entrez le code affiché sur l'autre appareil. ⚠️ Peut ne pas fonctionner sur les réseaux d'entreprise ou très sécurisés.",connectBtn:"🔗 Connecter",connecting:"⏳ Connexion…",p2pSendErr:"❌ Erreur de connexion.",p2pShort:"Le code doit comporter au moins 4 caractères.",p2pTimeout:"Délai dépassé — vérifiez le code.",p2pDataErr:"Erreur lors du traitement du profil.",p2pFail:"Connexion échouée. Le code est-il correct ?",p2pNotFound:"Appareil introuvable.",p2pRecvOk:n=>`✅ Profil « ${n} » importé !`,defaultProfile:"Profil importé",errQuota:"Stockage plein — supprimez des fiches ou des profils.",modeSend:"Envoyer",modeRecv:"Recevoir",theme:"Thème",editMode:"Éditer",editModeExit:"Terminer",resetSize:"Réinitialiser taille/position",cardColor:"Couleur",dragHandle:"Déplacer librement"}};
+const TR={en:{newCard:"New card",export:"Export",exportAll:"Export all",import:"Import",importMulti:(n,t)=>`Import ${n} profile(s) from ${t} file(s)?`,importDone:(n)=>`✅ ${n} profile(s) imported.`,importPartial:(ok,fail)=>`✅ ${ok} imported, ⚠️ ${fail} failed.`,share:"Share",settings:"Settings",newProfile:"New profile",profiles:"Profiles",searchPh:"Search... (use / for all profiles)",emptyTitle:"No cards yet",emptySub:"Click '+ New card' to get started.",noResultTitle:"No results",noResultSub:"Try different keywords.",pin:"Pin",unpin:"Unpin",edit:"Edit",copy:"Copy",copied:"Copied!",resultsN:n=>n===1?"1 result":`${n} results`,allCards:n=>n===1?"1 card":`${n} cards`,newCardTitle:"New card",editCardTitle:"Edit card",edPh:"💡 Write your new card here...",save:"✅ Save",modify:"✅ Modify",delete:"🗑️ Delete",cancel:"Cancel",create:"✅ Create",newProfileTitle:"New profile",profilePh:"Profile name (e.g. Work, Personal…)",welcomeTitle:"Welcome! Create your first profile",firstProfilePh:"Your profile name (e.g. Personal, Work…)",settingsTitle:"Settings",general:"General",statistics:"Statistics",language:"Language",totalCards:"Total cards",errEmpty:"Please enter some content.",errProfileEmpty:"Please enter a profile name.",errDuplicate:n=>`"${n}" already exists.`,errLast:"Can't delete the only profile.",confirmCard:"Delete this card?",confirmProfile:n=>`Delete "${n}" and all its cards?`,confirmImport:(c,i,p)=>`Replace ${c} entries in "${p}" with ${i} from file?`,errImport:"Import failed.",shareTitle:"Share via device",sendInstr:'Click "Generate code" to get a connection code. Keep this window open until the transfer is complete.',genCode:"🔑 Generate code",waitMsg:"⏳ Waiting for connection…",sendOk:"✅ Profile sent!",recvInstr:"Enter the code shown on the other device. ⚠️ May not work on corporate or heavily restricted networks.",connectBtn:"🔗 Connect",connecting:"⏳ Connecting…",p2pSendErr:"❌ Connection error. Try again.",p2pShort:"Code must be at least 4 characters.",p2pTimeout:"Timed out — check the code and retry.",p2pDataErr:"Error processing received profile.",p2pFail:"Connection failed. Is the code correct?",p2pNotFound:"Device not found. Make sure it's waiting.",p2pRecvOk:n=>`✅ Profile "${n}" imported!`,defaultProfile:"Imported profile",errQuota:"Storage full — delete some cards or profiles.",modeSend:"Send",modeRecv:"Receive",theme:"Theme",editMode:"Edit",editModeExit:"Done",resetSize:"Reset size & position",resetAllSizes:"Reset all sizes",cardColor:"Color",dragHandle:"Drag to position freely"},fr:{newCard:"Nouvelle fiche",export:"Exporter",exportAll:"Tout exporter",import:"Importer",importMulti:(n,t)=>`Importer ${n} profil(s) depuis ${t} fichier(s) ?`,importDone:(n)=>`✅ ${n} profil(s) importé(s).`,importPartial:(ok,fail)=>`✅ ${ok} importé(s), ⚠️ ${fail} échec(s).`,share:"Partager",settings:"Paramètres",newProfile:"Nouveau profil",profiles:"Profils",searchPh:"Rechercher… (« / » pour tous les profils)",emptyTitle:"Aucune fiche",emptySub:"Cliquez sur '+ Nouvelle fiche' pour commencer.",noResultTitle:"Aucun résultat",noResultSub:"Essayez d'autres mots-clés.",pin:"Épingler",unpin:"Désépingler",edit:"Modifier",copy:"Copier",copied:"Copié !",resultsN:n=>n===1?"1 résultat":`${n} résultats`,allCards:n=>n===1?"1 fiche":`${n} fiches`,newCardTitle:"Nouvelle fiche",editCardTitle:"Modifier la fiche",edPh:"💡 Écrivez votre nouvelle fiche ici…",save:"✅ Sauvegarder",modify:"✅ Modifier",delete:"🗑️ Supprimer",cancel:"Annuler",create:"✅ Créer",newProfileTitle:"Nouveau profil",profilePh:"Nom du profil (ex : Travail, Personnel…)",welcomeTitle:"Bienvenue ! Créez votre premier profil",firstProfilePh:"Nom de votre profil (ex : Personnel, Travail…)",settingsTitle:"Paramètres",general:"Général",statistics:"Statistiques",language:"Langue",totalCards:"Total fiches",errEmpty:"Veuillez entrer du contenu.",errProfileEmpty:"Veuillez entrer un nom de profil.",errDuplicate:n=>`« ${n} » existe déjà.`,errLast:"Impossible de supprimer le seul profil.",confirmCard:"Supprimer cette fiche ?",confirmProfile:n=>`Supprimer « ${n} » et toutes ses fiches ?`,confirmImport:(c,i,p)=>`Remplacer ${c} entrées dans « ${p} » par ${i} du fichier ?`,errImport:"Erreur d'importation.",shareTitle:"Partager via appareil",sendInstr:"Cliquez sur « Générer un code » pour obtenir un code de connexion. Gardez cette fenêtre ouverte jusqu'à la fin du transfert.",genCode:"🔑 Générer un code",waitMsg:"⏳ En attente de connexion…",sendOk:"✅ Profil envoyé !",recvInstr:"Entrez le code affiché sur l'autre appareil. ⚠️ Peut ne pas fonctionner sur les réseaux d'entreprise ou très sécurisés.",connectBtn:"🔗 Connecter",connecting:"⏳ Connexion…",p2pSendErr:"❌ Erreur de connexion.",p2pShort:"Le code doit comporter au moins 4 caractères.",p2pTimeout:"Délai dépassé — vérifiez le code.",p2pDataErr:"Erreur lors du traitement du profil.",p2pFail:"Connexion échouée. Le code est-il correct ?",p2pNotFound:"Appareil introuvable.",p2pRecvOk:n=>`✅ Profil « ${n} » importé !`,defaultProfile:"Profil importé",errQuota:"Stockage plein — supprimez des fiches ou des profils.",modeSend:"Envoyer",modeRecv:"Recevoir",theme:"Thème",editMode:"Éditer",editModeExit:"Terminer",resetSize:"Réinitialiser taille/position",resetAllSizes:"Réinitialiser toutes les tailles",cardColor:"Couleur",dragHandle:"Déplacer librement"}};
 let lang='en';
 const t=(k,...a)=>{const v=TR[lang]?.[k]??TR.en[k];return typeof v==='function'?v(...a):v??k;};
 
@@ -1778,6 +1763,14 @@ const addClass=(el,...c)=>el.classList.add(...c);
 const remClass=(el,...c)=>el.classList.remove(...c);
 const toggleClass=(el,c,v)=>el.classList.toggle(c,v);
 const isRich=s=>/<[a-z][\s\S]*>/i.test(s);
+function isImageOnly(ct){
+  if(!isRich(ct))return false;
+  const tmp=document.createElement('div');
+  tmp.innerHTML=ct;
+  if(tmp.querySelectorAll('img').length!==1)return false;
+  tmp.querySelectorAll('img').forEach(i=>i.remove());
+  return tmp.textContent.trim()===''&&tmp.querySelector('video,audio,iframe')==null;
+}
 const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const fmtDate=ts=>{if(!ts)return'';const d=new Date(ts);return`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;};
 
@@ -2063,8 +2056,6 @@ async function init(){
           const o={content:e.content||'',isPinned:!!e.isPinned,createdAt:e.createdAt||Date.now()};
           if(typeof e.w==='number'&&e.w>0)o.w=e.w;
           if(typeof e.h==='number'&&e.h>0)o.h=e.h;
-          if(typeof e.x==='number')o.x=e.x;
-          if(typeof e.y==='number')o.y=e.y;
           if(typeof e.color==='string'&&e.color)o.color=e.color;
           return o;
         }).filter(Boolean);
@@ -2082,14 +2073,7 @@ async function init(){
 /* ════════════════════════════════════════════════════════
    RENDER CARDS
 ════════════════════════════════════════════════════════ */
-function updateCanvasHeight(){
-  const res=$('results');
-  let maxBottom=0;
-  res.querySelectorAll('.card[data-positioned="1"]').forEach(c=>{
-    maxBottom=Math.max(maxBottom,c.offsetTop+c.offsetHeight);
-  });
-  res.style.minHeight=maxBottom>0?(maxBottom+60)+'px':'';
-}
+function updateCanvasHeight(){$('results').style.minHeight='';}
 
 // Pre-compute lowercased plain-text version of an entry's content, lazily.
 // Cached directly on the entry object (non-enumerable so it doesn't get persisted).
@@ -2159,7 +2143,8 @@ function render(filter=''){
     const isExternal=isGlobal&&profileId!==currentPid;
     const card=document.createElement('div');
     const colorClass=entry.color?' color-'+entry.color:'';
-    card.className='card'+(entry.isPinned?' pinned':'')+colorClass;
+    const imgOnly=isImageOnly(ct);
+    card.className='card'+(entry.isPinned?' pinned':'')+colorClass+(imgOnly?' img-only':'');
     // Skip animation in global mode for performance (a lot of cards = a lot of paints)
     if(!isGlobal)card.style.animationDelay=`${n*.025}s`;
     else card.style.animation='none';
@@ -2172,14 +2157,10 @@ function render(filter=''){
       if(entry.w)card.style.width=entry.w+'px';
       if(entry.h)card.style.height=entry.h+'px';
     }
-    // Apply free position only for cards from the current profile
-    const hasPos=(typeof entry.x==='number')&&(typeof entry.y==='number');
-    if(hasPos&&!isExternal){card.dataset.positioned='1';card.style.left=entry.x+'px';card.style.top=entry.y+'px';}
     // Profile badge HTML (only when global search is active)
     const profName=(profiles[profileId]&&profiles[profileId].name)||profileId;
     const badgeHtml=isGlobal?`<span class="profile-badge" title="${esc(profName)}">${esc(profName)}</span>`:'';
     card.innerHTML=`<div class="card-pin-label">📌 Pinned</div>
-    <div class="card-drag-handle" data-r="drag" title="${t('dragHandle')}"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></div>
     <button class="card-reset-size" data-r="reset-size" title="${t('resetSize')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 3 3 9 9 9"/></svg></button>
     <div class="card-body rich-content${isRich(ct)?'':' plain-text'}">${processContent(ct,terms)}</div><div class="card-footer"><div class="card-footer-left">${badgeHtml}<span class="card-date">${fmtDate(entry.createdAt)}</span></div><div class="card-actions">
     <button class="card-btn${entry.isPinned?' pin-on':''}" data-r="pin" title="${entry.isPinned?t('unpin'):t('pin')}"><svg viewBox="0 0 24 24" fill="${entry.isPinned?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg></button>
@@ -2189,17 +2170,6 @@ function render(filter=''){
     <div class="card-resize-handle rh-r" data-r="resize-r"></div>
     <div class="card-resize-handle rh-b" data-r="resize-b"></div>
     <div class="card-resize-handle rh-br" data-r="resize-br"></div>`;
-    card.querySelector('[data-r="pin"]').addEventListener('click',ev=>{ev.stopPropagation();togglePinAt(profileId,indexInProfile);});
-    card.querySelector('[data-r="copy"]').addEventListener('click',ev=>{ev.stopPropagation();copyCard(entry,card);});
-    card.querySelector('[data-r="edit"]').addEventListener('click',ev=>{ev.stopPropagation();editCardAt(profileId,indexInProfile);});
-    if(!isExternal){
-      // Drag/resize/reset only make sense on the current profile in local layout
-      card.querySelector('[data-r="reset-size"]').addEventListener('click',ev=>{ev.stopPropagation();resetCardSize(indexInProfile);});
-      card.querySelector('[data-r="resize-r"]').addEventListener('pointerdown',ev=>startResize(ev,card,indexInProfile,'w'));
-      card.querySelector('[data-r="resize-b"]').addEventListener('pointerdown',ev=>startResize(ev,card,indexInProfile,'h'));
-      card.querySelector('[data-r="resize-br"]').addEventListener('pointerdown',ev=>startResize(ev,card,indexInProfile,'wh'));
-      wireDragHandle(card,indexInProfile);
-    }
     frag.appendChild(card);
   }
   // Single DOM swap — much faster than appending one by one.
@@ -2252,8 +2222,31 @@ function editCardAt(profileId,idx){
 function togglePin(idx){if(!$('addModal').classList.contains('off'))return;entries[idx].isPinned=!entries[idx].isPinned;entries.sort((a,b)=>(b.isPinned?1:0)-(a.isPinned?1:0));profiles[currentPid].entries=entries;persist();renderSidebar();render($('search').value);}
 
 function copyCard(entry,card){
-  let txt=entry.content;if(isRich(entry.content)){const t=document.createElement('div');t.innerHTML=entry.content;txt=t.innerText;}
-  navigator.clipboard.writeText(txt).then(()=>{const btn=card.querySelector('[data-r="copy"]');btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`;btn.classList.add('copied');setTimeout(()=>{btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;btn.classList.remove('copied');},1500);});
+  const tmp=document.createElement('div');
+  tmp.innerHTML=entry.content||'';
+  const plain=tmp.innerText;
+  const html=isRich(entry.content)?entry.content:'';
+
+  const showOk=()=>{
+    const btn=card.querySelector('[data-r="copy"]');
+    if(!btn)return;
+    btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    btn.classList.add('copied');
+    setTimeout(()=>{
+      btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+      btn.classList.remove('copied');
+    },1500);
+  };
+
+  // Copy both HTML (preserves formatting) and plain text fallback
+  if(html&&navigator.clipboard.write){
+    navigator.clipboard.write([new ClipboardItem({
+      'text/html':new Blob([html],{type:'text/html'}),
+      'text/plain':new Blob([plain],{type:'text/plain'}),
+    })]).then(showOk).catch(()=>navigator.clipboard.writeText(plain).then(showOk));
+  }else{
+    navigator.clipboard.writeText(plain).then(showOk);
+  }
 }
 
 /* ════════════════════════════════════════════════════════
@@ -2261,10 +2254,20 @@ function copyCard(entry,card){
 ════════════════════════════════════════════════════════ */
 function toggleEditMode(){
   editMode=!editMode;
-  const btn=$('editModeBtn'),lbl=$('lbl-editmode'),res=$('results'),plist=$('profileList');
-  if(editMode){btn.classList.add('active');res.classList.add('edit-mode');plist.classList.add('edit-mode');if(lbl)lbl.textContent=t('editModeExit');}
-  else{btn.classList.remove('active');res.classList.remove('edit-mode');plist.classList.remove('edit-mode');if(lbl)lbl.textContent=t('editMode');}
-  // No re-render: just toggle the class. All cards & handles already exist in the DOM.
+  const btn=$('editModeBtn'),lbl=$('lbl-editmode'),res=$('results'),plist=$('profileList'),rab=$('resetAllSizesBtn');
+  if(editMode){
+    btn.classList.add('active');
+    res.classList.add('edit-mode');
+    plist.classList.add('edit-mode');
+    if(lbl)lbl.textContent=t('editModeExit');
+    remClass(rab,'off');
+  }else{
+    btn.classList.remove('active');
+    res.classList.remove('edit-mode');
+    plist.classList.remove('edit-mode');
+    if(lbl)lbl.textContent=t('editMode');
+    addClass(rab,'off');
+  }
 }
 
 function startProfileDrag(ev,pid,row){
@@ -2307,18 +2310,25 @@ function reorderProfiles(draggedPid,targetPid,insertBefore){
 function resetCardSize(idx){
   const e=entries[idx];if(!e)return;
   delete e.w;delete e.h;
-  delete e.x;delete e.y;
   profiles[currentPid].entries=entries;persist();
   const card=document.querySelector(`#results .card[data-idx="${idx}"]`);
-  if(card){card.style.width='';card.style.height='';card.style.left='';card.style.top='';card.removeAttribute('data-sized');card.removeAttribute('data-positioned');}
-  updateCanvasHeight();
+  if(card){card.style.width='';card.style.height='';card.removeAttribute('data-sized');}
+}
+
+function resetAllCardSizes(){
+  let changed=false;
+  entries.forEach(e=>{if(e.w||e.h){delete e.w;delete e.h;changed=true;}});
+  if(!changed)return;
+  profiles[currentPid].entries=entries;persist();
+  document.querySelectorAll('#results .card').forEach(card=>{
+    card.style.width='';card.style.height='';card.removeAttribute('data-sized');
+  });
 }
 
 function startResize(ev,card,idx,axis){
   if(!editMode)return;
   ev.preventDefault();ev.stopPropagation();
   const entry=entries[idx];if(!entry)return;
-  const wasPositioned=card.dataset.positioned==='1';
   const rect=card.getBoundingClientRect();
   const parent=card.parentElement;
   const parentRect=parent.getBoundingClientRect();
@@ -2326,24 +2336,16 @@ function startResize(ev,card,idx,axis){
   const startW=rect.width,startH=rect.height;
   const MIN_W=180,MIN_H=120,MAX_W=1200,MAX_H=1600;
 
-  // For flex cards: insert a placeholder to keep the slot while the card is lifted out.
-  // For already-positioned (absolute) cards: skip the placeholder (they're already out of flow).
-  let placeholder=null;
-  if(!wasPositioned){
-    placeholder=document.createElement('div');
-    placeholder.style.width=startW+'px';
-    placeholder.style.height=startH+'px';
-    placeholder.style.flex='0 0 auto';
-    placeholder.style.visibility='hidden';
-    placeholder.className='card-placeholder';
-    card.parentNode.insertBefore(placeholder,card);
-  }
+  const placeholder=document.createElement('div');
+  placeholder.style.width=startW+'px';
+  placeholder.style.height=startH+'px';
+  placeholder.style.flex='0 0 auto';
+  placeholder.style.visibility='hidden';
+  placeholder.className='card-placeholder';
+  card.parentNode.insertBefore(placeholder,card);
 
-  // Pin the card where it currently is, using absolute positioning within the container.
-  // Its real width/height will actually change during drag → content stays crisp, no distortion.
   const topInParent=rect.top-parentRect.top+parent.scrollTop;
   const leftInParent=rect.left-parentRect.left+parent.scrollLeft;
-  // Parent needs to be a positioning context
   const prevParentPosition=parent.style.position;
   if(getComputedStyle(parent).position==='static')parent.style.position='relative';
 
@@ -2386,15 +2388,12 @@ function startResize(ev,card,idx,axis){
     document.removeEventListener('pointercancel',onUp);
     if(handle.releasePointerCapture&&ev.pointerId!=null){try{handle.releasePointerCapture(ev.pointerId);}catch(_){}}
 
-    // STEP 2: restore the card to its layout state after resizing.
     card.style.position='';
-    // For positioned cards, keep left/top; for flex cards, clear them.
-    if(wasPositioned){card.style.top=entry.y+'px';card.style.left=entry.x+'px';}
-    else{card.style.top='';card.style.left='';}
+    card.style.top='';
+    card.style.left='';
     card.style.margin='';
-    // width/height are kept (they're the new size to persist)
-    if(!wasPositioned&&placeholder&&placeholder.parentNode)placeholder.parentNode.removeChild(placeholder);
-    if(!wasPositioned&&parent.style.position!==prevParentPosition)parent.style.position=prevParentPosition;
+    if(placeholder&&placeholder.parentNode)placeholder.parentNode.removeChild(placeholder);
+    if(parent.style.position!==prevParentPosition)parent.style.position=prevParentPosition;
 
     card.classList.remove('resizing');
     document.body.classList.remove('resizing-card','resizing-w','resizing-h');
@@ -2410,21 +2409,11 @@ function startResize(ev,card,idx,axis){
 }
 
 /* ════════════════════════════════════════════════════════
-   EDIT MODE — FREE DRAG TO POSITION CARDS
-   - Activated by the 6-dot grip handle (edit mode only)
-   - Drops the card at any x/y in the results canvas (position: absolute)
-   - On release: saves entry.x / entry.y, locks current width (entry.w)
-   - Reset button clears x/y/w/h and returns card to flex flow
-   - pointermove throttled to one rAF update per frame for smooth 60fps
+   EDIT MODE — DRAG TO REORDER CARDS
+   O(1) drag target via elementFromPoint.
+   Drop reorders the DOM directly — no full re-render.
 ════════════════════════════════════════════════════════ */
 const _drag={active:false};
-
-function wireDragHandle(card,idx){
-  const handle=card.querySelector('[data-r="drag"]');
-  if(!handle)return;
-  handle.addEventListener('pointerdown',ev=>startCardDrag(ev,card,idx));
-  handle.addEventListener('click',e=>{e.stopPropagation();e.preventDefault();});
-}
 
 function startCardDrag(ev,card,idx){
   if(!editMode)return;
@@ -2434,67 +2423,102 @@ function startCardDrag(ev,card,idx){
   const container=$('results');
   const srcEntry=entries[idx];if(!srcEntry)return;
 
-  // Snapshot starting geometry
-  const rect=card.getBoundingClientRect();
-  const offsetX=ev.clientX-rect.left;
-  const offsetY=ev.clientY-rect.top;
+  const startX=ev.clientX,startY=ev.clientY;
+  const THRESHOLD=6; // px before drag commits
+  let committed=false,placeholder=null;
+  let offsetX=0,offsetY=0,startW=0,startH=0;
+  let pendingX=startX,pendingY=startY,rafId=0;
+  let lastTargetEl=null,lastIsAfter=null;
 
-  // Lift the card to a fixed overlay (follows the cursor)
-  card.classList.add('dragging');
-  card.style.width=rect.width+'px';
-  card.style.height=rect.height+'px';
-  card.style.left=rect.left+'px';
-  card.style.top=rect.top+'px';
-  document.body.appendChild(card);
-  document.body.classList.add('dragging-card');
-  _drag.active=true;
+  const commit=()=>{
+    committed=true;
+    const rect=card.getBoundingClientRect();
+    offsetX=pendingX-rect.left; offsetY=pendingY-rect.top;
+    startW=rect.width; startH=rect.height;
+    placeholder=document.createElement('div');
+    placeholder.className='card-drop-placeholder';
+    placeholder.style.width=startW+'px';
+    placeholder.style.height=startH+'px';
+    placeholder.style.flexShrink='0';
+    card.parentNode.insertBefore(placeholder,card);
+    card.style.width=startW+'px'; card.style.height=startH+'px';
+    card.style.left=(pendingX-offsetX)+'px'; card.style.top=(pendingY-offsetY)+'px';
+    // Animate the lift, then kill transition so position follows pointer instantly
+    card.style.transition='transform .2s cubic-bezier(.34,1.4,.64,1),box-shadow .2s ease,opacity .15s ease';
+    card.classList.add('dragging');
+    document.body.appendChild(card);
+    document.body.classList.add('dragging-card');
+    container.classList.add('dragging-active');
+    _drag.active=true;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      if(card.classList.contains('dragging'))card.style.transition='none';
+    }));
+  };
 
-  let pendingX=ev.clientX,pendingY=ev.clientY,rafId=0;
+  const movePlaceholder=()=>{
+    if(!placeholder)return;
+    const el=document.elementFromPoint(pendingX,pendingY);
+    const target=el&&el.closest&&el.closest('.card:not(.dragging)');
+    if(target&&container.contains(target)){
+      const r=target.getBoundingClientRect();
+      const isAfter=pendingY>r.top+r.height/2||
+        (Math.abs(pendingY-(r.top+r.height/2))<6&&pendingX>r.left+r.width/2);
+      if(target!==lastTargetEl||isAfter!==lastIsAfter){
+        lastTargetEl=target;lastIsAfter=isAfter;
+        container.insertBefore(placeholder,isAfter?target.nextSibling:target);
+      }
+    }
+  };
+
   const tick=()=>{
     rafId=0;
+    if(!committed){
+      const dx=pendingX-startX,dy=pendingY-startY;
+      if(Math.sqrt(dx*dx+dy*dy)>THRESHOLD)commit();
+      else return;
+    }
     card.style.left=(pendingX-offsetX)+'px';
     card.style.top=(pendingY-offsetY)+'px';
-    const SCROLL_ZONE=60,SCROLL_SPEED=14,vh=window.innerHeight;
-    if(pendingY<SCROLL_ZONE)window.scrollBy(0,-SCROLL_SPEED);
-    else if(pendingY>vh-SCROLL_ZONE)window.scrollBy(0,SCROLL_SPEED);
+    movePlaceholder();
+    const SZ=64,SP=16,vh=window.innerHeight;
+    if(pendingY<SZ)window.scrollBy(0,-SP);
+    else if(pendingY>vh-SZ)window.scrollBy(0,SP);
   };
-  const onMove=e=>{
-    pendingX=e.clientX;pendingY=e.clientY;
-    if(!rafId)rafId=requestAnimationFrame(tick);
-  };
+
+  const onMove=e=>{pendingX=e.clientX;pendingY=e.clientY;if(!rafId)rafId=requestAnimationFrame(tick);};
 
   const onUp=()=>{
     if(rafId){cancelAnimationFrame(rafId);rafId=0;}
     document.removeEventListener('pointermove',onMove);
     document.removeEventListener('pointerup',onUp);
     document.removeEventListener('pointercancel',onUp);
+    if(!committed)return; // simple click, no drag
     document.body.classList.remove('dragging-card');
+    container.classList.remove('dragging-active');
     _drag.active=false;
-
-    // Compute final position relative to the results container
-    const cRect=container.getBoundingClientRect();
-    const x=Math.round(Math.max(0,(pendingX-offsetX)-cRect.left+container.scrollLeft));
-    const y=Math.round(Math.max(0,(pendingY-offsetY)-cRect.top+container.scrollTop));
-
-    // Return card to DOM before re-render
     card.classList.remove('dragging');
     card.style.cssText='';
-    if(card.parentNode===document.body)document.body.removeChild(card);
-
-    // Save free position (and lock current width so the card doesn't lose its flex size)
-    srcEntry.x=x;srcEntry.y=y;
-    if(!srcEntry.w)srcEntry.w=Math.round(rect.width);
+    if(srcEntry.w)card.style.width=srcEntry.w+'px';
+    if(srcEntry.h)card.style.height=srcEntry.h+'px';
+    if(srcEntry.w||srcEntry.h)card.dataset.sized='1';
+    container.insertBefore(card,placeholder);
+    placeholder.remove();
+    const newEntries=[];
+    for(const child of container.children){
+      if(!child.classList.contains('card'))continue;
+      const ci=parseInt(child.dataset.idx);
+      newEntries.push(isNaN(ci)?srcEntry:entries[ci]);
+    }
+    if(!newEntries.includes(srcEntry))newEntries.push(srcEntry);
+    let i=0;
+    for(const child of container.children){if(child.classList.contains('card'))child.dataset.idx=i++;}
+    if(newEntries.length===entries.length){entries.length=0;newEntries.forEach(e=>entries.push(e));}
     profiles[currentPid].entries=entries;persist();
-    render($('search').value);
   };
 
   document.addEventListener('pointermove',onMove,{passive:true});
   document.addEventListener('pointerup',onUp);
   document.addEventListener('pointercancel',onUp);
-
-  // First frame: place the floating card under the cursor
-  card.style.left=(ev.clientX-offsetX)+'px';
-  card.style.top=(ev.clientY-offsetY)+'px';
 }
 
 /* ════════════════════════════════════════════════════════
@@ -2526,7 +2550,7 @@ function editCard(idx){
 function applyTr(){
   const s=(id,k)=>{const el=$(id);if(el)el.textContent=t(k);};
   s('lbl-newcard','newCard');s('lbl-export','export');s('lbl-export-all','exportAll');s('lbl-import','import');s('lbl-share','share');s('lbl-settings','settings');s('lbl-np','newProfile');s('lbl-profiles','profiles');s('lbl-theme','theme');s('lbl-send','modeSend');s('lbl-recv','modeRecv');s('lbl-settings-title','settingsTitle');s('lbl-general','general');s('lbl-statistics','statistics');s('lbl-language','language');s('lbl-cardColor','cardColor');
-  s('lbl-editmode',editMode?'editModeExit':'editMode');
+  s('lbl-editmode',editMode?'editModeExit':'editMode');s('lbl-reset-all-sizes','resetAllSizes');
   $('search').placeholder=t('searchPh');
   $('profileModal-title').textContent=t('newProfileTitle');$('profileName').placeholder=t('profilePh');$('createProfile').textContent=t('create');$('cancelProfile2').textContent=t('cancel');
   if(editIdx<0){$('addModal-title').textContent='✏️ '+t('newCardTitle');$('newEntry').dataset.ph=t('edPh');$('saveEntry').textContent=t('save');}
@@ -2609,6 +2633,7 @@ $('search').addEventListener('input',e=>{
 // Add card
 $('addBtn').addEventListener('click',()=>{resetCardModal();openCardModal();});
 $('editModeBtn').addEventListener('click',toggleEditMode);
+$('resetAllSizesBtn').addEventListener('click',resetAllCardSizes);
 $('cancelEntry').addEventListener('click',closeCardModal);
 $('cancelEntry2').addEventListener('click',closeCardModal);
 $('saveEntry').addEventListener('click',()=>{
@@ -2626,8 +2651,17 @@ $('saveEntry').addEventListener('click',()=>{
     entries.push(o);
     entries.sort((a,b)=>(b.isPinned?1:0)-(a.isPinned?1:0));
   }
+  const isNew=editIdx<0;
   profiles[currentPid].entries=entries;persist();render($('search').value);renderSidebar();closeCardModal();
-  setTimeout(()=>$('search').focus(),100);
+  if(isNew){
+    // Scroll to reveal the newly created card (always last in the list)
+    setTimeout(()=>{
+      const cards=document.querySelectorAll('#results .card');
+      if(cards.length)cards[cards.length-1].scrollIntoView({behavior:'smooth',block:'nearest'});
+    },60);
+  }else{
+    setTimeout(()=>$('search').focus(),100);
+  }
 });
 $('deleteEntry').addEventListener('click',()=>{if(editIdx<0)return;if(!confirm(t('confirmCard')))return;entries.splice(editIdx,1);profiles[currentPid].entries=entries;persist();renderSidebar();closeCardModal();render($('search').value);});
 
@@ -2643,8 +2677,6 @@ $('exportBtn').addEventListener('click',()=>{
     const o={content:e.content,isPinned:e.isPinned||false,createdAt:e.createdAt};
     if(typeof e.w==='number'&&e.w>0)o.w=e.w;
     if(typeof e.h==='number'&&e.h>0)o.h=e.h;
-    if(typeof e.x==='number')o.x=e.x;
-    if(typeof e.y==='number')o.y=e.y;
     if(typeof e.color==='string'&&e.color)o.color=e.color;
     return o;
   })};
@@ -2663,8 +2695,6 @@ $('exportAllBtn').addEventListener('click',()=>{
         const o={content:e.content,isPinned:e.isPinned||false,createdAt:e.createdAt};
         if(typeof e.w==='number'&&e.w>0)o.w=e.w;
         if(typeof e.h==='number'&&e.h>0)o.h=e.h;
-        if(typeof e.x==='number')o.x=e.x;
-        if(typeof e.y==='number')o.y=e.y;
         if(typeof e.color==='string'&&e.color)o.color=e.color;
         return o;
       })};
@@ -2692,8 +2722,6 @@ $('importFile').addEventListener('change',async e=>{
     const o={content:x.content||'',isPinned:x.isPinned||false,createdAt:x.createdAt||now+i};
     if(typeof x.w==='number'&&x.w>0)o.w=x.w;
     if(typeof x.h==='number'&&x.h>0)o.h=x.h;
-    if(typeof x.x==='number')o.x=x.x;
-    if(typeof x.y==='number')o.y=x.y;
     if(typeof x.color==='string'&&x.color)o.color=x.color;
     return o;
   };
@@ -3130,14 +3158,10 @@ document.addEventListener('keydown',e=>{
       if(sent) return; // ignorer les connexions multiples
       conn.on('open',()=>{
         if(sent) return; sent=true;
-        // Normaliser les entrées avec exactement le même format que l'export fichier
-        // (content, isPinned, createdAt, w/h/x/y/color si présents)
         const entriesOut=(profiles[currentPid].entries||[]).map(e=>{
           const o={content:e.content||'',isPinned:!!e.isPinned,createdAt:e.createdAt};
           if(typeof e.w==='number'&&e.w>0)o.w=e.w;
           if(typeof e.h==='number'&&e.h>0)o.h=e.h;
-          if(typeof e.x==='number')o.x=e.x;
-          if(typeof e.y==='number')o.y=e.y;
           if(typeof e.color==='string'&&e.color)o.color=e.color;
           return o;
         });
@@ -3191,8 +3215,6 @@ document.addEventListener('keydown',e=>{
             const o={content:e.content||'',isPinned:!!e.isPinned,createdAt:e.createdAt||now+i};
             if(typeof e.w==='number'&&e.w>0)o.w=e.w;
             if(typeof e.h==='number'&&e.h>0)o.h=e.h;
-            if(typeof e.x==='number')o.x=e.x;
-            if(typeof e.y==='number')o.y=e.y;
             if(typeof e.color==='string'&&e.color)o.color=e.color;
             return o;
           }).filter(Boolean);
@@ -3250,6 +3272,59 @@ document.addEventListener('keydown',e=>{
     e.target.setSelectionRange(s,end);
   });
   $('peerInput').addEventListener('keydown',e=>{if(e.key==='Enter')startRecv();});
+})();
+
+/* ════════════════════════════════════════════════════════
+   DELEGATED EVENT LISTENERS — set up once, handle all cards
+   (allows DOM-only reorder without re-render after drag drop)
+════════════════════════════════════════════════════════ */
+(()=>{
+  const res=$('results');
+
+  // Click: pin / copy / edit / reset-size
+  res.addEventListener('click',ev=>{
+    const btn=ev.target.closest('[data-r]');
+    if(!btn)return;
+    const r=btn.dataset.r;
+    if(r==='drag'||r==='resize-r'||r==='resize-b'||r==='resize-br')return;
+    ev.stopPropagation();
+    const card=btn.closest('.card');
+    if(!card)return;
+    const idx=parseInt(card.dataset.idx);
+    if(isNaN(idx))return;
+    const pid=card.dataset.profilePid||currentPid;
+    const pEntries=pid===currentPid?entries:(profiles[pid]?.entries||[]);
+    if(r==='pin')togglePinAt(pid,idx);
+    else if(r==='copy')copyCard(pEntries[idx],card);
+    else if(r==='edit')editCardAt(pid,idx);
+    else if(r==='reset-size')resetCardSize(idx);
+  });
+
+  // Pointerdown: drag from anywhere on card, resize handles take priority
+  res.addEventListener('pointerdown',ev=>{
+    if(!editMode)return;
+    const r_el=ev.target.closest('[data-r]');
+    const r=r_el?.dataset.r;
+    // Resize handles take priority
+    if(r==='resize-r'||r==='resize-b'||r==='resize-br'){
+      const card=r_el.closest('.card');
+      if(!card||card.dataset.profilePid)return;
+      const idx=parseInt(card.dataset.idx);
+      if(isNaN(idx))return;
+      if(r==='resize-r')startResize(ev,card,idx,'w');
+      else if(r==='resize-b')startResize(ev,card,idx,'h');
+      else startResize(ev,card,idx,'wh');
+      return;
+    }
+    // Don't drag on action buttons
+    if(r==='pin'||r==='copy'||r==='edit'||r==='reset-size')return;
+    // Drag from anywhere else on the card
+    const card=ev.target.closest('.card');
+    if(!card||card.dataset.profilePid)return;
+    const idx=parseInt(card.dataset.idx);
+    if(isNaN(idx))return;
+    startCardDrag(ev,card,idx);
+  });
 })();
 
 // Kick off
