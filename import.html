@@ -1104,6 +1104,9 @@ body.dark .p-row.active .p-row-count {
 #settingsModal { width: min(540px, calc(100vw - 24px)); padding: 0; overflow: hidden; height: min(520px, 85vh); display: flex; flex-direction: column; }
 .s-group-label { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--c-text3); margin: 0 2px 10px; }
 .s-section { background: var(--c-surf2); border: 1px solid var(--c-border); border-radius: var(--r); overflow: hidden; }
+#sprofiles-list { overflow-y: auto; }
+#sprofiles-list::-webkit-scrollbar { width: 6px; }
+#sprofiles-list::-webkit-scrollbar-thumb { background: var(--c-border2); border-radius: 4px; }
 .s-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 12px; }
 .s-row + .s-row, .s-row + .s-row-hint, .s-row-hint + .s-row { border-top: 1px solid var(--c-border); }
 .s-row-hint { font-size: 12px; color: var(--c-text3); line-height: 1.45; padding: 10px 12px; }
@@ -2570,6 +2573,8 @@ async function init(){
           if(typeof e.w==='number'&&e.w>0)o.w=e.w;
           if(typeof e.h==='number'&&e.h>0)o.h=e.h;
           if(typeof e.color==='string'&&e.color)o.color=e.color;
+          if(typeof e.x==='number')o.x=e.x;
+          if(typeof e.y==='number')o.y=e.y;
           return o;
         }).filter(Boolean);
       });
@@ -3401,11 +3406,13 @@ document.querySelectorAll('#cardColorPicker .ccp-sw').forEach(b=>{
 // Export
 $('exportBtn').addEventListener('click',async()=>{
   const name=profiles[currentPid].name;
-  const exportData={profile:name,exportedAt:new Date().toISOString(),entries:entries.map(e=>{
-    const o={content:e.content,isPinned:e.isPinned||false,createdAt:e.createdAt};
+  const exportData={profile:name,pid:currentPid,exportedAt:new Date().toISOString(),entries:entries.map(e=>{
+    const o={id:e.id,content:e.content,isPinned:e.isPinned||false,createdAt:e.createdAt};
     if(typeof e.w==='number'&&e.w>0)o.w=e.w;
     if(typeof e.h==='number'&&e.h>0)o.h=e.h;
     if(typeof e.color==='string'&&e.color)o.color=e.color;
+    if(typeof e.x==='number')o.x=e.x;
+    if(typeof e.y==='number')o.y=e.y;
     return o;
   })};
   await writeExportFile(`${name}.json`,exportData);
@@ -3413,19 +3420,21 @@ $('exportBtn').addEventListener('click',async()=>{
 
 // Export all — one JSON file per profile (same format as single Export)
 $('exportAllBtn').addEventListener('click',async()=>{
-  const list=Object.values(profiles);
+  const list=Object.entries(profiles);
   if(!list.length)return;
   const stamp=new Date().toISOString();
   const dirHandle=await getExportDirHandle();
   const useDir=!!(dirHandle&&await ensureDirPermission(dirHandle));
   let savedToDir=0;
   for(let i=0;i<list.length;i++){
-    const p=list[i];
-    const exportData={profile:p.name,exportedAt:stamp,entries:(p.entries||[]).map(e=>{
-      const o={content:e.content,isPinned:e.isPinned||false,createdAt:e.createdAt};
+    const [pid,p]=list[i];
+    const exportData={profile:p.name,pid:pid,exportedAt:stamp,entries:(p.entries||[]).map(e=>{
+      const o={id:e.id,content:e.content,isPinned:e.isPinned||false,createdAt:e.createdAt};
       if(typeof e.w==='number'&&e.w>0)o.w=e.w;
       if(typeof e.h==='number'&&e.h>0)o.h=e.h;
       if(typeof e.color==='string'&&e.color)o.color=e.color;
+      if(typeof e.x==='number')o.x=e.x;
+      if(typeof e.y==='number')o.y=e.y;
       return o;
     })};
     if(await writeExportFile(`${p.name}.json`,exportData,{silent:true}))savedToDir++;
@@ -3452,6 +3461,8 @@ $('importFile').addEventListener('change',async e=>{
     if(typeof x.w==='number'&&x.w>0)o.w=x.w;
     if(typeof x.h==='number'&&x.h>0)o.h=x.h;
     if(typeof x.color==='string'&&x.color)o.color=x.color;
+    if(typeof x.x==='number')o.x=x.x;
+    if(typeof x.y==='number')o.y=x.y;
     return o;
   };
   // Find an existing profile id by case-insensitive name match
@@ -3474,6 +3485,7 @@ $('importFile').addEventListener('change',async e=>{
     if(parsed&&Array.isArray(parsed.entries)){
       return [{
         name:(parsed.profile||baseName).toString().slice(0,60),
+        oldPid:typeof parsed.pid==='string'?parsed.pid:null,
         entries:parsed.entries.map(normalizeEntry).filter(Boolean)
       }];
     }
@@ -3498,17 +3510,36 @@ $('importFile').addEventListener('change',async e=>{
 
   // Apply each candidate: replace if name exists, else create
   const replaced=[],created=[];let lastPid=currentPid;
+  // Map each candidate's old (exported) pid → its final pid in this app, so
+  // "!"-mention links (which embed data-pid="<old pid>") can be remapped below.
+  const pidMap={};
   for(const c of candidates){
     const existingPid=findPidByName(c.name);
     if(existingPid){
       profiles[existingPid].entries=c.entries;
       lastPid=existingPid;
       replaced.push(c.name);
+      if(c.oldPid)pidMap[c.oldPid]=existingPid;
     }else{
       const pid=makePid(c.name);
       profiles[pid]={name:c.name,entries:c.entries};
       lastPid=pid;
       created.push(c.name);
+      if(c.oldPid)pidMap[c.oldPid]=pid;
+    }
+  }
+  // Rewrite "!"-mention links that pointed at a re-mapped profile pid.
+  const pidEntries=Object.entries(pidMap).filter(([oldPid,newPid])=>oldPid!==newPid);
+  if(pidEntries.length){
+    for(const c of candidates){
+      for(const en of c.entries){
+        if(!en.content||en.content.indexOf('data-pid=')<0)continue;
+        let ct=en.content;
+        for(const [oldPid,newPid] of pidEntries){
+          ct=ct.split(`data-pid="${oldPid}"`).join(`data-pid="${newPid}"`);
+        }
+        en.content=ct;
+      }
     }
   }
   persist();
@@ -4111,6 +4142,8 @@ document.addEventListener('keydown',e=>{
             if(typeof e.w==='number'&&e.w>0)o.w=e.w;
             if(typeof e.h==='number'&&e.h>0)o.h=e.h;
             if(typeof e.color==='string'&&e.color)o.color=e.color;
+            if(typeof e.x==='number')o.x=e.x;
+            if(typeof e.y==='number')o.y=e.y;
             return o;
           }).filter(Boolean);
           const ex=Object.values(profiles).map(p=>p.name.toLowerCase());
