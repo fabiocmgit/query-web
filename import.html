@@ -842,6 +842,32 @@ body.dark .card.canvas-dragging {
   box-shadow: 0 28px 56px rgba(0,0,0,.58), 0 8px 18px rgba(0,0,0,.38) !important;
 }
 
+/* ── Filter-active: suspend canvas positioning, show compact flow layout ── */
+#results.canvas-mode.filter-active {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+  align-items: flex-start !important;
+  align-content: flex-start !important;
+  min-height: 0 !important;
+  position: static !important;
+}
+#results.canvas-mode.filter-active > .card {
+  position: static !important;
+  left: auto !important;
+  top: auto !important;
+  z-index: auto !important;
+  margin: 0 !important;
+  flex: 1 1 280px;
+  min-width: 260px;
+  max-width: 420px;
+}
+#results.canvas-mode.filter-active > .card[data-sized="1"] {
+  flex: 0 0 auto !important;
+  max-width: none !important;
+}
+#results.canvas-mode.filter-active.edit-mode::before { display: none !important; }
+
 
 /* Empty states */
 .empty-state {
@@ -2620,7 +2646,7 @@ function isCanvasActive(){ return $('results').classList.contains('canvas-mode')
 
 function updateCanvasHeight(){
   const c=$('results');
-  if(!isCanvasActive()){c.style.minHeight='';return;}
+  if(!isCanvasActive()||c.classList.contains('filter-active')){c.style.minHeight='';return;}
   let maxY=520;
   c.querySelectorAll('.card').forEach(cd=>{
     const t=parseFloat(cd.style.top)||0;
@@ -2656,6 +2682,10 @@ function render(filter=''){
   const isGlobal=parsed.globalSearch;
   const terms=parsed.terms;
   const hasFilter=terms.length>0;
+
+  // Suspend canvas absolute positioning when a filter is active
+  if(hasFilter&&!isGlobal)res.classList.add('filter-active');
+  else res.classList.remove('filter-active');
 
   // Build the entry pool: current profile only, or all profiles if "/" prefix
   let pool;
@@ -2711,8 +2741,8 @@ function render(filter=''){
       if(entry.w)card.style.width=entry.w+'px';
       if(entry.h)card.style.height=entry.h+'px';
     }
-    // Apply canvas position if canvas mode is active (persists outside edit mode too)
-    if(isCanvasActive()&&typeof entry.x==='number'&&typeof entry.y==='number'){
+    // Apply canvas position if canvas mode is active and no filter is distorting layout
+    if(isCanvasActive()&&!hasFilter&&typeof entry.x==='number'&&typeof entry.y==='number'){
       card.style.left=entry.x+'px';
       card.style.top=entry.y+'px';
     }
@@ -2749,7 +2779,7 @@ function render(filter=''){
   if(totalMatched===0&&hasFilter)res.innerHTML=`<div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-title">${t('noResultTitle')}</div><div class="empty-state-sub">${t('noResultSub')}</div></div>`;
   // Auto-activate canvas if entries have stored positions (handles page reload)
   if(!isCanvasActive()&&!isGlobal&&entries.some(e=>typeof e.x==='number'))res.classList.add('canvas-mode');
-  if(isCanvasActive())ensureCanvasPositions();else updateCanvasHeight();
+  if(isCanvasActive()&&!hasFilter)ensureCanvasPositions();else updateCanvasHeight();
 }
 
 // Pin/unpin a card by (profileId, index) — supports global search
