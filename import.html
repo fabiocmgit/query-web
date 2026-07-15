@@ -211,6 +211,25 @@ body {
 .p-row-del:hover { background: #fee2e2; color: var(--c-err); transform: none; box-shadow: none; }
 .p-row-del svg { width: 10px; height: 10px; pointer-events: none; }
 
+/* Live-share button on each profile row — mirrors .p-row-del */
+.p-row-live {
+  opacity: 0;
+  width: 18px; height: 18px;
+  border: none; background: transparent;
+  color: var(--c-text3);
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all .12s;
+}
+.p-row:hover .p-row-live { opacity: 1; }
+.p-row-live:hover { background: rgba(139,92,246,.12); color: #8b5cf6; transform: none; box-shadow: none; }
+.p-row-live svg { width: 11px; height: 11px; pointer-events: none; }
+/* Profile currently shared live: icon always visible, static and subtle */
+.p-row.live-on .p-row-live { opacity: .55; color: #8b5cf6; }
+.p-row.live-on:hover .p-row-live { opacity: 1; }
+
 /* Profile drag-to-reorder handle — only visible in edit mode */
 .p-row-drag { display: none; flex-shrink: 0; width: 14px; height: 14px; align-items: center; justify-content: center; cursor: grab; color: var(--c-text3); border-radius: 3px; opacity: 0; transition: opacity .12s; }
 .p-row-drag svg { width: 10px; height: 10px; pointer-events: none; }
@@ -1240,8 +1259,9 @@ body.dark .p-row.active .p-row-count {
 .stat-row-c { background: var(--c-border); color: var(--c-text2); padding: 1px 7px; border-radius: 20px; font-size: 11px; font-family: 'Geist Mono', monospace; }
 
 /* Share modal */
-#shareModal { width: min(380px, calc(100vw - 24px)); padding: 0; overflow: hidden; }
-.share-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+#shareModal { width: min(540px, calc(100vw - 24px)); padding: 0; overflow: hidden; }
+#pseudoModal { width: min(340px, calc(100vw - 24px)); padding: 0; overflow: hidden; }
+.share-body { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
 .share-tabs { display: flex; gap: 4px; }
 .s-tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 8px; border: 1px solid var(--c-border); border-radius: var(--r); background: var(--c-surf2); color: var(--c-text2); cursor: pointer; font-size: 11px; font-weight: 500; font-family: inherit; transition: all .12s; }
 .s-tab:hover { border-color: var(--c-accent); background: var(--c-accent-l); color: var(--c-accent); transform: none; box-shadow: none; }
@@ -1279,6 +1299,20 @@ body.dark .share-status.notice  { background: rgba(234,179,8,.12); color: #fbbf2
 }
 .peer-input { flex: 1; padding: 10px 12px; font-size: 18px; font-weight: 700; font-family: 'Geist Mono', monospace; letter-spacing: 5px; text-transform: uppercase; border: 1px solid var(--c-border); border-radius: var(--r); background: var(--c-surf2); color: var(--c-text); text-align: center; outline: none; transition: border-color .15s; }
 .peer-input:focus { border-color: var(--c-accent); }
+
+/* ── Live rooms (collaborative P2P) ── */
+.live-badge { display:inline-flex; align-items:center; gap:5px; margin-left:8px; padding:2px 9px; border-radius:10px; background:rgba(139,92,246,.12); color:#8b5cf6; font-size:10.5px; font-weight:700; letter-spacing:.05em; vertical-align:middle; cursor:pointer; }
+.live-badge svg { width:11px; height:11px; flex-shrink:0; }
+.share-pbtn.danger { background:#8b5cf6; }
+.share-pbtn.danger:hover { background:#7c3aed; }
+.live-code-row { display:flex; align-items:center; justify-content:center; gap:8px; margin:4px 0; }
+.live-pseudo-row { display:flex; align-items:center; gap:8px; }
+.live-pseudo-row label { font-size:12px; color:var(--c-text2); flex-shrink:0; }
+.live-pseudo-input { flex:1; min-width:0; padding:7px 10px; font-size:12.5px; font-family:inherit; border:1px solid var(--c-border); border-radius:var(--r); background:var(--c-surf2); color:var(--c-text); outline:none; transition:border-color .15s; }
+.live-pseudo-input:focus { border-color:#8b5cf6; }
+.live-members { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:2px 0 4px; }
+.live-member { padding:3px 10px; border-radius:12px; background:rgba(139,92,246,.12); color:#8b5cf6; font-size:11px; font-weight:600; }
+.live-member.me { border:1px dashed rgba(139,92,246,.5); }
 
 /* ── QR code (P2P share) ── */
 .qr-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; padding-top: 4px; }
@@ -1660,6 +1694,7 @@ body.dark .share-status.notice  { background: rgba(234,179,8,.12); color: #fbbf2
       <span class="topbar-breadcrumb-app">Query</span>
       <span class="topbar-breadcrumb-sep">/</span>
       <span id="tb-profile-name">—</span>
+      <span id="liveBadge" class="live-badge off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49"/><path d="M7.76 16.24a6 6 0 0 1 0-8.49"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 19.07a10 10 0 0 1 0-14.14"/></svg><span id="liveBadgeTxt"></span></span>
     </div>
 
     <div class="topbar-search">
@@ -1911,6 +1946,16 @@ body.dark .share-status.notice  { background: rgba(234,179,8,.12); color: #fbbf2
   </div>
 </div>
 
+<!-- PSEUDO MODAL — demandé à l'arrivée via un lien d'invitation -->
+<div id="pseudoModal" class="modal off">
+  <div class="m-head"><h3>👤 <span id="pseudoModal-title"></span></h3><button class="x-btn" id="pseudoModalClose">✕</button></div>
+  <div class="share-body">
+    <p id="pseudoModalTxt" class="share-instr"></p>
+    <input type="text" id="pseudoModalInput" class="live-pseudo-input" maxlength="20">
+    <button id="pseudoModalOk" class="share-pbtn"></button>
+  </div>
+</div>
+
 <!-- SHARE MODAL -->
 <div id="shareModal" class="modal off">
   <div class="m-head"><h3>📡 <span id="shareModal-title">Share via device</span></h3><button class="x-btn" id="closeShare">✕</button></div>
@@ -1918,6 +1963,7 @@ body.dark .share-status.notice  { background: rgba(234,179,8,.12); color: #fbbf2
     <div class="share-tabs">
       <button class="s-tab on" id="tab-send"><span class="s-tab-icon">📤</span><span id="lbl-send">Send</span></button>
       <button class="s-tab" id="tab-recv"><span class="s-tab-icon">📥</span><span id="lbl-recv">Receive</span></button>
+      <button class="s-tab" id="tab-live"><span class="s-tab-icon">📡</span><span id="lbl-live">Share</span></button>
     </div>
     <div id="sendPanel" class="share-panel">
       <p id="sendInstr" class="share-instr">Click "Generate code" to get a connection code.</p>
@@ -1946,6 +1992,28 @@ body.dark .share-status.notice  { background: rgba(234,179,8,.12); color: #fbbf2
       <p id="connectingMsg" class="share-status waiting off">⏳ Connecting...</p>
       <div id="recvOk" class="share-status success off"></div>
       <div id="recvErr" class="share-status error off">❌ <span id="recvErrTxt"></span></div>
+    </div>
+    <div id="livePanel" class="share-panel off">
+      <p id="liveInstr" class="share-instr"></p>
+      <div class="live-pseudo-row"><label id="livePseudoLbl" for="livePseudoInput"></label><input type="text" id="livePseudoInput" class="live-pseudo-input" maxlength="20"></div>
+      <div id="liveOffView">
+        <p id="liveJoinInstr" class="share-instr"></p>
+        <div class="ci-row">
+          <input type="text" id="liveCodeInput" class="peer-input" placeholder="ABC123-XYZ456" maxlength="17">
+          <button id="liveJoinBtn" class="share-pbtn"></button>
+        </div>
+        <div id="liveErr" class="share-status error off"></div>
+      </div>
+      <div id="liveOnView" class="off">
+        <p id="liveCurrentTxt" class="share-instr"></p>
+        <div id="liveMembers" class="live-members"></div>
+        <p id="liveInviteLbl" class="share-instr"></p>
+        <div class="live-code-row"><span id="liveMyCode" class="peer-code small"></span><button id="liveCopyBtn" class="copy-code-btn" title="Copy">📋</button></div>
+        <button id="liveLinkBtn" class="share-pbtn"></button>
+        <p id="liveStatusTxt" class="share-status waiting"></p>
+        <p id="liveHostHint" class="share-instr"></p>
+        <button id="liveStopBtn" class="share-pbtn danger"></button>
+      </div>
     </div>
   </div>
 </div>
@@ -1978,7 +2046,7 @@ body.dark .share-status.notice  { background: rgba(234,179,8,.12); color: #fbbf2
 /* ════════════════════════════════════════════════════════
    i18n
 ════════════════════════════════════════════════════════ */
-const TR={en:{newCard:"New card",export:"Export",exportAll:"Export all",import:"Import",importMulti:(n,t)=>`Import ${n} profile(s) from ${t} file(s)?`,importDone:(n)=>`✅ ${n} profile(s) imported.`,importPartial:(ok,fail)=>`✅ ${ok} imported, ⚠️ ${fail} failed.`,share:"Share",settings:"Settings",newProfile:"New profile",profiles:"Profiles",searchPh:"Search... (use / for all profiles)",emptyTitle:"No cards yet",emptySub:"Click '+ New card' to get started.",noResultTitle:"No results",noResultSub:"Try different keywords.",pin:"Pin",unpin:"Unpin",edit:"Edit",copy:"Copy",copied:"Copied!",resultsN:n=>n===1?"1 result":`${n} results`,allCards:n=>n===1?"1 card":`${n} cards`,newCardTitle:"New card",editCardTitle:"Edit card",edPh:"💡 Write your new card here...",save:"✅ Save",modify:"✅ Modify",delete:"🗑️ Delete",cancel:"Cancel",create:"✅ Create",newProfileTitle:"New profile",profilePh:"Profile name (e.g. Work, Personal…)",welcomeTitle:"Welcome! Create your first profile",firstProfilePh:"Your profile name (e.g. Personal, Work…)",settingsTitle:"Settings",general:"General",statistics:"Statistics",language:"Language",totalCards:"Total cards",errEmpty:"Please enter some content.",errProfileEmpty:"Please enter a profile name.",errDuplicate:n=>`"${n}" already exists.`,errLast:"Can't delete the only profile.",confirmCard:"Delete this card?",confirmProfile:n=>`Delete "${n}" and all its cards?`,confirmImport:(c,i,p)=>`Replace ${c} entries in "${p}" with ${i} from file?`,errImport:"Import failed.",shareTitle:"Share via device",sendInstr:'Click "Generate code" to get a connection code. Keep this window open until the transfer is complete.',genCode:"🔑 Generate code",waitMsg:"⏳ Waiting for connection…",sendOk:"✅ Profile sent!",recvInstr:"Enter the code shown on the other device. ⚠️ May not work on corporate or heavily restricted networks.",connectBtn:"🔗 Connect",connecting:"⏳ Connecting…",p2pSendErr:"❌ Connection error. Try again.",p2pShort:"Code must be at least 4 characters.",p2pTimeout:"Timed out — check the code and retry.",p2pDataErr:"Error processing received profile.",p2pFail:"Connection failed. Is the code correct?",p2pNotFound:"Device not found. Make sure it's waiting.",p2pRecvOk:n=>`✅ Profile "${n}" imported!`,defaultProfile:"Imported profile",errQuota:"Storage full — delete some cards or profiles.",qrHint:"Or scan with a phone camera to open Query and import this profile",pwaNoticeTxt:"You're in the browser, not in the Query app on your home screen. Open the installed Query app, go to Share → Receive, and enter this code there so the profile ends up in the app:",pwaImportAnyway:"Import here in the browser instead",modeSend:"Send",modeRecv:"Receive",theme:"Theme",editMode:"Edit",editModeExit:"Done",resetSize:"Reset size & position",resetAllSizes:"Reset all sizes",cardColor:"Color",dragHandle:"Drag to position freely",exportSection:"Export",exportFolder:"Save location",chooseFolder:"Choose folder…",changeFolder:"Change…",exportFolderHint:"Exported JSON files are saved straight to this folder instead of your browser's downloads.",exportFolderUnsupported:"This doesn't work on Firefox — your browser doesn't support choosing a folder, so files will be downloaded normally.",exportFolderReset:"Reset",exportFolderDenied:"Permission denied — files will be downloaded normally.",exportSavedTo:(f,d)=>`✅ ${f} saved to "${d}"`,exportDownloaded:(f)=>`⬇️ ${f} downloaded`,exportAllSavedTo:(n,d)=>`✅ ${n} file(s) saved to "${d}"`,exportAllDownloaded:(n)=>`⬇️ ${n} file(s) downloaded`,helpSection:"Help",tutorialProfile:"Tutorial profile",recreateTutorial:"Recreate",tutorialHint:'Removed the "👋 Welcome" demo profile? Bring it back anytime to revisit the feature tour.',tutorialRecreated:"👋 Welcome profile recreated!",profilesSection:"Profiles",profilesHint:"Click the emoji to open the picker. Press Enter or click away to save the name.",changeEmoji:"Change emoji",currentProfile:"current",mentionHint:"Type to search a card to link…",mentionNoCards:"No other card to link to yet",mentionUntitled:"(empty card)",mentionDeleted:"Deleted card",mentionDeletedTitle:"This card no longer exists",linkShowCanvas:"Show on canvas"},fr:{newCard:"Nouvelle fiche",export:"Exporter",exportAll:"Tout exporter",import:"Importer",importMulti:(n,t)=>`Importer ${n} profil(s) depuis ${t} fichier(s) ?`,importDone:(n)=>`✅ ${n} profil(s) importé(s).`,importPartial:(ok,fail)=>`✅ ${ok} importé(s), ⚠️ ${fail} échec(s).`,share:"Partager",settings:"Paramètres",newProfile:"Nouveau profil",profiles:"Profils",searchPh:"Rechercher… (« / » pour tous les profils)",emptyTitle:"Aucune fiche",emptySub:"Cliquez sur '+ Nouvelle fiche' pour commencer.",noResultTitle:"Aucun résultat",noResultSub:"Essayez d'autres mots-clés.",pin:"Épingler",unpin:"Désépingler",edit:"Modifier",copy:"Copier",copied:"Copié !",resultsN:n=>n===1?"1 résultat":`${n} résultats`,allCards:n=>n===1?"1 fiche":`${n} fiches`,newCardTitle:"Nouvelle fiche",editCardTitle:"Modifier la fiche",edPh:"💡 Écrivez votre nouvelle fiche ici…",save:"✅ Sauvegarder",modify:"✅ Modifier",delete:"🗑️ Supprimer",cancel:"Annuler",create:"✅ Créer",newProfileTitle:"Nouveau profil",profilePh:"Nom du profil (ex : Travail, Personnel…)",welcomeTitle:"Bienvenue ! Créez votre premier profil",firstProfilePh:"Nom de votre profil (ex : Personnel, Travail…)",settingsTitle:"Paramètres",general:"Général",statistics:"Statistiques",language:"Langue",totalCards:"Total fiches",errEmpty:"Veuillez entrer du contenu.",errProfileEmpty:"Veuillez entrer un nom de profil.",errDuplicate:n=>`« ${n} » existe déjà.`,errLast:"Impossible de supprimer le seul profil.",confirmCard:"Supprimer cette fiche ?",confirmProfile:n=>`Supprimer « ${n} » et toutes ses fiches ?`,confirmImport:(c,i,p)=>`Remplacer ${c} entrées dans « ${p} » par ${i} du fichier ?`,errImport:"Erreur d'importation.",shareTitle:"Partager via appareil",sendInstr:"Cliquez sur « Générer un code » pour obtenir un code de connexion. Gardez cette fenêtre ouverte jusqu'à la fin du transfert.",genCode:"🔑 Générer un code",waitMsg:"⏳ En attente de connexion…",sendOk:"✅ Profil envoyé !",recvInstr:"Entrez le code affiché sur l'autre appareil. ⚠️ Peut ne pas fonctionner sur les réseaux d'entreprise ou très sécurisés.",connectBtn:"🔗 Connecter",connecting:"⏳ Connexion…",p2pSendErr:"❌ Erreur de connexion.",p2pShort:"Le code doit comporter au moins 4 caractères.",p2pTimeout:"Délai dépassé — vérifiez le code.",p2pDataErr:"Erreur lors du traitement du profil.",p2pFail:"Connexion échouée. Le code est-il correct ?",p2pNotFound:"Appareil introuvable.",p2pRecvOk:n=>`✅ Profil « ${n} » importé !`,defaultProfile:"Profil importé",errQuota:"Stockage plein — supprimez des fiches ou des profils.",qrHint:"Ou scannez ce code avec l'appareil photo d'un téléphone pour ouvrir Query et importer ce profil",pwaNoticeTxt:"Tu es dans le navigateur, pas dans l'app Query de ton écran d'accueil. Ouvre l'app Query installée, va dans Partager → Recevoir, et entre ce code là-bas pour que le profil arrive dans l'app :",pwaImportAnyway:"Importer ici dans le navigateur quand même",modeSend:"Envoyer",modeRecv:"Recevoir",theme:"Thème",editMode:"Éditer",editModeExit:"Terminer",resetSize:"Réinitialiser taille/position",resetAllSizes:"Réinitialiser toutes les tailles",cardColor:"Couleur",dragHandle:"Déplacer librement",exportSection:"Exportation",exportFolder:"Emplacement d'enregistrement",chooseFolder:"Choisir un dossier…",changeFolder:"Changer…",exportFolderHint:"Les fichiers JSON exportés sont enregistrés directement dans ce dossier au lieu des téléchargements du navigateur.",exportFolderUnsupported:"Ne fonctionne pas sur Firefox — votre navigateur ne permet pas de choisir un dossier, les fichiers seront téléchargés normalement.",exportFolderReset:"Réinitialiser",exportFolderDenied:"Permission refusée — les fichiers seront téléchargés normalement.",exportSavedTo:(f,d)=>`✅ ${f} enregistré dans « ${d} »`,exportDownloaded:(f)=>`⬇️ ${f} téléchargé`,exportAllSavedTo:(n,d)=>`✅ ${n} fichier(s) enregistré(s) dans « ${d} »`,exportAllDownloaded:(n)=>`⬇️ ${n} fichier(s) téléchargé(s)`,helpSection:"Aide",tutorialProfile:"Profil tutoriel",recreateTutorial:"Recréer",tutorialHint:'Vous avez supprimé le profil de démo « 👋 Welcome » ? Récupérez-le à tout moment pour revoir la visite des fonctionnalités.',tutorialRecreated:"👋 Profil Welcome recréé !",profilesSection:"Profils",profilesHint:"Cliquez sur l'émoji pour ouvrir le sélecteur. Appuyez sur Entrée ou cliquez ailleurs pour enregistrer le nom.",changeEmoji:"Changer l'émoji",currentProfile:"actif",mentionHint:"Tapez pour rechercher une fiche à lier…",mentionNoCards:"Pas encore d'autre fiche à lier",mentionUntitled:"(fiche vide)",mentionDeleted:"Fiche supprimée",mentionDeletedTitle:"Cette fiche n'existe plus",linkShowCanvas:"Voir sur le canevas"}};
+const TR={en:{newCard:"New card",export:"Export",exportAll:"Export all",import:"Import",importMulti:(n,t)=>`Import ${n} profile(s) from ${t} file(s)?`,importDone:(n)=>`✅ ${n} profile(s) imported.`,importPartial:(ok,fail)=>`✅ ${ok} imported, ⚠️ ${fail} failed.`,share:"Share",settings:"Settings",newProfile:"New profile",profiles:"Profiles",searchPh:"Search... (use / for all profiles)",emptyTitle:"No cards yet",emptySub:"Click '+ New card' to get started.",noResultTitle:"No results",noResultSub:"Try different keywords.",pin:"Pin",unpin:"Unpin",edit:"Edit",copy:"Copy",copied:"Copied!",resultsN:n=>n===1?"1 result":`${n} results`,allCards:n=>n===1?"1 card":`${n} cards`,newCardTitle:"New card",editCardTitle:"Edit card",edPh:"💡 Write your new card here...",save:"✅ Save",modify:"✅ Modify",delete:"🗑️ Delete",cancel:"Cancel",create:"✅ Create",newProfileTitle:"New profile",profilePh:"Profile name (e.g. Work, Personal…)",welcomeTitle:"Welcome! Create your first profile",firstProfilePh:"Your profile name (e.g. Personal, Work…)",settingsTitle:"Settings",general:"General",statistics:"Statistics",language:"Language",totalCards:"Total cards",errEmpty:"Please enter some content.",errProfileEmpty:"Please enter a profile name.",errDuplicate:n=>`"${n}" already exists.`,errLast:"Can't delete the only profile.",confirmCard:"Delete this card?",confirmProfile:n=>`Delete "${n}" and all its cards?`,confirmImport:(c,i,p)=>`Replace ${c} entries in "${p}" with ${i} from file?`,errImport:"Import failed.",shareTitle:"Share via device",sendInstr:'Click "Generate code" to get a connection code. Keep this window open until the transfer is complete.',genCode:"🔑 Generate code",waitMsg:"⏳ Waiting for connection…",sendOk:"✅ Profile sent!",recvInstr:"Enter the code shown on the other device. ⚠️ May not work on corporate or heavily restricted networks.",connectBtn:"🔗 Connect",connecting:"⏳ Connecting…",p2pSendErr:"❌ Connection error. Try again.",p2pShort:"Code must be at least 4 characters.",p2pTimeout:"Timed out — check the code and retry.",p2pDataErr:"Error processing received profile.",p2pFail:"Connection failed. Is the code correct?",p2pNotFound:"Device not found. Make sure it's waiting.",p2pRecvOk:n=>`✅ Profile "${n}" imported!`,defaultProfile:"Imported profile",errQuota:"Storage full — delete some cards or profiles.",qrHint:"Or scan with a phone camera to open Query and import this profile",pwaNoticeTxt:"You're in the browser, not in the Query app on your home screen. Open the installed Query app, go to Share → Receive, and enter this code there so the profile ends up in the app:",pwaImportAnyway:"Import here in the browser instead",modeSend:"Send",modeRecv:"Receive",theme:"Theme",editMode:"Edit",editModeExit:"Done",resetSize:"Reset size & position",resetAllSizes:"Reset all sizes",cardColor:"Color",dragHandle:"Drag to position freely",exportSection:"Export",exportFolder:"Save location",chooseFolder:"Choose folder…",changeFolder:"Change…",exportFolderHint:"Exported JSON files are saved straight to this folder instead of your browser's downloads.",exportFolderUnsupported:"This doesn't work on Firefox — your browser doesn't support choosing a folder, so files will be downloaded normally.",exportFolderReset:"Reset",exportFolderDenied:"Permission denied — files will be downloaded normally.",exportSavedTo:(f,d)=>`✅ ${f} saved to "${d}"`,exportDownloaded:(f)=>`⬇️ ${f} downloaded`,exportAllSavedTo:(n,d)=>`✅ ${n} file(s) saved to "${d}"`,exportAllDownloaded:(n)=>`⬇️ ${n} file(s) downloaded`,helpSection:"Help",tutorialProfile:"Tutorial profile",recreateTutorial:"Recreate",tutorialHint:'Removed the "👋 Welcome" demo profile? Bring it back anytime to revisit the feature tour.',tutorialRecreated:"👋 Welcome profile recreated!",profilesSection:"Profiles",profilesHint:"Click the emoji to open the picker. Press Enter or click away to save the name.",changeEmoji:"Change emoji",currentProfile:"current",mentionHint:"Type to search a card to link…",mentionNoCards:"No other card to link to yet",mentionUntitled:"(empty card)",mentionDeleted:"Deleted card",mentionDeletedTitle:"This card no longer exists",linkShowCanvas:"Show on canvas",liveTab:"Live sync",liveInstr:"Unlike Send/Receive (one-time copy), live sync keeps this profile continuously synchronized: anyone with the invite link can create, edit and delete cards, and every change appears for everyone. Data travels only between devices, end-to-end encrypted — no cloud, no account.",liveCreate:"📡 Start sharing",liveJoinInstr:"Join a shared profile with its invite code (to share one of YOUR profiles, use the 📡 icon on its row in the sidebar):",liveJoin:"🔗 Join",liveStatus:n=>n===0?"⏳ Waiting for participants… keep this tab open.":`🟢 Connected — ${n} other device(s)`,liveOffline:"🔴 Sharing unavailable (already open in another tab?)",liveErrCode:"Invalid code — expected format: ABC123-XYZ456.",liveJoined:n=>`✅ Joined shared profile "${n}"!`,liveHostHint:"Changes sync between devices that are online at the same time. When someone reconnects, everything reconciles automatically.",liveCurrent:"This profile is shared",liveBadge:n=>`SHARED · ${n}`,liveInviteLbl:"Invite code — share it privately with your collaborators:",liveNoCrypto:"Sharing needs a secure context (HTTPS).",liveResume:"📡 Resume sharing (same code)",liveStop:"⏹ Stop sharing",livePseudoAsk:"Choose your nickname (visible to the other participants):",livePseudoSet:n=>`✅ Nickname saved: ${n}`,livePseudoTitle:"Your nickname",livePseudoOk:"Join",liveRowTip:"Share this profile live",liveStopConfirm:"Stop sharing this profile? Your local copy stays, but changes will no longer sync. Restarting later will generate a new invite code.",liveStopped:"Sharing stopped.",liveCopyLink:"🔗 Copy invite link",liveLinkCopied:"✅ Invite link copied!",livePseudoLbl:"Nickname:",liveYou:"you"},fr:{newCard:"Nouvelle fiche",export:"Exporter",exportAll:"Tout exporter",import:"Importer",importMulti:(n,t)=>`Importer ${n} profil(s) depuis ${t} fichier(s) ?`,importDone:(n)=>`✅ ${n} profil(s) importé(s).`,importPartial:(ok,fail)=>`✅ ${ok} importé(s), ⚠️ ${fail} échec(s).`,share:"Partager",settings:"Paramètres",newProfile:"Nouveau profil",profiles:"Profils",searchPh:"Rechercher… (« / » pour tous les profils)",emptyTitle:"Aucune fiche",emptySub:"Cliquez sur '+ Nouvelle fiche' pour commencer.",noResultTitle:"Aucun résultat",noResultSub:"Essayez d'autres mots-clés.",pin:"Épingler",unpin:"Désépingler",edit:"Modifier",copy:"Copier",copied:"Copié !",resultsN:n=>n===1?"1 résultat":`${n} résultats`,allCards:n=>n===1?"1 fiche":`${n} fiches`,newCardTitle:"Nouvelle fiche",editCardTitle:"Modifier la fiche",edPh:"💡 Écrivez votre nouvelle fiche ici…",save:"✅ Sauvegarder",modify:"✅ Modifier",delete:"🗑️ Supprimer",cancel:"Annuler",create:"✅ Créer",newProfileTitle:"Nouveau profil",profilePh:"Nom du profil (ex : Travail, Personnel…)",welcomeTitle:"Bienvenue ! Créez votre premier profil",firstProfilePh:"Nom de votre profil (ex : Personnel, Travail…)",settingsTitle:"Paramètres",general:"Général",statistics:"Statistiques",language:"Langue",totalCards:"Total fiches",errEmpty:"Veuillez entrer du contenu.",errProfileEmpty:"Veuillez entrer un nom de profil.",errDuplicate:n=>`« ${n} » existe déjà.`,errLast:"Impossible de supprimer le seul profil.",confirmCard:"Supprimer cette fiche ?",confirmProfile:n=>`Supprimer « ${n} » et toutes ses fiches ?`,confirmImport:(c,i,p)=>`Remplacer ${c} entrées dans « ${p} » par ${i} du fichier ?`,errImport:"Erreur d'importation.",shareTitle:"Partager via appareil",sendInstr:"Cliquez sur « Générer un code » pour obtenir un code de connexion. Gardez cette fenêtre ouverte jusqu'à la fin du transfert.",genCode:"🔑 Générer un code",waitMsg:"⏳ En attente de connexion…",sendOk:"✅ Profil envoyé !",recvInstr:"Entrez le code affiché sur l'autre appareil. ⚠️ Peut ne pas fonctionner sur les réseaux d'entreprise ou très sécurisés.",connectBtn:"🔗 Connecter",connecting:"⏳ Connexion…",p2pSendErr:"❌ Erreur de connexion.",p2pShort:"Le code doit comporter au moins 4 caractères.",p2pTimeout:"Délai dépassé — vérifiez le code.",p2pDataErr:"Erreur lors du traitement du profil.",p2pFail:"Connexion échouée. Le code est-il correct ?",p2pNotFound:"Appareil introuvable.",p2pRecvOk:n=>`✅ Profil « ${n} » importé !`,defaultProfile:"Profil importé",errQuota:"Stockage plein — supprimez des fiches ou des profils.",qrHint:"Ou scannez ce code avec l'appareil photo d'un téléphone pour ouvrir Query et importer ce profil",pwaNoticeTxt:"Tu es dans le navigateur, pas dans l'app Query de ton écran d'accueil. Ouvre l'app Query installée, va dans Partager → Recevoir, et entre ce code là-bas pour que le profil arrive dans l'app :",pwaImportAnyway:"Importer ici dans le navigateur quand même",modeSend:"Envoyer",modeRecv:"Recevoir",theme:"Thème",editMode:"Éditer",editModeExit:"Terminer",resetSize:"Réinitialiser taille/position",resetAllSizes:"Réinitialiser toutes les tailles",cardColor:"Couleur",dragHandle:"Déplacer librement",exportSection:"Exportation",exportFolder:"Emplacement d'enregistrement",chooseFolder:"Choisir un dossier…",changeFolder:"Changer…",exportFolderHint:"Les fichiers JSON exportés sont enregistrés directement dans ce dossier au lieu des téléchargements du navigateur.",exportFolderUnsupported:"Ne fonctionne pas sur Firefox — votre navigateur ne permet pas de choisir un dossier, les fichiers seront téléchargés normalement.",exportFolderReset:"Réinitialiser",exportFolderDenied:"Permission refusée — les fichiers seront téléchargés normalement.",exportSavedTo:(f,d)=>`✅ ${f} enregistré dans « ${d} »`,exportDownloaded:(f)=>`⬇️ ${f} téléchargé`,exportAllSavedTo:(n,d)=>`✅ ${n} fichier(s) enregistré(s) dans « ${d} »`,exportAllDownloaded:(n)=>`⬇️ ${n} fichier(s) téléchargé(s)`,helpSection:"Aide",tutorialProfile:"Profil tutoriel",recreateTutorial:"Recréer",tutorialHint:'Vous avez supprimé le profil de démo « 👋 Welcome » ? Récupérez-le à tout moment pour revoir la visite des fonctionnalités.',tutorialRecreated:"👋 Profil Welcome recréé !",profilesSection:"Profils",profilesHint:"Cliquez sur l'émoji pour ouvrir le sélecteur. Appuyez sur Entrée ou cliquez ailleurs pour enregistrer le nom.",changeEmoji:"Changer l'émoji",currentProfile:"actif",mentionHint:"Tapez pour rechercher une fiche à lier…",mentionNoCards:"Pas encore d'autre fiche à lier",mentionUntitled:"(fiche vide)",mentionDeleted:"Fiche supprimée",mentionDeletedTitle:"Cette fiche n'existe plus",linkShowCanvas:"Voir sur le canevas",liveTab:"Collaborer",liveInstr:"Contrairement à Envoyer/Recevoir (copie ponctuelle), la collaboration garde ce profil synchronisé en continu : toute personne ayant le lien d'invitation peut créer, modifier et supprimer des fiches, et chaque changement apparaît chez tout le monde. Les données circulent uniquement entre les appareils, chiffrées de bout en bout — pas de cloud, pas de compte.",liveCreate:"📡 Démarrer le partage",liveJoinInstr:"Rejoignez un profil partagé avec son code d'invitation (pour partager un de VOS profils, utilisez l'icône 📡 sur sa ligne dans la barre latérale) :",liveJoin:"🔗 Rejoindre",liveStatus:n=>n===0?"⏳ En attente de participants… gardez cet onglet ouvert.":`🟢 Connecté — ${n} autre(s) appareil(s)`,liveOffline:"🔴 Partage indisponible (déjà ouvert dans un autre onglet ?)",liveErrCode:"Code invalide — format attendu : ABC123-XYZ456.",liveJoined:n=>`✅ Profil partagé « ${n} » rejoint !`,liveHostHint:"Les modifications se synchronisent entre les appareils en ligne au même moment. À la reconnexion, tout se réconcilie automatiquement.",liveCurrent:"Ce profil est partagé",liveBadge:n=>`PARTAGÉ · ${n}`,liveInviteLbl:"Code d'invitation — partagez-le en privé avec vos collaborateurs :",liveNoCrypto:"Le partage nécessite un contexte sécurisé (HTTPS).",liveResume:"📡 Reprendre le partage (même code)",liveStop:"⏹ Arrêter le partage",livePseudoAsk:"Choisissez votre pseudo (visible par les autres participants) :",livePseudoSet:n=>`✅ Pseudo enregistré : ${n}`,livePseudoTitle:"Votre pseudo",livePseudoOk:"Rejoindre",liveRowTip:"Partager ce profil en direct",liveStopConfirm:"Arrêter le partage de ce profil ? Votre copie locale est conservée, mais les modifications ne seront plus synchronisées. Relancer plus tard générera un nouveau code d'invitation.",liveStopped:"Partage arrêté.",liveCopyLink:"🔗 Copier le lien d'invitation",liveLinkCopied:"✅ Lien d'invitation copié !",livePseudoLbl:"Pseudo :",liveYou:"vous"}};
 let lang='en';
 const t=(k,...a)=>{const v=TR[lang]?.[k]??TR.en[k];return typeof v==='function'?v(...a):v??k;};
 
@@ -2394,7 +2462,8 @@ function renderSidebar(){
   const list=$('profileList');list.innerHTML='';
   Object.entries(profiles).forEach(([pid,p])=>{
     const row=document.createElement('div');row.className='p-row'+(pid===currentPid?' active':'');row.dataset.pid=pid;
-    row.innerHTML=`<span class="p-row-drag" title="Réordonner"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></span><span class="p-row-icon">${p.icon||'📁'}</span><span class="p-row-name">${esc(p.name)}</span><span class="p-row-count">${p.entries.length}</span><button class="p-row-del" data-pid="${pid}" title="Delete profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
+    row.innerHTML=`<span class="p-row-drag" title="Réordonner"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></span><span class="p-row-icon">${p.icon||'📁'}</span><span class="p-row-name">${esc(p.name)}</span><span class="p-row-count">${p.entries.length}</span><button class="p-row-live" data-pid="${pid}" title="${t('liveRowTip')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49"/><path d="M7.76 16.24a6 6 0 0 1 0-8.49"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 19.07a10 10 0 0 1 0-14.14"/></svg></button><button class="p-row-del" data-pid="${pid}" title="Delete profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
+    row.querySelector('.p-row-live').addEventListener('click',e=>{e.stopPropagation();if(window._openLiveShare)window._openLiveShare(pid);});
     row.querySelector('.p-row-del').addEventListener('click',e=>{e.stopPropagation();deleteProfile(pid);});
     row.querySelector('.p-row-drag').addEventListener('pointerdown',e=>{e.stopPropagation();startProfileDrag(e,pid,row);});
     row.addEventListener('click',e=>{if(!e.target.closest('.p-row-drag'))switchProfile(pid);});
@@ -2619,6 +2688,8 @@ async function init(){
           if(typeof e==='string')return{id:genId(),content:e,isPinned:false,createdAt:Date.now()+i};
           if(!e||typeof e!=='object')return null;
           const o={id:e.id||genId(),content:e.content||'',isPinned:!!e.isPinned,createdAt:e.createdAt||Date.now()};
+          if(typeof e.updatedAt==='number')o.updatedAt=e.updatedAt;
+          if(typeof e.updatedBy==='string')o.updatedBy=e.updatedBy;
           if(typeof e.w==='number'&&e.w>0)o.w=e.w;
           if(typeof e.h==='number'&&e.h>0)o.h=e.h;
           if(typeof e.color==='string'&&e.color)o.color=e.color;
@@ -4494,6 +4565,694 @@ function showLinkPanelCard(){
     if(isNaN(idx))return;
     startCanvasDrag(ev,card,idx);
   });
+})();
+
+/* ════════════════════════════════════════════════════════
+   LIVE ROOMS — profils partagés en direct (collaboratif P2P)
+   ────────────────────────────────────────────────────────
+   Principe : un profil "live" est une salle. Chaque membre garde sa
+   copie locale complète (offline-first) ; les modifications circulent
+   en direct entre pairs connectés via WebRTC (PeerJS pour le signaling
+   uniquement — les données ne touchent jamais de serveur).
+
+   - Code d'invitation = "SALLE-SECRET". La partie SALLE sert à dériver
+     les peer IDs (visible du serveur de signaling) ; le SECRET ne
+     transite JAMAIS par le réseau : il dérive une clé AES-GCM (PBKDF2)
+     qui chiffre tous les messages. Un pair sans le secret est rejeté.
+   - Topologie : maillage + balise tournante. Chaque membre a un peer ID
+     aléatoire (jamais de conflit). L'ID fixe "query-live-<SALLE>" est un
+     simple point de rendez-vous (balise) que N'IMPORTE QUEL membre en
+     ligne revendique quand il est libre — la salle reste donc joignable
+     tant qu'au moins un membre est là, créateur ou pas. Les messages
+     d'état incluent la liste des pairs connus → maillage auto-réparant.
+   - Conflits : last-writer-wins PAR FICHE (les fiches s'éditent
+     atomiquement dans la modale → pas besoin de CRDT caractère par
+     caractère). Chaque fiche porte updatedAt/updatedBy ; départage
+     déterministe → tous les pairs convergent.
+   - Suppressions : tombstones persistées (liveRooms[pid].tombs) pour
+     qu'une fiche supprimée ne "ressuscite" pas au retour d'un membre
+     hors-ligne.
+   - Rattrapage : à chaque nouvelle connexion, échange d'état complet
+     (fiches + tombstones), fusion LWW idempotente.
+   - Détection des changements locaux : persist() est enveloppé — il
+     diffe les fiches du profil live contre un instantané (shadow) et
+     diffuse les opérations. Aucun point de mutation existant à toucher.
+════════════════════════════════════════════════════════ */
+(()=>{
+  const hasCrypto=!!(window.crypto&&crypto.subtle);
+  const sessions={}; // pid → session active
+
+  const LIVE_PEER_CFG={host:'0.peerjs.com',port:443,path:'/',secure:true,config:{iceServers:[
+    {urls:'stun:stun.l.google.com:19302'},
+    {urls:'stun:stun1.l.google.com:19302'},
+    {urls:'stun:stun.cloudflare.com:3478'},
+    {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
+    {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
+    {urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'}
+  ]}};
+
+  const genShort=()=>Math.random().toString(36).substring(2,8).toUpperCase().padEnd(6,'0');
+  const opId=()=>'o'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+  // Conversion par blocs — les fiches avec images base64 dépassent la
+  // limite d'arguments de String.fromCharCode(...) sinon.
+  const b64=buf=>{
+    const u=new Uint8Array(buf);let s='';
+    for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));
+    return btoa(s);
+  };
+  const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+
+  /* ── Registre persisté : d.liveRooms = { pid: {room,secret,isHost,memberId,tombs,peers} } ── */
+  function getRooms(){const d=load()||{};return d.liveRooms||{};}
+  function saveRooms(rooms){const d=load()||{};d.liveRooms=rooms;save(d);}
+
+  /* ── Pseudo du membre : partagé entre toutes les salles, généré au premier
+        besoin (noms d'animaux lisibles dans les deux langues). ── */
+  const PSEUDO_POOL=['Panda','Koala','Fennec','Lynx','Puma','Jaguar','Kiwi','Gecko','Dingo','Okapi','Tapir','Quokka'];
+  function getPseudo(){
+    const d=load()||{};
+    if(!d.livePseudo){
+      d.livePseudo=PSEUDO_POOL[Math.floor(Math.random()*PSEUDO_POOL.length)]+'-'+Math.floor(10+Math.random()*90);
+      save(d);
+    }
+    return d.livePseudo;
+  }
+  function setPseudo(p){const d=load()||{};const v=(p||'').trim().slice(0,20);if(v){d.livePseudo=v;save(d);}return d.livePseudo;}
+
+  // Lien d'invitation : le code voyage dans le fragment (#) — il n'atteint
+  // jamais un serveur, même si la page est servie en HTTP(S).
+  const inviteLink=s=>location.href.split('#')[0]+'#live='+s.room+'-'+s.secret;
+
+  /* ── Chiffrement applicatif : le signaling/TURN ne voit que des blobs ── */
+  async function deriveKey(room,secret){
+    const enc=new TextEncoder();
+    const base=await crypto.subtle.importKey('raw',enc.encode(secret),'PBKDF2',false,['deriveKey']);
+    return crypto.subtle.deriveKey(
+      {name:'PBKDF2',salt:enc.encode('query-live:'+room),iterations:120000,hash:'SHA-256'},
+      base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+  }
+  async function encMsg(key,obj){
+    const iv=crypto.getRandomValues(new Uint8Array(12));
+    const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(JSON.stringify(obj)));
+    return {q:'live1',iv:b64(iv.buffer),ct:b64(ct)};
+  }
+  async function decMsg(key,data){
+    if(!data||data.q!=='live1')throw new Error('bad frame');
+    const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(data.iv)},key,unb64(data.ct));
+    return JSON.parse(new TextDecoder().decode(pt));
+  }
+
+  /* ── Fiches : empreinte pour le diff (updatedAt exclu → pas de boucle d'écho) ── */
+  const fp=e=>JSON.stringify([e.content,!!e.isPinned,e.color||'',e.w||0,e.h||0,e.x??null,e.y??null]);
+  function sanitizeCard(e){
+    if(!e||typeof e!=='object'||typeof e.id!=='string')return null;
+    const o={id:e.id,content:typeof e.content==='string'?e.content:'',isPinned:!!e.isPinned,
+             createdAt:typeof e.createdAt==='number'?e.createdAt:Date.now()};
+    o.updatedAt=typeof e.updatedAt==='number'?e.updatedAt:o.createdAt;
+    if(typeof e.updatedBy==='string')o.updatedBy=e.updatedBy;
+    if(typeof e.w==='number'&&e.w>0)o.w=e.w;
+    if(typeof e.h==='number'&&e.h>0)o.h=e.h;
+    if(typeof e.color==='string'&&e.color)o.color=e.color;
+    if(typeof e.x==='number')o.x=e.x;
+    if(typeof e.y==='number')o.y=e.y;
+    return o;
+  }
+
+  function mkSession(pid,rec){
+    const s={pid,room:rec.room,secret:rec.secret,isHost:!!rec.isHost,memberId:rec.memberId,
+             key:null,peer:null,beacon:null,claiming:false,
+             conns:new Map(),seen:new Set(),shadow:new Map(),members:new Map(),
+             applying:false,retryTimer:null,dead:false,announced:false,
+             lastName:profiles[pid]?.name||'',
+             knownPeers:new Set(Array.isArray(rec.peers)?rec.peers:[])};
+    (profiles[pid]?.entries||[]).forEach(e=>{if(e&&e.id)s.shadow.set(e.id,fp(e));});
+    sessions[pid]=s;
+    return s;
+  }
+  // ID principal ÉPHÉMÈRE (régénéré à chaque session — jamais bloqué par un
+  // ancien enregistrement côté signaling) + ID de la balise (fixe, partagé).
+  // Le memberId stable, lui, ne sert qu'aux départages LWW (updatedBy).
+  const myId=s=>'query-live-'+s.room+'-'+s.connId;
+  const beaconId=s=>'query-live-'+s.room;
+
+  /* ── Connexion ── */
+  async function start(s){
+    if(!hasCrypto){showToast(t('liveNoCrypto'),{error:true});return;}
+    try{s.key=await deriveKey(s.room,s.secret);}catch(_){showToast(t('liveNoCrypto'),{error:true});return;}
+    if(s.retryTimer){clearInterval(s.retryTimer);s.retryTimer=null;} // start() peut être rappelé (retry d'ID)
+    s.connId=genShort()+genShort(); // frais à chaque tentative → zéro collision
+    const p=new Peer(myId(s),LIVE_PEER_CFG);
+    s.peer=p;
+    p.on('open',()=>{
+      s.dead=false;
+      claimBeacon(s);                       // devenir le point de rendez-vous si libre
+      if(!s.conns.size)dial(s,beaconId(s)); // sinon, joindre celui qui le tient
+      s.knownPeers.forEach(id=>{if(id!==myId(s))dial(s,id);});
+      updateLiveUI();
+    });
+    p.on('connection',conn=>attach(s,conn));
+    p.on('error',err=>{
+      const type=err&&err.type;
+      if(type==='peer-unavailable')return;         // pair hors-ligne — le retry s'en charge
+      if(type==='unavailable-id'){
+        // Notre ID aléatoire est encore tenu par le signaling (reprise
+        // immédiate, ou salle ouverte dans un autre onglet). On réessaie.
+        s.dead=true;updateLiveUI();
+        try{p.destroy();}catch(_){}
+        setTimeout(()=>{if(sessions[s.pid]===s&&(!s.peer||s.peer.destroyed)){s.dead=false;start(s);}},8000);
+        return;
+      }
+      console.warn('[live] peer error:',type||err);
+    });
+    p.on('disconnected',()=>{if(s.peer===p&&!p.destroyed){try{p.reconnect();}catch(_){}}});
+    // Boucle d'entretien : revendiquer la balise si libre, retrouver la salle
+    // via la balise quand on est isolé, recontacter les membres connus.
+    s.retryTimer=setInterval(()=>{
+      if(!s.peer||s.peer.destroyed)return;
+      if(!s.beacon&&!s.claiming)claimBeacon(s);
+      if(!s.beacon&&!s.conns.size&&!s.conns.has(beaconId(s)))dial(s,beaconId(s));
+      s.knownPeers.forEach(id=>{if(id!==myId(s)&&!s.conns.has(id))dial(s,id);});
+    },20000);
+  }
+
+  /* ── Balise tournante : n'importe quel membre en ligne tient l'ID fixe
+        "query-live-<SALLE>" pour servir de point d'entrée aux autres.
+        Si son détenteur part, un autre membre la revendique au cycle
+        suivant — la salle reste joignable tant que quelqu'un est là. ── */
+  function claimBeacon(s){
+    if(s.beacon||s.claiming)return;
+    s.claiming=true;
+    let bp;
+    try{bp=new Peer(beaconId(s),LIVE_PEER_CFG);}catch(_){s.claiming=false;return;}
+    bp.on('open',()=>{s.claiming=false;s.beacon=bp;});
+    bp.on('connection',conn=>{
+      if(conn.peer===myId(s)){try{conn.close();}catch(_){}return;} // pas de boucle sur soi-même
+      attach(s,conn);
+    });
+    bp.on('error',err=>{
+      s.claiming=false;
+      // unavailable-id = quelqu'un d'autre tient déjà la balise — normal.
+      if(s.beacon!==bp){try{bp.destroy();}catch(_){}}
+    });
+    bp.on('disconnected',()=>{if(s.beacon===bp){try{bp.reconnect();}catch(_){}}});
+    bp.on('close',()=>{if(s.beacon===bp)s.beacon=null;});
+  }
+
+  function dial(s,remoteId){
+    if(!s.peer||s.peer.destroyed||s.conns.has(remoteId)||remoteId===myId(s))return;
+    let conn;try{conn=s.peer.connect(remoteId,{reliable:true});}catch(_){return;}
+    if(conn)attach(s,conn);
+  }
+
+  function attach(s,conn){
+    conn.on('open',()=>{
+      s.conns.set(conn.peer,conn);
+      // Mémoriser les IDs principaux des membres (pas la balise, qui change de main)
+      if(conn.peer!==beaconId(s)&&!s.knownPeers.has(conn.peer)){
+        s.knownPeers.add(conn.peer);
+        const rooms=getRooms();
+        if(rooms[s.pid]){rooms[s.pid].peers=[...s.knownPeers].slice(-12);saveRooms(rooms);}
+      }
+      updateLiveUI();
+      sendTo(s,conn,stateMsg(s)); // rattrapage : état complet à chaque (re)connexion
+    });
+    conn.on('data',async raw=>{
+      let msg;
+      // Échec de déchiffrement = pair sans le bon secret → rejet
+      try{msg=await decMsg(s.key,raw);}catch(_){try{conn.close();}catch(_){}return;}
+      handle(s,conn,msg);
+    });
+    const drop=()=>{if(s.conns.get(conn.peer)===conn){s.conns.delete(conn.peer);s.members.delete(conn.peer);updateLiveUI();}};
+    conn.on('close',drop);
+    conn.on('error',drop);
+  }
+  async function sendTo(s,conn,msg){try{conn.send(await encMsg(s.key,msg));}catch(_){}}
+  async function broadcast(s,msg){
+    if(!s.conns.size)return;
+    let frame;try{frame=await encMsg(s.key,msg);}catch(_){return;}
+    s.conns.forEach(c=>{try{c.send(frame);}catch(_){}});
+  }
+
+  function stateMsg(s){
+    const p=profiles[s.pid]||{};
+    const rec=getRooms()[s.pid]||{};
+    return {t:'state',me:myId(s),who:getPseudo(),name:p.name||'',nameTs:rec.nameTs||0,
+            cards:(p.entries||[]).map(e=>({...e})),
+            tombs:rec.tombs||{},peers:[...s.conns.keys()]};
+  }
+
+  /* ── Nom du profil : LWW aussi, via nameTs (persisté dans la salle) ── */
+  function applyName(s,name,ts){
+    if(typeof name!=='string'||!name||typeof ts!=='number')return;
+    const rooms=getRooms(),rec=rooms[s.pid],prof=profiles[s.pid];
+    if(!rec||!prof)return;
+    // Le tout premier état reçu baptise le profil placeholder même sans nameTs
+    const isBaptism=!!prof._livePlaceholder;
+    if(!isBaptism&&ts<=(rec.nameTs||0))return;
+    rec.nameTs=Math.max(ts,rec.nameTs||0);saveRooms(rooms);
+    const nn=name.slice(0,60);
+    delete prof._livePlaceholder;
+    if(isBaptism&&!s.announced){s.announced=true;showToast(t('liveJoined',nn));}
+    if(prof.name!==nn){
+      prof.name=nn;s.lastName=nn;
+      s.applying=true;try{persist();}finally{s.applying=false;}
+      renderSidebar();
+      if(s.pid===currentPid)updateTopbar();
+      updateLiveUI();
+    }else{s.lastName=nn;}
+  }
+
+  function handle(s,conn,msg){
+    if(!msg||typeof msg!=='object')return;
+    if(msg.t==='state'){
+      if(typeof msg.who==='string'&&msg.who&&typeof msg.me==='string'){s.members.set(msg.me,msg.who.slice(0,20));updateLiveUI();}
+      applyName(s,msg.name,typeof msg.nameTs==='number'?msg.nameTs:0);
+      merge(s,Array.isArray(msg.cards)?msg.cards:[],msg.tombs&&typeof msg.tombs==='object'?msg.tombs:{});
+      // L'expéditeur révèle son ID principal → on le compose directement
+      if(typeof msg.me==='string'&&msg.me.startsWith('query-live-'+s.room+'-'))dial(s,msg.me);
+      // Guérison du maillage : se connecter aux membres qu'on ne connaît pas encore
+      (Array.isArray(msg.peers)?msg.peers:[]).forEach(id=>{
+        if(typeof id==='string'&&id.startsWith('query-live-'+s.room+'-')&&id!==myId(s))dial(s,id);
+      });
+      // La connexion à la balise n'est qu'un rendez-vous : une fois l'état
+      // échangé et l'ID principal connu, on la libère.
+      if(conn.peer===beaconId(s))setTimeout(()=>{try{conn.close();}catch(_){}},1500);
+    }else if(msg.t==='op'){
+      if(typeof msg.id!=='string'||s.seen.has(msg.id))return;
+      s.seen.add(msg.id);
+      if(s.seen.size>5000)s.seen.clear();
+      if(msg.kind==='upsert'&&msg.card)merge(s,[msg.card],{});
+      else if(msg.kind==='del'&&typeof msg.cid==='string')merge(s,[],{[msg.cid]:typeof msg.ts==='number'?msg.ts:Date.now()});
+      else if(msg.kind==='name')applyName(s,msg.name,msg.ts);
+      else if(msg.kind==='hello'&&typeof msg.me==='string'&&typeof msg.who==='string'&&msg.who){s.members.set(msg.me,msg.who.slice(0,20));updateLiveUI();}
+      // Relai : propage aux autres pairs (couvre les maillages partiels)
+      s.conns.forEach(c=>{if(c!==conn)sendTo(s,c,msg);});
+    }
+  }
+
+  /* ── Rangement du canevas : quand la synchro fait atterrir deux fiches
+        au même endroit, la plus récemment placée se décale vers un espace
+        libre — celle qui était déjà bien placée ne bouge JAMAIS. Le calcul
+        est déterministe (ordre updatedAt puis id), donc chaque pair aboutit
+        au même agencement ; le décalage est ensuite rediffusé comme une
+        édition normale pour que tout le monde converge. ── */
+  function resolveOverlaps(s){
+    const prof=profiles[s.pid];if(!prof)return [];
+    const list=(prof.entries||[]).filter(e=>e&&typeof e.x==='number'&&typeof e.y==='number');
+    if(list.length<2)return [];
+    const W=e=>(typeof e.w==='number'&&e.w>0)?e.w:300;
+    const H=e=>(typeof e.h==='number'&&e.h>0)?e.h:170;
+    // "Au même endroit" = les rectangles se recouvrent à plus de 40 % de la
+    // plus petite fiche — un léger chevauchement volontaire reste permis.
+    const collide=(a,b)=>{
+      const ox=Math.min(a.x+W(a),b.x+W(b))-Math.max(a.x,b.x);
+      const oy=Math.min(a.y+H(a),b.y+H(b))-Math.max(a.y,b.y);
+      if(ox<=0||oy<=0)return false;
+      return (ox*oy)/Math.min(W(a)*H(a),W(b)*H(b))>0.4;
+    };
+    const sorted=list.slice().sort((a,b)=>
+      ((a.updatedAt||a.createdAt||0)-(b.updatedAt||b.createdAt||0))||(a.id<b.id?-1:1));
+    const placed=[],moved=[];
+    sorted.forEach(e=>{
+      let guard=0,m=false;
+      while(placed.some(p=>collide(p,e))&&guard++<200){e.x+=36;e.y+=36;m=true;}
+      if(m)moved.push(e);
+      placed.push(e);
+    });
+    return moved;
+  }
+
+  /* ── Fusion LWW idempotente — utilisée pour l'état complet ET les ops ── */
+  function merge(s,remoteCards,remoteTombs){
+    const prof=profiles[s.pid];if(!prof)return;
+    if(!Array.isArray(prof.entries))prof.entries=[];
+    const list=prof.entries;
+    const rooms=getRooms();
+    const tombs=(rooms[s.pid]&&rooms[s.pid].tombs)||{};
+    let changed=false;
+
+    Object.keys(remoteTombs).forEach(id=>{
+      const ts=remoteTombs[id];
+      if(typeof ts!=='number')return;
+      if((tombs[id]||0)<ts){tombs[id]=ts;changed=true;}
+    });
+    // Une fiche modifiée APRÈS sa suppression survit (LWW) ; sinon elle part.
+    for(let i=list.length-1;i>=0;i--){
+      const e=list[i],ts=tombs[e.id];
+      if(ts&&(e.updatedAt||e.createdAt||0)<=ts){list.splice(i,1);s.shadow.delete(e.id);changed=true;}
+    }
+    remoteCards.forEach(rc=>{
+      const c=sanitizeCard(rc);if(!c)return;
+      const ts=tombs[c.id];
+      if(ts&&c.updatedAt<=ts)return;
+      const i=list.findIndex(e=>e&&e.id===c.id);
+      if(i<0){list.push(c);changed=true;}
+      else{
+        const le=list[i],lts=le.updatedAt||le.createdAt||0;
+        // LWW ; à timestamp égal, départage déterministe par auteur
+        if(c.updatedAt>lts||(c.updatedAt===lts&&(c.updatedBy||'')>(le.updatedBy||'')&&fp(c)!==fp(le))){
+          list[i]=c;changed=true;
+        }
+      }
+    });
+    if(!changed)return;
+
+    list.sort((a,b)=>(b.isPinned?1:0)-(a.isPinned?1:0));
+    // Séparer les fiches que la fusion a superposées (celle déjà en place reste)
+    const moved=resolveOverlaps(s);
+    if(rooms[s.pid]){rooms[s.pid].tombs=tombs;saveRooms(rooms);}
+    // Rafraîchir le shadow AVANT persist pour ne pas ré-émettre les changements reçus
+    s.shadow=new Map(list.filter(e=>e&&e.id).map(e=>[e.id,fp(e)]));
+    if(s.pid===currentPid)entries=list;
+    s.applying=true;
+    try{persist();}finally{s.applying=false;}
+    // Les décalages du rangement sont des éditions à part entière : horodatées
+    // et diffusées, pour que tous les pairs adoptent le même agencement (LWW).
+    if(moved.length){
+      const mnow=Date.now();
+      moved.forEach(e=>{
+        e.updatedAt=mnow;e.updatedBy=s.memberId;
+        const op={t:'op',id:opId(),kind:'upsert',card:{...e}};
+        s.seen.add(op.id);broadcast(s,op);
+      });
+    }
+    renderSidebar();
+    if(s.pid===currentPid){updateTopbar();render($('search').value);}
+    updateLiveUI();
+  }
+
+  /* ── Détection des changements locaux : persist() enveloppé.
+        Tous les points de mutation existants (sauvegarde, suppression,
+        épinglage, redimensionnement, déplacement…) passent par persist()
+        → un seul point d'accroche, zéro modification du code existant. ── */
+  const _basePersist=persist;
+  persist=function(){
+    Object.values(sessions).forEach(s=>{
+      if(s.applying||!profiles[s.pid])return;
+      const list=profiles[s.pid].entries||[];
+      const present=new Set();
+      const now=Date.now();
+      list.forEach(e=>{
+        if(!e||!e.id)return;
+        present.add(e.id);
+        const f=fp(e);
+        if(s.shadow.get(e.id)===f)return;
+        e.updatedAt=now;e.updatedBy=s.memberId;
+        s.shadow.set(e.id,f);
+        const op={t:'op',id:opId(),kind:'upsert',card:{...e}};
+        s.seen.add(op.id);broadcast(s,op);
+      });
+      [...s.shadow.keys()].forEach(id=>{
+        if(present.has(id))return;
+        s.shadow.delete(id);
+        const rooms=getRooms();
+        if(rooms[s.pid]){rooms[s.pid].tombs=rooms[s.pid].tombs||{};rooms[s.pid].tombs[id]=now;saveRooms(rooms);}
+        const op={t:'op',id:opId(),kind:'del',cid:id,ts:now};
+        s.seen.add(op.id);broadcast(s,op);
+      });
+      // Renommage local du profil → diffusé à la salle
+      const nm=profiles[s.pid].name||'';
+      if(nm&&nm!==s.lastName){
+        s.lastName=nm;
+        const rooms=getRooms();
+        if(rooms[s.pid]){rooms[s.pid].nameTs=now;saveRooms(rooms);}
+        const op={t:'op',id:opId(),kind:'name',name:nm,ts:now};
+        s.seen.add(op.id);broadcast(s,op);
+      }
+    });
+    const ok=_basePersist();
+    updateLiveUI();
+    return ok;
+  };
+
+  /* ── Quitter la salle quand le profil est supprimé ── */
+  const _baseDeleteProfile=deleteProfile;
+  deleteProfile=function(pid){
+    _baseDeleteProfile(pid);
+    if(!profiles[pid]){
+      // Profil supprimé → la salle disparaît vraiment (pas de pause ici)
+      closeSession(pid);
+      const rooms=getRooms();
+      if(rooms[pid]){delete rooms[pid];saveRooms(rooms);}
+      updateLiveUI();
+    }
+  };
+
+  /* ── Actions ── */
+  async function createRoom(){
+    const pid=currentPid;
+    if(!profiles[pid]||sessions[pid])return;
+    if(!hasCrypto){showToast(t('liveNoCrypto'),{error:true});return;}
+    const rooms=getRooms();
+    let rec=rooms[pid];
+    // Code PERMANENT : si la salle a déjà existé pour ce profil (partage en
+    // pause), on la reprend avec le même code et le même rôle — les autres
+    // membres peuvent donc toujours nous retrouver. Sinon, on crée.
+    if(rec)delete rec.paused;
+    else rec=rooms[pid]={room:genShort(),secret:genShort(),isHost:true,memberId:genShort(),tombs:{},peers:[],nameTs:Date.now()};
+    saveRooms(rooms);
+    // Marqueur durable : ce profil EST la salle <room>. Il survit à un
+    // "arrêter le partage" — re-rejoindre le même code réattache ce profil
+    // au lieu d'en créer un doublon.
+    profiles[pid].liveRoom=rec.room;
+    const s=mkSession(pid,rec);
+    persist();
+    updateLiveUI();
+    await start(s);
+  }
+
+  async function joinRoom(code){
+    const m=/^([A-Z0-9]{4,8})-([A-Z0-9]{4,8})$/.exec((code||'').trim().toUpperCase());
+    if(!m){liveErr(t('liveErrCode'));return;}
+    if(!hasCrypto){liveErr(t('liveNoCrypto'));return;}
+    const room=m[1],secret=m[2];
+    const rooms=getRooms();
+    // UN SEUL profil par salle : retrouver le profil déjà lié à ce code —
+    // salle encore enregistrée, ou profil marqué liveRoom après un départ.
+    let pid=Object.keys(rooms).find(p=>rooms[p].room===room&&profiles[p])
+          ||Object.keys(profiles).find(p=>profiles[p]&&profiles[p].liveRoom===room);
+    if(pid&&sessions[pid]){switchProfile(pid);updateLiveUI();return;}
+    if(!pid){
+      pid='live_'+room.toLowerCase()+'_'+Date.now();
+      profiles[pid]={name:'📡 '+room,entries:[],liveRoom:room,_livePlaceholder:true};
+    }else{
+      profiles[pid].liveRoom=room;
+    }
+    // Réattachement : reprendre l'enregistrement existant (tombstones,
+    // memberId…) s'il est encore là, sinon repartir proprement.
+    const rec=rooms[pid]||{room,secret,isHost:false,memberId:genShort(),tombs:{},peers:[]};
+    rec.secret=secret;
+    delete rec.paused;
+    rooms[pid]=rec;saveRooms(rooms);
+    const s=mkSession(pid,rec);
+    persist();
+    renderSidebar();switchProfile(pid);
+    $('liveCodeInput').value='';
+    updateLiveUI();
+    await start(s);
+  }
+
+  function closeSession(pid){
+    const s=sessions[pid];
+    if(!s)return;
+    if(s.retryTimer)clearInterval(s.retryTimer);
+    try{s.peer&&s.peer.destroy();}catch(_){}
+    try{s.beacon&&s.beacon.destroy();}catch(_){}
+    delete sessions[pid];
+  }
+
+  // Arrêt définitif du partage : la session se ferme et l'enregistrement de
+  // salle disparaît — la copie locale du profil reste. Le marqueur liveRoom
+  // est conservé pour qu'un futur "rejoindre" avec l'ancien code réattache
+  // ce profil au lieu d'en créer un doublon. Relancer le partage depuis ce
+  // profil génère un NOUVEAU code (les anciens invités ne nous suivent plus).
+  function stopSharing(pid){
+    if(!sessions[pid])return;
+    closeSession(pid);
+    const rooms=getRooms();
+    if(rooms[pid]){delete rooms[pid];saveRooms(rooms);}
+    showToast(t('liveStopped'));
+    updateLiveUI();
+  }
+
+  /* ── UI ── */
+  function liveErr(msg){
+    const el=$('liveErr');if(!el)return;
+    el.textContent='❌ '+msg;remClass(el,'off');
+    setTimeout(()=>addClass(el,'off'),5000);
+  }
+
+  function updateLiveUI(){
+    const s=sessions[currentPid];
+    const badge=$('liveBadge');
+    if(badge){
+      if(s&&!s.dead){remClass(badge,'off');$('liveBadgeTxt').textContent=t('liveBadge',s.conns.size);}
+      else addClass(badge,'off');
+    }
+    markLiveRows();
+    renderLivePanel();
+  }
+
+  // Icône radio violette sur les lignes de la sidebar dont le profil est en direct
+  function markLiveRows(){
+    document.querySelectorAll('#profileList .p-row').forEach(row=>{
+      toggleClass(row,'live-on',!!sessions[row.dataset.pid]);
+    });
+  }
+  const _baseRenderSidebar=renderSidebar;
+  renderSidebar=function(){_baseRenderSidebar();markLiveRows();};
+
+  // Icône 📡 d'une ligne de profil (sidebar) — SEUL point de création d'un
+  // partage. Si le profil n'est pas encore partagé : création directe (ou
+  // reprise avec le même code si la salle existait déjà), puis la modale
+  // s'ouvre sur le panneau Live avec le lien d'invitation à copier.
+  window._openLiveShare=async pid=>{
+    if(!profiles[pid])return;
+    if(pid!==currentPid)switchProfile(pid);
+    if(!sessions[pid])await createRoom();
+    $('shareBtn').click();   // ouvre la modale (reset sur l'onglet Envoyer)
+    setLiveTab(true);        // puis bascule sur l'onglet Live
+  };
+
+  function renderLivePanel(){
+    if(!$('livePanel'))return;
+    $('lbl-live').textContent=t('liveTab');
+    $('liveInstr').textContent=t('liveInstr');
+    $('livePseudoLbl').textContent=t('livePseudoLbl');
+    const pi=$('livePseudoInput');
+    if(document.activeElement!==pi)pi.value=getPseudo();
+    $('liveJoinInstr').textContent=t('liveJoinInstr');
+    $('liveJoinBtn').textContent=t('liveJoin');
+    $('liveHostHint').textContent=t('liveHostHint');
+    $('liveInviteLbl').textContent=t('liveInviteLbl');
+    $('liveLinkBtn').textContent=t('liveCopyLink');
+    $('liveStopBtn').textContent=t('liveStop');
+    const s=sessions[currentPid];
+    if(s){
+      addClass($('liveOffView'),'off');remClass($('liveOnView'),'off');
+      $('liveCurrentTxt').textContent=t('liveCurrent')+' — '+(profiles[currentPid]?.name||'');
+      $('liveMyCode').textContent=s.room+'-'+s.secret;
+      // Participants : soi-même + les membres connectés dont on connaît le pseudo
+      const wrap=$('liveMembers');wrap.innerHTML='';
+      const me=document.createElement('span');me.className='live-member me';
+      me.textContent=getPseudo()+' ('+t('liveYou')+')';wrap.appendChild(me);
+      s.members.forEach((who,id)=>{
+        if(!s.conns.has(id))return;
+        const el=document.createElement('span');el.className='live-member';el.textContent=who;wrap.appendChild(el);
+      });
+      const st=$('liveStatusTxt');
+      if(s.dead){st.className='share-status error';st.textContent=t('liveOffline');}
+      else{st.className='share-status '+(s.conns.size?'success':'waiting');st.textContent=t('liveStatus',s.conns.size);}
+    }else{
+      remClass($('liveOffView'),'off');addClass($('liveOnView'),'off');
+    }
+  }
+
+  function setLiveTab(on){
+    toggleClass($('tab-live'),'on',on);
+    toggleClass($('livePanel'),'off',!on);
+    if(on){
+      $('tab-send').classList.remove('on');$('tab-recv').classList.remove('on');
+      addClass($('sendPanel'),'off');addClass($('recvPanel'),'off');
+      renderLivePanel();
+    }
+  }
+  $('tab-live').addEventListener('click',()=>setLiveTab(true));
+  $('tab-send').addEventListener('click',()=>setLiveTab(false));
+  $('tab-recv').addEventListener('click',()=>setLiveTab(false));
+  $('shareBtn').addEventListener('click',()=>setLiveTab(false)); // resetShare() rouvre l'onglet "Envoyer"
+
+  $('liveJoinBtn').addEventListener('click',()=>{joinRoom($('liveCodeInput').value);});
+  $('liveCodeInput').addEventListener('input',e=>{
+    const st=e.target.selectionStart,en=e.target.selectionEnd;
+    e.target.value=e.target.value.toUpperCase();
+    e.target.setSelectionRange(st,en);
+  });
+  $('liveCodeInput').addEventListener('keydown',e=>{if(e.key==='Enter')joinRoom($('liveCodeInput').value);});
+  $('liveCopyBtn').addEventListener('click',()=>{
+    navigator.clipboard.writeText($('liveMyCode').textContent).then(()=>{
+      const b=$('liveCopyBtn'),o=b.textContent;b.textContent='✅';setTimeout(()=>b.textContent=o,1500);
+    });
+  });
+  $('liveLinkBtn').addEventListener('click',()=>{
+    const s=sessions[currentPid];if(!s)return;
+    navigator.clipboard.writeText(inviteLink(s)).then(()=>showToast(t('liveLinkCopied')));
+  });
+  $('liveStopBtn').addEventListener('click',()=>{
+    if(!sessions[currentPid])return;
+    if(!confirm(t('liveStopConfirm')))return;
+    stopSharing(currentPid);
+  });
+  // Changement de pseudo : sauvegarde + toast de confirmation + annonce
+  // à toutes les salles actives.
+  function applyPseudo(raw){
+    const v=setPseudo(raw);
+    showToast(t('livePseudoSet',v));
+    Object.values(sessions).forEach(s=>{
+      if(!s.connId)return; // session pas encore connectée — le pseudo partira avec le prochain état
+      const op={t:'op',id:opId(),kind:'hello',me:myId(s),who:v};
+      s.seen.add(op.id);broadcast(s,op);
+    });
+    renderLivePanel();
+    return v;
+  }
+  $('livePseudoInput').addEventListener('change',e=>{e.target.value=applyPseudo(e.target.value);});
+
+  /* ── Modale pseudo (intégrée au site) — affichée à l'arrivée via un lien
+        d'invitation, AVANT de rejoindre la salle. Valider (ou Entrée)
+        enregistre le pseudo ; ✕ garde l'actuel. Dans les deux cas on
+        poursuit la jonction. ── */
+  let _pseudoNext=null;
+  function askPseudo(next){
+    _pseudoNext=next||null;
+    $('pseudoModal-title').textContent=t('livePseudoTitle');
+    $('pseudoModalTxt').textContent=t('livePseudoAsk');
+    $('pseudoModalOk').textContent=t('livePseudoOk');
+    $('pseudoModalInput').value=getPseudo();
+    remClass($('pseudoModal'),'off');showBackdrop();
+    setTimeout(()=>{const i=$('pseudoModalInput');i.focus();i.select();},80);
+  }
+  function closePseudoModal(apply){
+    if(apply)applyPseudo($('pseudoModalInput').value);
+    addClass($('pseudoModal'),'off');hideBackdrop();
+    const next=_pseudoNext;_pseudoNext=null;
+    if(next)next();
+  }
+  $('pseudoModalOk').addEventListener('click',()=>closePseudoModal(true));
+  $('pseudoModalClose').addEventListener('click',()=>closePseudoModal(false));
+  $('pseudoModalInput').addEventListener('keydown',e=>{if(e.key==='Enter')closePseudoModal(true);});
+
+  // Lien d'invitation #live=SALLE-SECRET → modale pseudo, puis jonction
+  // automatique. Le fragment est effacé aussitôt pour ne pas traîner
+  // dans l'historique.
+  function checkHashJoin(){
+    const m=/^#live=([A-Z0-9]{4,8}-[A-Z0-9]{4,8})$/i.exec(location.hash||'');
+    if(!m)return;
+    history.replaceState(null,'',location.pathname+location.search);
+    askPseudo(()=>{
+      $('shareBtn').click();setLiveTab(true);
+      joinRoom(m[1]);
+    });
+  }
+  window.addEventListener('hashchange',checkHashJoin);
+  // Cliquer sur le badge ouvre directement l'onglet Partage de la modale
+  $('liveBadge').addEventListener('click',()=>{$('shareBtn').click();setLiveTab(true);});
+
+  /* ── Reprise automatique des salles au démarrage ── */
+  document.addEventListener('query-ready',()=>{
+    const rooms=getRooms();
+    let dirty=false;
+    Object.keys(rooms).forEach(pid=>{
+      if(!profiles[pid]){delete rooms[pid];dirty=true;return;}
+      // Migration : marquer les profils liés créés avant l'ajout de liveRoom
+      if(!profiles[pid].liveRoom)profiles[pid].liveRoom=rooms[pid].room;
+      if(rooms[pid].paused)return; // partage arrêté par l'utilisateur — ne pas reprendre tout seul
+      start(mkSession(pid,rooms[pid]));
+    });
+    if(dirty)saveRooms(rooms);
+    checkHashJoin(); // arrivée via un lien d'invitation
+    updateLiveUI();
+  },{once:true});
 })();
 
 // Kick off
