@@ -3042,26 +3042,26 @@ function togglePin(idx){if(!$('addModal').classList.contains('off'))return;entri
 function buildClipboardHtml(content){
   const isDark=document.body.classList.contains('dark');
   const fg=isDark?'#f2f2f2':'#1c1c1a';
-  const bg=isDark?'#1e1e1e':'#ffffff';
   const codeBg=isDark?'#2a2a2a':'#f1f5f9';
   const codeBd=isDark?'#383838':'#e2e8f0';
   const accent='#2563eb';
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;line-height:1.65;color:${fg};background:${bg};margin:0;padding:8px;}
-b,strong{font-weight:700;}i,em{font-style:italic;}u{text-decoration:underline;}
-s,strike,del{text-decoration:line-through;}
-h1{font-size:1.5em;font-weight:700;margin:.6em 0 .3em;}
-h2{font-size:1.25em;font-weight:700;margin:.6em 0 .3em;}
-h3{font-size:1.1em;font-weight:700;margin:.6em 0 .3em;}
-ul{padding-left:1.6em;list-style:disc;margin:.35em 0;}
-ol{padding-left:1.6em;list-style:decimal;margin:.35em 0;}
-li{margin:.15em 0;}
-blockquote{border-left:3px solid ${accent};background:rgba(37,99,235,.08);padding:8px 14px;margin:.5em 0;font-style:italic;}
-code{font-family:'Consolas','Courier New',monospace;font-size:.9em;background:${codeBg};border:1px solid ${codeBd};padding:1px 5px;border-radius:4px;}
-pre{background:${codeBg};border:1px solid ${codeBd};border-radius:6px;padding:10px 12px;margin:.5em 0;overflow-x:auto;font-family:'Consolas','Courier New',monospace;font-size:.88em;line-height:1.55;white-space:pre;}
-pre code{background:transparent;border:none;padding:0;font-size:1em;}
-hr{border:none;border-top:2px solid ${codeBd};margin:.75em 0;}
-</style></head><body>${content}</body></html>`;
+  // Apply inline styles via DOM so that broken CRM editors (e.g. Dynamics) don't
+  // render the <style> block as visible text.
+  const tmp=document.createElement('div');
+  tmp.innerHTML=content;
+  tmp.querySelectorAll('h1').forEach(el=>el.style.cssText='font-size:1.5em;font-weight:700;margin:.6em 0 .3em;');
+  tmp.querySelectorAll('h2').forEach(el=>el.style.cssText='font-size:1.25em;font-weight:700;margin:.6em 0 .3em;');
+  tmp.querySelectorAll('h3').forEach(el=>el.style.cssText='font-size:1.1em;font-weight:700;margin:.6em 0 .3em;');
+  tmp.querySelectorAll('ul').forEach(el=>el.style.cssText='padding-left:1.6em;list-style:disc;margin:.35em 0;');
+  tmp.querySelectorAll('ol').forEach(el=>el.style.cssText='padding-left:1.6em;list-style:decimal;margin:.35em 0;');
+  tmp.querySelectorAll('li').forEach(el=>el.style.cssText='margin:.15em 0;');
+  tmp.querySelectorAll('blockquote').forEach(el=>el.style.cssText=`border-left:3px solid ${accent};background:rgba(37,99,235,.08);padding:8px 14px;margin:.5em 0;font-style:italic;`);
+  tmp.querySelectorAll('code').forEach(el=>{if(el.parentElement.tagName!=='PRE')el.style.cssText=`font-family:'Consolas','Courier New',monospace;font-size:.9em;background:${codeBg};border:1px solid ${codeBd};padding:1px 5px;border-radius:4px;`;});
+  tmp.querySelectorAll('pre').forEach(el=>el.style.cssText=`background:${codeBg};border:1px solid ${codeBd};border-radius:6px;padding:10px 12px;margin:.5em 0;font-family:'Consolas','Courier New',monospace;font-size:.88em;line-height:1.55;white-space:pre;`);
+  tmp.querySelectorAll('pre code').forEach(el=>el.style.cssText='background:transparent;border:none;padding:0;');
+  tmp.querySelectorAll('hr').forEach(el=>el.style.cssText=`border:none;border-top:2px solid ${codeBd};margin:.75em 0;`);
+  const body=`<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;line-height:1.65;color:${fg};">${tmp.innerHTML}</div>`;
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${body}</body></html>`;
 }
 
 function copyCard(entry,card){
