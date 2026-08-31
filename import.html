@@ -462,6 +462,110 @@ body {
   color: var(--c-text3);
 }
 
+/* ── Ghost button to add a cover image, shown next to the title when no profile cover is set ── */
+.content-cover-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  border: 1px dashed var(--c-border2);
+  background: transparent;
+  color: var(--c-text2);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.content-cover-add-btn:hover { border-color: var(--c-accent); color: var(--c-accent); background: var(--c-accent-l); }
+.content-cover-add-btn svg { width: 13px; height: 13px; }
+
+/* ── Profile cover — a per-profile banner image above the card list, Notion-style ── */
+.profile-cover {
+  position: relative;
+  height: 180px;
+  border-radius: var(--r2);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  margin-bottom: 20px;
+  overflow: hidden;
+  box-shadow: var(--s-sm);
+}
+.profile-cover-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,.45) 100%);
+  pointer-events: none;
+  transition: background .15s;
+}
+.profile-cover-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity .15s, transform .15s;
+}
+.profile-cover:hover .profile-cover-actions,
+.profile-cover:focus-within .profile-cover-actions { opacity: 1; transform: translateY(0); }
+.cover-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+  background: rgba(20, 20, 20, .55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background .15s;
+}
+.cover-action-btn:hover { background: rgba(20, 20, 20, .78); }
+.cover-action-btn.cover-action-danger { padding: 6px 8px; }
+.cover-action-btn.cover-action-primary { background: var(--c-accent); }
+.cover-action-btn.cover-action-primary:hover { background: var(--c-accent-h); }
+.cover-action-btn svg { width: 13px; height: 13px; display: block; }
+@media (max-width: 640px) {
+  .profile-cover { height: 120px; }
+}
+
+/* ── Reposition mode: drag the cover image inside its fixed frame ── */
+.profile-cover.repositioning { cursor: grab; user-select: none; }
+.profile-cover.repositioning.dragging { cursor: grabbing; }
+.profile-cover.repositioning .profile-cover-scrim { background: rgba(0,0,0,.2); }
+.profile-cover-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  background: rgba(20, 20, 20, .6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  padding: 5px 10px;
+  border-radius: 20px;
+  pointer-events: none;
+}
+/* Always visible while active (no hover-fade) so "Save" stays reachable mid-drag. */
+.profile-cover-repo-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 6px;
+}
+
 /* ─── CARDS ─── */
 #results {
   display: flex;
@@ -1908,13 +2012,41 @@ body.dark .share-status.notice  { background: rgba(234,179,8,.12); color: #fbbf2
 
   <!-- Content -->
   <div id="content">
+    <div id="profileCover" class="profile-cover off">
+      <div class="profile-cover-scrim"></div>
+      <div class="profile-cover-hint off" id="coverRepositionHint"><span id="lbl-coverRepositionHint">Drag to reposition</span></div>
+      <div class="profile-cover-actions" id="coverActions">
+        <button id="coverRepositionBtn" class="cover-action-btn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+          <span id="lbl-coverReposition">Reposition</span>
+        </button>
+        <button id="coverChangeBtn" class="cover-action-btn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16.5V19a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2.5"/><polyline points="7 8 12 3 17 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span id="lbl-coverChange">Change</span>
+        </button>
+        <button id="coverRemoveBtn" class="cover-action-btn cover-action-danger" type="button" title="Remove banner">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </button>
+      </div>
+      <div class="profile-cover-repo-actions off" id="coverRepositionActions">
+        <button id="coverSavePosBtn" class="cover-action-btn cover-action-primary" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span id="lbl-coverSavePos">Save position</span>
+        </button>
+      </div>
+    </div>
     <div class="content-header">
       <h1 class="content-title" id="content-title">—</h1>
+      <button id="coverAddBtn" class="content-cover-add-btn off" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+        <span id="lbl-coverAdd">Cover</span>
+      </button>
       <span class="content-subtitle" id="content-count"></span>
     </div>
     <div id="results"></div>
   </div>
 </div><!-- /#main -->
+<input type="file" id="coverFileInput" accept="image/*" style="display:none">
 
 </div><!-- /#app -->
 
@@ -2257,7 +2389,7 @@ body.dark .share-status.notice  { background: rgba(234,179,8,.12); color: #fbbf2
 /* ════════════════════════════════════════════════════════
    i18n
 ════════════════════════════════════════════════════════ */
-const TR={en:{newCard:"New card",export:"Export",exportAll:"Export all",import:"Import",importMulti:(n,t)=>`Import ${n} profile(s) from ${t} file(s)?`,importDone:(n)=>`✅ ${n} profile(s) imported.`,importPartial:(ok,fail)=>`✅ ${ok} imported, ⚠️ ${fail} failed.`,share:"Share",settings:"Settings",newProfile:"New profile",profiles:"Profiles",searchPh:"Search... (use / for all profiles)",emptyTitle:"No cards yet",emptySub:"Click '+ New card' to get started.",noResultTitle:"No results",noResultSub:"Try different keywords.",pin:"Pin",unpin:"Unpin",edit:"Edit",view:"View",copy:"Copy",copied:"Copied!",resultsN:n=>n===1?"1 result":`${n} results`,allCards:n=>n===1?"1 card":`${n} cards`,newCardTitle:"New card",editCardTitle:"Edit card",edPh:"💡 Write your new card here...\n• # for a tag\n• ! to link another card\n• / in the search bar to look across every profile",save:"✅ Save",modify:"✅ Modify",delete:"🗑️ Delete",cancel:"Cancel",create:"✅ Create",newProfileTitle:"New profile",profilePh:"Profile name (e.g. Work, Personal…)",welcomeTitle:"Welcome! Create your first profile",firstProfilePh:"Your profile name (e.g. Personal, Work…)",settingsTitle:"Settings",general:"General",statistics:"Statistics",language:"Language",totalCards:"Total cards",errEmpty:"Please enter some content.",errProfileEmpty:"Please enter a profile name.",errDuplicate:n=>`"${n}" already exists.`,errLast:"Can't delete the only profile.",confirmCard:"Delete this card?",confirmProfile:n=>`Delete "${n}" and all its cards?`,confirmImport:(c,i,p)=>`Replace ${c} entries in "${p}" with ${i} from file?`,errImport:"Import failed.",shareTitle:"Share via device",sendInstr:'Click "Generate code" to get a connection code. Keep this window open until the transfer is complete.',genCode:"🔑 Generate code",waitMsg:"⏳ Waiting for connection…",sendOk:"✅ Profile sent!",recvInstr:"Enter the code shown on the other device. ⚠️ May not work on corporate or heavily restricted networks.",connectBtn:"🔗 Connect",connecting:"⏳ Connecting…",p2pSendErr:"❌ Connection error. Try again.",p2pShort:"Code must be at least 4 characters.",p2pTimeout:"Timed out — check the code and retry.",p2pDataErr:"Error processing received profile.",p2pFail:"Connection failed. Is the code correct?",p2pNotFound:"Device not found. Make sure it's waiting.",p2pRecvOk:n=>`✅ Profile "${n}" imported!`,defaultProfile:"Imported profile",errQuota:"Storage full — delete some cards or profiles.",qrHint:"Or scan with a phone camera to open Query and import this profile",pwaNoticeTxt:"You're in the browser, not in the Query app on your home screen. Open the installed Query app, go to Share → Receive, and enter this code there so the profile ends up in the app:",pwaImportAnyway:"Import here in the browser instead",modeSend:"Send",modeRecv:"Receive",theme:"Theme",editMode:"Edit",editModeExit:"Done",listMode:"List",gridMode:"Grid",resetSize:"Reset size & position",resetAllSizes:"Reset all sizes",cardColor:"Color",dragHandle:"Drag to position freely",exportSection:"Export",exportFolder:"Save location",chooseFolder:"Choose folder…",changeFolder:"Change…",exportFolderHint:"Exported JSON files are saved straight to this folder instead of your browser's downloads.",exportFolderUnsupported:"This doesn't work on Firefox — your browser doesn't support choosing a folder, so files will be downloaded normally.",exportFolderReset:"Reset",exportFolderDenied:"Permission denied — files will be downloaded normally.",exportSavedTo:(f,d)=>`✅ ${f} saved to "${d}"`,exportDownloaded:(f)=>`⬇️ ${f} downloaded`,exportAllSavedTo:(n,d)=>`✅ ${n} file(s) saved to "${d}"`,exportAllDownloaded:(n)=>`⬇️ ${n} file(s) downloaded`,helpSection:"Help",guidedTour:"Guided tour",startTour:"Start",guidedTourHint:"Take a quick tour of the app's features — you can restart it anytime.",profilesSection:"Profiles",profilesHint:"Click the emoji to open the picker. Press Enter or click away to save the name.",changeEmoji:"Change emoji",currentProfile:"current",mentionHint:"Type to search a card to link…",mentionNoCards:"No other card to link to yet",mentionUntitled:"(empty card)",mentionDeleted:"Deleted card",mentionDeletedTitle:"This card no longer exists",liveTab:"Live sync",liveInstr:"Unlike Send/Receive (one-time copy), live sync keeps this profile continuously synchronized: anyone with the invite link can create, edit and delete cards, and every change appears for everyone. Data travels only between devices, end-to-end encrypted — no cloud, no account.",liveCreate:"📡 Start sharing",liveJoinInstr:"Join a shared profile with its invite code (to share one of YOUR profiles, use the 📡 icon on its row in the sidebar):",liveJoin:"🔗 Join",liveStatus:n=>n===0?"⏳ Waiting for participants… keep this tab open.":`🟢 Connected — ${n} other device(s)`,liveOffline:"🔴 Sharing unavailable (already open in another tab?)",liveErrCode:"Invalid code — expected format: ABC123-XYZ456.",liveJoined:n=>`✅ Joined shared profile "${n}"!`,liveHostHint:"Changes sync between devices that are online at the same time. When someone reconnects, everything reconciles automatically.",liveCurrent:"This profile is shared",liveBadge:n=>`SHARED · ${n}`,liveInviteLbl:"Invite code — share it privately with your collaborators:",liveNoCrypto:"Sharing needs a secure context (HTTPS).",liveResume:"📡 Resume sharing (same code)",liveStop:"⏹ Stop sharing",livePseudoAsk:"Choose your nickname (visible to the other participants):",livePseudoSet:n=>`✅ Nickname saved: ${n}`,livePseudoTitle:"Your nickname",livePseudoOk:"Join",liveRowTip:"Share this profile live",liveStopConfirm:"Stop sharing this profile? Your local copy stays, but changes will no longer sync. Restarting later will generate a new invite code.",liveStopped:"Sharing stopped.",liveCopyLink:"🔗 Copy invite link",liveLinkCopied:"✅ Invite link copied!",livePseudoLbl:"Nickname:",liveYou:"you",tourWelcomeTitle:"Welcome to Query",tourWelcomeDesc:"A quick tour of everything you can do — takes less than a minute. Restart it anytime from Settings → Help.",tourCreateTitle:"Create & format a card",tourCreateDesc:'Click "+ New card" to create one. Format it with the toolbar: bold, lists, links, colors, images…',tourOrganizeTitle:"Pin, color, organize",tourOrganizeDesc:"Pin important cards to keep them at the top, give them a color to spot them at a glance, and use the eye icon to preview a card without editing it.",tourCanvasTitle:"List or canvas layout",tourCanvasDesc:"Switch to canvas mode (Edit) to freely resize and drag cards anywhere on the board — great for moodboards and visual layouts.",tourSearchTitle:"Search everything",tourSearchDesc:"Type a word to filter cards in the current profile. Add / before your search to look across all profiles at once.",tourProfilesTitle:"Multiple profiles",tourProfilesDesc:"Create as many profiles as you like (Work, Personal, Projects…), switch between them from the sidebar, and reorder them by drag-and-drop.",tourLiveTitle:"Live collaboration",tourLiveDesc:"Share a profile live with others: everyone can create, edit and delete cards in real time, end-to-end encrypted — no server, no account.",tourExportTitle:"Export, import, back up",tourExportDesc:"Export saves the current profile as JSON, Export all saves everything. Tip: pick a folder in Settings → Export so files save there automatically.",tourShareTitle:"Send to another device",tourShareDesc:"The Share button generates a one-time code to transfer a whole profile peer-to-peer between two devices — no server, no account needed.",tourStartTitle:"You're all set!",tourStartDesc:"Everything is stored locally on your device — your data belongs to you. Go ahead and create your first card!",tourNext:"Next",tourSkip:"Skip",tourFinish:"Let's go!"},fr:{newCard:"Nouvelle fiche",export:"Exporter",exportAll:"Tout exporter",import:"Importer",importMulti:(n,t)=>`Importer ${n} profil(s) depuis ${t} fichier(s) ?`,importDone:(n)=>`✅ ${n} profil(s) importé(s).`,importPartial:(ok,fail)=>`✅ ${ok} importé(s), ⚠️ ${fail} échec(s).`,share:"Partager",settings:"Paramètres",newProfile:"Nouveau profil",profiles:"Profils",searchPh:"Rechercher… (« / » pour tous les profils)",emptyTitle:"Aucune fiche",emptySub:"Cliquez sur '+ Nouvelle fiche' pour commencer.",noResultTitle:"Aucun résultat",noResultSub:"Essayez d'autres mots-clés.",pin:"Épingler",unpin:"Désépingler",edit:"Modifier",view:"Consulter",copy:"Copier",copied:"Copié !",resultsN:n=>n===1?"1 résultat":`${n} résultats`,allCards:n=>n===1?"1 fiche":`${n} fiches`,newCardTitle:"Nouvelle fiche",editCardTitle:"Modifier la fiche",edPh:"💡 Écrivez votre nouvelle fiche ici…\n• # pour créer un tag\n• ! pour lier une autre fiche\n• / dans la recherche pour chercher dans tous les profils",save:"✅ Sauvegarder",modify:"✅ Modifier",delete:"🗑️ Supprimer",cancel:"Annuler",create:"✅ Créer",newProfileTitle:"Nouveau profil",profilePh:"Nom du profil (ex : Travail, Personnel…)",welcomeTitle:"Bienvenue ! Créez votre premier profil",firstProfilePh:"Nom de votre profil (ex : Personnel, Travail…)",settingsTitle:"Paramètres",general:"Général",statistics:"Statistiques",language:"Langue",totalCards:"Total fiches",errEmpty:"Veuillez entrer du contenu.",errProfileEmpty:"Veuillez entrer un nom de profil.",errDuplicate:n=>`« ${n} » existe déjà.`,errLast:"Impossible de supprimer le seul profil.",confirmCard:"Supprimer cette fiche ?",confirmProfile:n=>`Supprimer « ${n} » et toutes ses fiches ?`,confirmImport:(c,i,p)=>`Remplacer ${c} entrées dans « ${p} » par ${i} du fichier ?`,errImport:"Erreur d'importation.",shareTitle:"Partager via appareil",sendInstr:"Cliquez sur « Générer un code » pour obtenir un code de connexion. Gardez cette fenêtre ouverte jusqu'à la fin du transfert.",genCode:"🔑 Générer un code",waitMsg:"⏳ En attente de connexion…",sendOk:"✅ Profil envoyé !",recvInstr:"Entrez le code affiché sur l'autre appareil. ⚠️ Peut ne pas fonctionner sur les réseaux d'entreprise ou très sécurisés.",connectBtn:"🔗 Connecter",connecting:"⏳ Connexion…",p2pSendErr:"❌ Erreur de connexion.",p2pShort:"Le code doit comporter au moins 4 caractères.",p2pTimeout:"Délai dépassé — vérifiez le code.",p2pDataErr:"Erreur lors du traitement du profil.",p2pFail:"Connexion échouée. Le code est-il correct ?",p2pNotFound:"Appareil introuvable.",p2pRecvOk:n=>`✅ Profil « ${n} » importé !`,defaultProfile:"Profil importé",errQuota:"Stockage plein — supprimez des fiches ou des profils.",qrHint:"Ou scannez ce code avec l'appareil photo d'un téléphone pour ouvrir Query et importer ce profil",pwaNoticeTxt:"Tu es dans le navigateur, pas dans l'app Query de ton écran d'accueil. Ouvre l'app Query installée, va dans Partager → Recevoir, et entre ce code là-bas pour que le profil arrive dans l'app :",pwaImportAnyway:"Importer ici dans le navigateur quand même",modeSend:"Envoyer",modeRecv:"Recevoir",theme:"Thème",editMode:"Éditer",editModeExit:"Terminer",listMode:"Liste",gridMode:"Grille",resetSize:"Réinitialiser taille/position",resetAllSizes:"Réinitialiser toutes les tailles",cardColor:"Couleur",dragHandle:"Déplacer librement",exportSection:"Exportation",exportFolder:"Emplacement d'enregistrement",chooseFolder:"Choisir un dossier…",changeFolder:"Changer…",exportFolderHint:"Les fichiers JSON exportés sont enregistrés directement dans ce dossier au lieu des téléchargements du navigateur.",exportFolderUnsupported:"Ne fonctionne pas sur Firefox — votre navigateur ne permet pas de choisir un dossier, les fichiers seront téléchargés normalement.",exportFolderReset:"Réinitialiser",exportFolderDenied:"Permission refusée — les fichiers seront téléchargés normalement.",exportSavedTo:(f,d)=>`✅ ${f} enregistré dans « ${d} »`,exportDownloaded:(f)=>`⬇️ ${f} téléchargé`,exportAllSavedTo:(n,d)=>`✅ ${n} fichier(s) enregistré(s) dans « ${d} »`,exportAllDownloaded:(n)=>`⬇️ ${n} fichier(s) téléchargé(s)`,helpSection:"Aide",guidedTour:"Visite guidée",startTour:"Lancer",guidedTourHint:"Fais un tour rapide des fonctionnalités de l'app — tu peux le relancer à tout moment.",profilesSection:"Profils",profilesHint:"Cliquez sur l'émoji pour ouvrir le sélecteur. Appuyez sur Entrée ou cliquez ailleurs pour enregistrer le nom.",changeEmoji:"Changer l'émoji",currentProfile:"actif",mentionHint:"Tapez pour rechercher une fiche à lier…",mentionNoCards:"Pas encore d'autre fiche à lier",mentionUntitled:"(fiche vide)",mentionDeleted:"Fiche supprimée",mentionDeletedTitle:"Cette fiche n'existe plus",liveTab:"Collaborer",liveInstr:"Contrairement à Envoyer/Recevoir (copie ponctuelle), la collaboration garde ce profil synchronisé en continu : toute personne ayant le lien d'invitation peut créer, modifier et supprimer des fiches, et chaque changement apparaît chez tout le monde. Les données circulent uniquement entre les appareils, chiffrées de bout en bout — pas de cloud, pas de compte.",liveCreate:"📡 Démarrer le partage",liveJoinInstr:"Rejoignez un profil partagé avec son code d'invitation (pour partager un de VOS profils, utilisez l'icône 📡 sur sa ligne dans la barre latérale) :",liveJoin:"🔗 Rejoindre",liveStatus:n=>n===0?"⏳ En attente de participants… gardez cet onglet ouvert.":`🟢 Connecté — ${n} autre(s) appareil(s)`,liveOffline:"🔴 Partage indisponible (déjà ouvert dans un autre onglet ?)",liveErrCode:"Code invalide — format attendu : ABC123-XYZ456.",liveJoined:n=>`✅ Profil partagé « ${n} » rejoint !`,liveHostHint:"Les modifications se synchronisent entre les appareils en ligne au même moment. À la reconnexion, tout se réconcilie automatiquement.",liveCurrent:"Ce profil est partagé",liveBadge:n=>`PARTAGÉ · ${n}`,liveInviteLbl:"Code d'invitation — partagez-le en privé avec vos collaborateurs :",liveNoCrypto:"Le partage nécessite un contexte sécurisé (HTTPS).",liveResume:"📡 Reprendre le partage (même code)",liveStop:"⏹ Arrêter le partage",livePseudoAsk:"Choisissez votre pseudo (visible par les autres participants) :",livePseudoSet:n=>`✅ Pseudo enregistré : ${n}`,livePseudoTitle:"Votre pseudo",livePseudoOk:"Rejoindre",liveRowTip:"Partager ce profil en direct",liveStopConfirm:"Arrêter le partage de ce profil ? Votre copie locale est conservée, mais les modifications ne seront plus synchronisées. Relancer plus tard générera un nouveau code d'invitation.",liveStopped:"Partage arrêté.",liveCopyLink:"🔗 Copier le lien d'invitation",liveLinkCopied:"✅ Lien d'invitation copié !",livePseudoLbl:"Pseudo :",liveYou:"vous",tourWelcomeTitle:"Bienvenue dans Query",tourWelcomeDesc:"Un rapide tour de toutes les fonctionnalités — ça prend moins d'une minute. Relance-le à tout moment depuis Paramètres → Aide.",tourCreateTitle:"Créer et mettre en forme une fiche",tourCreateDesc:'Clique sur « + Nouvelle fiche » pour en créer une. Mets-la en forme avec la barre d\'outils : gras, listes, liens, couleurs, images…',tourOrganizeTitle:"Épingler, colorer, organiser",tourOrganizeDesc:"Épingle les fiches importantes pour les garder en haut, donne-leur une couleur pour les repérer d'un coup d'œil, et utilise l'icône œil pour consulter une fiche sans la modifier.",tourCanvasTitle:"Vue liste ou canevas",tourCanvasDesc:"Passe en mode canevas (Éditer) pour redimensionner et déplacer librement tes fiches sur le tableau — parfait pour les tableaux visuels.",tourSearchTitle:"Rechercher partout",tourSearchDesc:"Tape un mot pour filtrer les fiches du profil actuel. Ajoute / avant ta recherche pour chercher dans tous les profils à la fois.",tourProfilesTitle:"Plusieurs profils",tourProfilesDesc:"Crée autant de profils que tu veux (Travail, Personnel, Projets…), passe de l'un à l'autre depuis la barre latérale, et réorganise-les par glisser-déposer.",tourLiveTitle:"Collaboration en direct",tourLiveDesc:"Partage un profil en direct avec d'autres personnes : tout le monde peut créer, modifier et supprimer des fiches en temps réel, chiffré de bout en bout — pas de serveur, pas de compte.",tourExportTitle:"Exporter, importer, sauvegarder",tourExportDesc:"Exporter enregistre le profil actuel en JSON, Tout exporter sauvegarde tout. Astuce : choisis un dossier dans Paramètres → Exportation pour un enregistrement automatique.",tourShareTitle:"Envoyer vers un autre appareil",tourShareDesc:"Le bouton Partager génère un code à usage unique pour transférer un profil entier d'appareil à appareil — pas de serveur, pas de compte.",tourStartTitle:"C'est parti !",tourStartDesc:"Tout est stocké localement sur ton appareil — tes données t'appartiennent. Crée ta première fiche !",tourNext:"Suivant",tourSkip:"Passer",tourFinish:"C'est parti !"}};
+const TR={en:{newCard:"New card",export:"Export",exportAll:"Export all",import:"Import",importMulti:(n,t)=>`Import ${n} profile(s) from ${t} file(s)?`,importDone:(n)=>`✅ ${n} profile(s) imported.`,importPartial:(ok,fail)=>`✅ ${ok} imported, ⚠️ ${fail} failed.`,share:"Share",settings:"Settings",newProfile:"New profile",profiles:"Profiles",searchPh:"Search... (use / for all profiles)",emptyTitle:"No cards yet",emptySub:"Click '+ New card' to get started.",noResultTitle:"No results",noResultSub:"Try different keywords.",pin:"Pin",unpin:"Unpin",edit:"Edit",view:"View",copy:"Copy",copied:"Copied!",resultsN:n=>n===1?"1 result":`${n} results`,allCards:n=>n===1?"1 card":`${n} cards`,newCardTitle:"New card",editCardTitle:"Edit card",edPh:"💡 Write your new card here...\n• # for a tag\n• ! to link another card\n• / in the search bar to look across every profile",save:"✅ Save",modify:"✅ Modify",delete:"🗑️ Delete",cancel:"Cancel",create:"✅ Create",newProfileTitle:"New profile",profilePh:"Profile name (e.g. Work, Personal…)",welcomeTitle:"Welcome! Create your first profile",firstProfilePh:"Your profile name (e.g. Personal, Work…)",settingsTitle:"Settings",general:"General",statistics:"Statistics",language:"Language",totalCards:"Total cards",errEmpty:"Please enter some content.",errProfileEmpty:"Please enter a profile name.",errDuplicate:n=>`"${n}" already exists.`,errLast:"Can't delete the only profile.",confirmCard:"Delete this card?",confirmProfile:n=>`Delete "${n}" and all its cards?`,confirmImport:(c,i,p)=>`Replace ${c} entries in "${p}" with ${i} from file?`,errImport:"Import failed.",shareTitle:"Share via device",sendInstr:'Click "Generate code" to get a connection code. Keep this window open until the transfer is complete.',genCode:"🔑 Generate code",waitMsg:"⏳ Waiting for connection…",sendOk:"✅ Profile sent!",recvInstr:"Enter the code shown on the other device. ⚠️ May not work on corporate or heavily restricted networks.",connectBtn:"🔗 Connect",connecting:"⏳ Connecting…",p2pSendErr:"❌ Connection error. Try again.",p2pShort:"Code must be at least 4 characters.",p2pTimeout:"Timed out — check the code and retry.",p2pDataErr:"Error processing received profile.",p2pFail:"Connection failed. Is the code correct?",p2pNotFound:"Device not found. Make sure it's waiting.",p2pRecvOk:n=>`✅ Profile "${n}" imported!`,defaultProfile:"Imported profile",errQuota:"Storage full — delete some cards or profiles.",qrHint:"Or scan with a phone camera to open Query and import this profile",pwaNoticeTxt:"You're in the browser, not in the Query app on your home screen. Open the installed Query app, go to Share → Receive, and enter this code there so the profile ends up in the app:",pwaImportAnyway:"Import here in the browser instead",modeSend:"Send",modeRecv:"Receive",theme:"Theme",editMode:"Edit",editModeExit:"Done",listMode:"List",gridMode:"Grid",resetSize:"Reset size & position",resetAllSizes:"Reset all sizes",cardColor:"Color",dragHandle:"Drag to position freely",coverAdd:"Banner",coverChange:"Change",confirmRemoveCover:"Remove this banner image?",coverReposition:"Reposition",coverRepositionHint:"Drag to reposition",coverSavePos:"Save position",exportSection:"Export",exportFolder:"Save location",chooseFolder:"Choose folder…",changeFolder:"Change…",exportFolderHint:"Exported JSON files are saved straight to this folder instead of your browser's downloads.",exportFolderUnsupported:"This doesn't work on Firefox — your browser doesn't support choosing a folder, so files will be downloaded normally.",exportFolderReset:"Reset",exportFolderDenied:"Permission denied — files will be downloaded normally.",exportSavedTo:(f,d)=>`✅ ${f} saved to "${d}"`,exportDownloaded:(f)=>`⬇️ ${f} downloaded`,exportAllSavedTo:(n,d)=>`✅ ${n} file(s) saved to "${d}"`,exportAllDownloaded:(n)=>`⬇️ ${n} file(s) downloaded`,helpSection:"Help",guidedTour:"Guided tour",startTour:"Start",guidedTourHint:"Take a quick tour of the app's features — you can restart it anytime.",profilesSection:"Profiles",profilesHint:"Click the emoji to open the picker. Press Enter or click away to save the name.",changeEmoji:"Change emoji",currentProfile:"current",mentionHint:"Type to search a card to link…",mentionNoCards:"No other card to link to yet",mentionUntitled:"(empty card)",mentionDeleted:"Deleted card",mentionDeletedTitle:"This card no longer exists",liveTab:"Live sync",liveInstr:"Unlike Send/Receive (one-time copy), live sync keeps this profile continuously synchronized: anyone with the invite link can create, edit and delete cards, and every change appears for everyone. Data travels only between devices, end-to-end encrypted — no cloud, no account.",liveCreate:"📡 Start sharing",liveJoinInstr:"Join a shared profile with its invite code (to share one of YOUR profiles, use the 📡 icon on its row in the sidebar):",liveJoin:"🔗 Join",liveStatus:n=>n===0?"⏳ Waiting for participants… keep this tab open.":`🟢 Connected — ${n} other device(s)`,liveOffline:"🔴 Sharing unavailable (already open in another tab?)",liveErrCode:"Invalid code — expected format: ABC123-XYZ456.",liveJoined:n=>`✅ Joined shared profile "${n}"!`,liveHostHint:"Changes sync between devices that are online at the same time. When someone reconnects, everything reconciles automatically.",liveCurrent:"This profile is shared",liveBadge:n=>`SHARED · ${n}`,liveInviteLbl:"Invite code — share it privately with your collaborators:",liveNoCrypto:"Sharing needs a secure context (HTTPS).",liveResume:"📡 Resume sharing (same code)",liveStop:"⏹ Stop sharing",livePseudoAsk:"Choose your nickname (visible to the other participants):",livePseudoSet:n=>`✅ Nickname saved: ${n}`,livePseudoTitle:"Your nickname",livePseudoOk:"Join",liveRowTip:"Share this profile live",liveStopConfirm:"Stop sharing this profile? Your local copy stays, but changes will no longer sync. Restarting later will generate a new invite code.",liveStopped:"Sharing stopped.",liveCopyLink:"🔗 Copy invite link",liveLinkCopied:"✅ Invite link copied!",livePseudoLbl:"Nickname:",liveYou:"you",tourWelcomeTitle:"Welcome to Query",tourWelcomeDesc:"A quick tour of everything you can do — takes less than a minute. Restart it anytime from Settings → Help.",tourCreateTitle:"Create & format a card",tourCreateDesc:'Click "+ New card" to create one. Format it with the toolbar: bold, lists, links, colors, images…',tourOrganizeTitle:"Pin, color, organize",tourOrganizeDesc:"Pin important cards to keep them at the top, give them a color to spot them at a glance, and use the eye icon to preview a card without editing it.",tourCanvasTitle:"List or canvas layout",tourCanvasDesc:"Switch to canvas mode (Edit) to freely resize and drag cards anywhere on the board — great for moodboards and visual layouts.",tourSearchTitle:"Search everything",tourSearchDesc:"Type a word to filter cards in the current profile. Add / before your search to look across all profiles at once.",tourProfilesTitle:"Multiple profiles",tourProfilesDesc:"Create as many profiles as you like (Work, Personal, Projects…), switch between them from the sidebar, and reorder them by drag-and-drop.",tourLiveTitle:"Live collaboration",tourLiveDesc:"Share a profile live with others: everyone can create, edit and delete cards in real time, end-to-end encrypted — no server, no account.",tourExportTitle:"Export, import, back up",tourExportDesc:"Export saves the current profile as JSON, Export all saves everything. Tip: pick a folder in Settings → Export so files save there automatically.",tourShareTitle:"Send to another device",tourShareDesc:"The Share button generates a one-time code to transfer a whole profile peer-to-peer between two devices — no server, no account needed.",tourStartTitle:"You're all set!",tourStartDesc:"Everything is stored locally on your device — your data belongs to you. Go ahead and create your first card!",tourNext:"Next",tourSkip:"Skip",tourFinish:"Let's go!"},fr:{newCard:"Nouvelle fiche",export:"Exporter",exportAll:"Tout exporter",import:"Importer",importMulti:(n,t)=>`Importer ${n} profil(s) depuis ${t} fichier(s) ?`,importDone:(n)=>`✅ ${n} profil(s) importé(s).`,importPartial:(ok,fail)=>`✅ ${ok} importé(s), ⚠️ ${fail} échec(s).`,share:"Partager",settings:"Paramètres",newProfile:"Nouveau profil",profiles:"Profils",searchPh:"Rechercher… (« / » pour tous les profils)",emptyTitle:"Aucune fiche",emptySub:"Cliquez sur '+ Nouvelle fiche' pour commencer.",noResultTitle:"Aucun résultat",noResultSub:"Essayez d'autres mots-clés.",pin:"Épingler",unpin:"Désépingler",edit:"Modifier",view:"Consulter",copy:"Copier",copied:"Copié !",resultsN:n=>n===1?"1 résultat":`${n} résultats`,allCards:n=>n===1?"1 fiche":`${n} fiches`,newCardTitle:"Nouvelle fiche",editCardTitle:"Modifier la fiche",edPh:"💡 Écrivez votre nouvelle fiche ici…\n• # pour créer un tag\n• ! pour lier une autre fiche\n• / dans la recherche pour chercher dans tous les profils",save:"✅ Sauvegarder",modify:"✅ Modifier",delete:"🗑️ Supprimer",cancel:"Annuler",create:"✅ Créer",newProfileTitle:"Nouveau profil",profilePh:"Nom du profil (ex : Travail, Personnel…)",welcomeTitle:"Bienvenue ! Créez votre premier profil",firstProfilePh:"Nom de votre profil (ex : Personnel, Travail…)",settingsTitle:"Paramètres",general:"Général",statistics:"Statistiques",language:"Langue",totalCards:"Total fiches",errEmpty:"Veuillez entrer du contenu.",errProfileEmpty:"Veuillez entrer un nom de profil.",errDuplicate:n=>`« ${n} » existe déjà.`,errLast:"Impossible de supprimer le seul profil.",confirmCard:"Supprimer cette fiche ?",confirmProfile:n=>`Supprimer « ${n} » et toutes ses fiches ?`,confirmImport:(c,i,p)=>`Remplacer ${c} entrées dans « ${p} » par ${i} du fichier ?`,errImport:"Erreur d'importation.",shareTitle:"Partager via appareil",sendInstr:"Cliquez sur « Générer un code » pour obtenir un code de connexion. Gardez cette fenêtre ouverte jusqu'à la fin du transfert.",genCode:"🔑 Générer un code",waitMsg:"⏳ En attente de connexion…",sendOk:"✅ Profil envoyé !",recvInstr:"Entrez le code affiché sur l'autre appareil. ⚠️ Peut ne pas fonctionner sur les réseaux d'entreprise ou très sécurisés.",connectBtn:"🔗 Connecter",connecting:"⏳ Connexion…",p2pSendErr:"❌ Erreur de connexion.",p2pShort:"Le code doit comporter au moins 4 caractères.",p2pTimeout:"Délai dépassé — vérifiez le code.",p2pDataErr:"Erreur lors du traitement du profil.",p2pFail:"Connexion échouée. Le code est-il correct ?",p2pNotFound:"Appareil introuvable.",p2pRecvOk:n=>`✅ Profil « ${n} » importé !`,defaultProfile:"Profil importé",errQuota:"Stockage plein — supprimez des fiches ou des profils.",qrHint:"Ou scannez ce code avec l'appareil photo d'un téléphone pour ouvrir Query et importer ce profil",pwaNoticeTxt:"Tu es dans le navigateur, pas dans l'app Query de ton écran d'accueil. Ouvre l'app Query installée, va dans Partager → Recevoir, et entre ce code là-bas pour que le profil arrive dans l'app :",pwaImportAnyway:"Importer ici dans le navigateur quand même",modeSend:"Envoyer",modeRecv:"Recevoir",theme:"Thème",editMode:"Éditer",editModeExit:"Terminer",listMode:"Liste",gridMode:"Grille",resetSize:"Réinitialiser taille/position",resetAllSizes:"Réinitialiser toutes les tailles",cardColor:"Couleur",dragHandle:"Déplacer librement",coverAdd:"Bannière",coverChange:"Changer",confirmRemoveCover:"Supprimer cette image de bannière ?",coverReposition:"Repositionner",coverRepositionHint:"Glissez pour repositionner",coverSavePos:"Enregistrer la position",exportSection:"Exportation",exportFolder:"Emplacement d'enregistrement",chooseFolder:"Choisir un dossier…",changeFolder:"Changer…",exportFolderHint:"Les fichiers JSON exportés sont enregistrés directement dans ce dossier au lieu des téléchargements du navigateur.",exportFolderUnsupported:"Ne fonctionne pas sur Firefox — votre navigateur ne permet pas de choisir un dossier, les fichiers seront téléchargés normalement.",exportFolderReset:"Réinitialiser",exportFolderDenied:"Permission refusée — les fichiers seront téléchargés normalement.",exportSavedTo:(f,d)=>`✅ ${f} enregistré dans « ${d} »`,exportDownloaded:(f)=>`⬇️ ${f} téléchargé`,exportAllSavedTo:(n,d)=>`✅ ${n} fichier(s) enregistré(s) dans « ${d} »`,exportAllDownloaded:(n)=>`⬇️ ${n} fichier(s) téléchargé(s)`,helpSection:"Aide",guidedTour:"Visite guidée",startTour:"Lancer",guidedTourHint:"Fais un tour rapide des fonctionnalités de l'app — tu peux le relancer à tout moment.",profilesSection:"Profils",profilesHint:"Cliquez sur l'émoji pour ouvrir le sélecteur. Appuyez sur Entrée ou cliquez ailleurs pour enregistrer le nom.",changeEmoji:"Changer l'émoji",currentProfile:"actif",mentionHint:"Tapez pour rechercher une fiche à lier…",mentionNoCards:"Pas encore d'autre fiche à lier",mentionUntitled:"(fiche vide)",mentionDeleted:"Fiche supprimée",mentionDeletedTitle:"Cette fiche n'existe plus",liveTab:"Collaborer",liveInstr:"Contrairement à Envoyer/Recevoir (copie ponctuelle), la collaboration garde ce profil synchronisé en continu : toute personne ayant le lien d'invitation peut créer, modifier et supprimer des fiches, et chaque changement apparaît chez tout le monde. Les données circulent uniquement entre les appareils, chiffrées de bout en bout — pas de cloud, pas de compte.",liveCreate:"📡 Démarrer le partage",liveJoinInstr:"Rejoignez un profil partagé avec son code d'invitation (pour partager un de VOS profils, utilisez l'icône 📡 sur sa ligne dans la barre latérale) :",liveJoin:"🔗 Rejoindre",liveStatus:n=>n===0?"⏳ En attente de participants… gardez cet onglet ouvert.":`🟢 Connecté — ${n} autre(s) appareil(s)`,liveOffline:"🔴 Partage indisponible (déjà ouvert dans un autre onglet ?)",liveErrCode:"Code invalide — format attendu : ABC123-XYZ456.",liveJoined:n=>`✅ Profil partagé « ${n} » rejoint !`,liveHostHint:"Les modifications se synchronisent entre les appareils en ligne au même moment. À la reconnexion, tout se réconcilie automatiquement.",liveCurrent:"Ce profil est partagé",liveBadge:n=>`PARTAGÉ · ${n}`,liveInviteLbl:"Code d'invitation — partagez-le en privé avec vos collaborateurs :",liveNoCrypto:"Le partage nécessite un contexte sécurisé (HTTPS).",liveResume:"📡 Reprendre le partage (même code)",liveStop:"⏹ Arrêter le partage",livePseudoAsk:"Choisissez votre pseudo (visible par les autres participants) :",livePseudoSet:n=>`✅ Pseudo enregistré : ${n}`,livePseudoTitle:"Votre pseudo",livePseudoOk:"Rejoindre",liveRowTip:"Partager ce profil en direct",liveStopConfirm:"Arrêter le partage de ce profil ? Votre copie locale est conservée, mais les modifications ne seront plus synchronisées. Relancer plus tard générera un nouveau code d'invitation.",liveStopped:"Partage arrêté.",liveCopyLink:"🔗 Copier le lien d'invitation",liveLinkCopied:"✅ Lien d'invitation copié !",livePseudoLbl:"Pseudo :",liveYou:"vous",tourWelcomeTitle:"Bienvenue dans Query",tourWelcomeDesc:"Un rapide tour de toutes les fonctionnalités — ça prend moins d'une minute. Relance-le à tout moment depuis Paramètres → Aide.",tourCreateTitle:"Créer et mettre en forme une fiche",tourCreateDesc:'Clique sur « + Nouvelle fiche » pour en créer une. Mets-la en forme avec la barre d\'outils : gras, listes, liens, couleurs, images…',tourOrganizeTitle:"Épingler, colorer, organiser",tourOrganizeDesc:"Épingle les fiches importantes pour les garder en haut, donne-leur une couleur pour les repérer d'un coup d'œil, et utilise l'icône œil pour consulter une fiche sans la modifier.",tourCanvasTitle:"Vue liste ou canevas",tourCanvasDesc:"Passe en mode canevas (Éditer) pour redimensionner et déplacer librement tes fiches sur le tableau — parfait pour les tableaux visuels.",tourSearchTitle:"Rechercher partout",tourSearchDesc:"Tape un mot pour filtrer les fiches du profil actuel. Ajoute / avant ta recherche pour chercher dans tous les profils à la fois.",tourProfilesTitle:"Plusieurs profils",tourProfilesDesc:"Crée autant de profils que tu veux (Travail, Personnel, Projets…), passe de l'un à l'autre depuis la barre latérale, et réorganise-les par glisser-déposer.",tourLiveTitle:"Collaboration en direct",tourLiveDesc:"Partage un profil en direct avec d'autres personnes : tout le monde peut créer, modifier et supprimer des fiches en temps réel, chiffré de bout en bout — pas de serveur, pas de compte.",tourExportTitle:"Exporter, importer, sauvegarder",tourExportDesc:"Exporter enregistre le profil actuel en JSON, Tout exporter sauvegarde tout. Astuce : choisis un dossier dans Paramètres → Exportation pour un enregistrement automatique.",tourShareTitle:"Envoyer vers un autre appareil",tourShareDesc:"Le bouton Partager génère un code à usage unique pour transférer un profil entier d'appareil à appareil — pas de serveur, pas de compte.",tourStartTitle:"C'est parti !",tourStartDesc:"Tout est stocké localement sur ton appareil — tes données t'appartiennent. Crée ta première fiche !",tourNext:"Suivant",tourSkip:"Passer",tourFinish:"C'est parti !"}};
 let lang='en';
 const t=(k,...a)=>{const v=TR[lang]?.[k]??TR.en[k];return typeof v==='function'?v(...a):v??k;};
 
@@ -2722,8 +2854,172 @@ function updateTopbar(){
   $('tb-profile-name').textContent=name;
   $('content-title').textContent=name;
   updateCount();
+  renderProfileCover();
 }
 function updateCount(){const n=entries.length;$('content-count').textContent=n>0?t('allCards',n):'';}
+
+/* ════════════════════════════════════════════════════════
+   PROFILE COVER IMAGE — a per-profile banner shown above the card list
+════════════════════════════════════════════════════════ */
+// Downscale + re-encode client-side so a phone photo doesn't bloat IndexedDB.
+function resizeImageFile(file,maxDim,quality){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onerror=()=>reject(reader.error);
+    reader.onload=()=>{
+      const img=new Image();
+      img.onerror=()=>reject(new Error('Invalid image'));
+      img.onload=()=>{
+        let w=img.naturalWidth,h=img.naturalHeight;
+        if(w>maxDim||h>maxDim){
+          if(w>=h){h=Math.round(h*maxDim/w);w=maxDim;}
+          else{w=Math.round(w*maxDim/h);h=maxDim;}
+        }
+        const canvas=document.createElement('canvas');
+        canvas.width=w;canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg',quality));
+      };
+      img.src=reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+async function setProfileCover(pid,file){
+  if(!file||!profiles[pid]||!file.type.startsWith('image/'))return;
+  try{
+    const dataUrl=await resizeImageFile(file,1600,.85);
+    profiles[pid].bgImage=dataUrl;
+    profiles[pid].bgPos={x:50,y:50};
+    persist();
+    if(pid===currentPid)renderProfileCover();
+  }catch(_){alert(t('errImport'));}
+}
+function removeProfileCover(pid){
+  if(!profiles[pid]||!profiles[pid].bgImage)return;
+  delete profiles[pid].bgImage;
+  delete profiles[pid].bgPos;
+  persist();
+  if(pid===currentPid)renderProfileCover();
+}
+function applyCoverPosition(){
+  const p=profiles[currentPid];
+  if(!p||!p.bgImage)return;
+  const pos=p.bgPos||{x:50,y:50};
+  $('profileCover').style.backgroundPosition=`${pos.x}% ${pos.y}%`;
+}
+function renderProfileCover(){
+  const cov=$('profileCover'),addBtn=$('coverAddBtn');
+  if(!cov||!addBtn)return;
+  // Any re-render (incl. a profile switch) drops out of reposition mode —
+  // the visual state only; data was already saved/discarded by whoever triggered it.
+  exitCoverReposition(null);
+  const p=profiles[currentPid];
+  const img=p&&p.bgImage;
+  if(img){
+    cov.style.backgroundImage=`url("${img}")`;
+    applyCoverPosition();
+    remClass(cov,'off');addClass(addBtn,'off');
+  }else{
+    cov.style.backgroundImage='';cov.style.backgroundPosition='';
+    addClass(cov,'off');remClass(addBtn,'off');
+  }
+}
+
+/* ── Reposition mode: drag the cover image inside its fixed-height frame ──
+   Uses the image's real natural size vs. the frame's rendered size to convert
+   drag pixels into a background-position % that tracks the cursor exactly
+   (not an approximation), the same math as Notion's cover repositioning. */
+function getNaturalSize(dataUrl){
+  return new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>resolve({w:img.naturalWidth,h:img.naturalHeight});
+    img.onerror=()=>resolve({w:1,h:1});
+    img.src=dataUrl;
+  });
+}
+let _coverNat=null,_coverRepoOriginal=null,_coverDrag=null;
+function enterCoverReposition(){
+  const cov=$('profileCover');
+  addClass(cov,'repositioning');
+  remClass($('coverRepositionHint'),'off');
+  addClass($('coverActions'),'off');
+  remClass($('coverRepositionActions'),'off');
+}
+// save: true = keep & persist the current position, false = revert it, null = just reset the UI (no data change)
+function exitCoverReposition(save){
+  const cov=$('profileCover');
+  if(!cov||!cov.classList.contains('repositioning')){_coverDrag=null;return;}
+  remClass(cov,'repositioning');remClass(cov,'dragging');
+  addClass($('coverRepositionHint'),'off');
+  remClass($('coverActions'),'off');addClass($('coverRepositionActions'),'off');
+  _coverDrag=null;
+  if(save===false&&profiles[currentPid]&&_coverRepoOriginal){
+    profiles[currentPid].bgPos={..._coverRepoOriginal};
+    applyCoverPosition();
+  }else if(save===true){
+    persist();
+  }
+  _coverRepoOriginal=null;
+}
+(()=>{
+  const fileInput=$('coverFileInput'),cov=$('profileCover');
+  $('coverAddBtn').addEventListener('click',()=>fileInput.click());
+  $('coverChangeBtn').addEventListener('click',()=>fileInput.click());
+  $('coverRemoveBtn').addEventListener('click',()=>{
+    if(confirm(t('confirmRemoveCover')))removeProfileCover(currentPid);
+  });
+  fileInput.addEventListener('change',async e=>{
+    const f=e.target.files[0];
+    e.target.value='';
+    if(f)await setProfileCover(currentPid,f);
+  });
+
+  $('coverRepositionBtn').addEventListener('click',async()=>{
+    const p=profiles[currentPid];
+    if(!p||!p.bgImage)return;
+    _coverNat=await getNaturalSize(p.bgImage);
+    _coverRepoOriginal={...(p.bgPos||{x:50,y:50})};
+    enterCoverReposition();
+  });
+  $('coverSavePosBtn').addEventListener('click',()=>exitCoverReposition(true));
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&cov.classList.contains('repositioning'))exitCoverReposition(false);
+  });
+
+  cov.addEventListener('pointerdown',e=>{
+    if(!cov.classList.contains('repositioning'))return;
+    if(e.target.closest('.cover-action-btn'))return; // clicking Save/Change/Remove shouldn't start a drag
+    const p=profiles[currentPid];
+    if(!p||!p.bgImage)return;
+    e.preventDefault();
+    const rect=cov.getBoundingClientRect();
+    const nat=_coverNat||{w:1,h:1};
+    const scale=Math.max(rect.width/nat.w,rect.height/nat.h);
+    const overflowX=Math.max(nat.w*scale-rect.width,0);
+    const overflowY=Math.max(nat.h*scale-rect.height,0);
+    const pos=p.bgPos||{x:50,y:50};
+    _coverDrag={startX:e.clientX,startY:e.clientY,startPosX:pos.x,startPosY:pos.y,overflowX,overflowY};
+    cov.setPointerCapture(e.pointerId);
+    addClass(cov,'dragging');
+  });
+  cov.addEventListener('pointermove',e=>{
+    if(!_coverDrag)return;
+    const dx=e.clientX-_coverDrag.startX,dy=e.clientY-_coverDrag.startY;
+    const nx=_coverDrag.overflowX>0?_coverDrag.startPosX-(dx/_coverDrag.overflowX)*100:50;
+    const ny=_coverDrag.overflowY>0?_coverDrag.startPosY-(dy/_coverDrag.overflowY)*100:50;
+    profiles[currentPid].bgPos={x:Math.max(0,Math.min(100,nx)),y:Math.max(0,Math.min(100,ny))};
+    applyCoverPosition();
+  });
+  const endDrag=e=>{
+    if(!_coverDrag)return;
+    remClass(cov,'dragging');
+    try{cov.releasePointerCapture(e.pointerId);}catch(_){}
+    _coverDrag=null;
+  };
+  cov.addEventListener('pointerup',endDrag);
+  cov.addEventListener('pointercancel',endDrag);
+})();
 
 /* ════════════════════════════════════════════════════════
    PROFILE OPS
@@ -3635,6 +3931,7 @@ function applyTr(){
   const cedb=$('clearExportDirBtn');if(cedb)cedb.title=t('exportFolderReset');
   const cfb=$('lbl-chooseFolder');if(cfb)cfb.textContent=t(_exportDirHandle?'changeFolder':'chooseFolder');
   s('lbl-editmode',editMode?'editModeExit':'editMode');s('lbl-reset-all-sizes','resetAllSizes');
+  s('lbl-coverAdd','coverAdd');s('lbl-coverChange','coverChange');s('lbl-coverReposition','coverReposition');s('lbl-coverRepositionHint','coverRepositionHint');s('lbl-coverSavePos','coverSavePos');
   s('lbl-linkCopy','copy');s('lbl-linkEdit','edit');
   $('search').placeholder=t('searchPh');
   $('profileModal-title').textContent=t('newProfileTitle');$('profileName').placeholder=t('profilePh');$('createProfile').textContent=t('create');$('cancelProfile2').textContent=t('cancel');

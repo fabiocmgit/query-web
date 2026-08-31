@@ -1,4 +1,4 @@
-const CACHE = 'query-v13';
+const CACHE = 'query-v17';
 const STATIC = [
   '/import.html', '/manifest.json',
   '/icons/icon16.png', '/icons/icon32.png', '/icons/icon48.png',
