@@ -3,196 +3,745 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Query — Knowledge Base Extension</title>
+<title>Query — Your Personal Knowledge Base</title>
+<meta name="description" content="Query is a fully local knowledge base for your browser. Capture anything, search instantly, share device-to-device — no account, no cloud, no subscription.">
+<meta property="og:title" content="Query — Your Personal Knowledge Base">
+<meta property="og:description" content="Save, organize and instantly search anything you read — 100% local, no account, no cloud.">
+<meta property="og:image" content="icon1024.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/icon32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="icons/icon16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="icons/icon180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+:root {
+  --bg:       #f5f5f0;
+  --surface:  #ffffff;
+  --surf2:    #fafaf8;
+  --border:   #e8e8e3;
+  --border2:  #d8d8d1;
+  --text:     #1c1c1a;
+  --text2:    #6b6b63;
+  --text3:    #9a9a90;
+  --accent:   #2563eb;
+  --accent-h: #1d4ed8;
+  --accent-l: #eff6ff;
+  --accent-b: #bfdbfe;
+  --yellow:   #fbbf24;
+  --s-sm: 0 1px 2px rgba(20,20,15,.05), 0 1px 3px rgba(20,20,15,.04);
+  --s-md: 0 8px 20px rgba(20,20,15,.07), 0 2px 6px rgba(20,20,15,.05);
+  --s-lg: 0 24px 60px rgba(20,20,15,.14), 0 6px 16px rgba(20,20,15,.06);
+  --r:  10px;
+  --r2: 16px;
+  --hero-fg: rgba(255,255,255,.92);
+}
+
+html { scroll-behavior: smooth; }
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-  min-height: 100vh;
-  color: #334155;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
-/* ── Header ── */
+h1, h2, h3, .brand-word { font-family: 'Syne', 'Arial Black', sans-serif; letter-spacing: -.02em; }
+
+a { color: inherit; }
+img { display: block; max-width: 100%; }
+section { position: relative; }
+
+.wrap { max-width: 1160px; margin: 0 auto; padding: 0 32px; }
+
+/* ── reveal-on-scroll ── */
+.reveal { opacity: 0; transform: translateY(28px); transition: opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1); }
+.reveal.in { opacity: 1; transform: translateY(0); }
+.reveal-delay-1 { transition-delay: .08s; }
+.reveal-delay-2 { transition-delay: .16s; }
+.reveal-delay-3 { transition-delay: .24s; }
+.reveal-delay-4 { transition-delay: .32s; }
+
+/* ════════════════════════ HEADER ════════════════════════ */
 header {
-  width: 100%; display: flex; align-items: center;
-  padding: 0 32px; height: 56px;
-  background: #fff; border-bottom: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; justify-content: center;
+  padding: 18px 0;
+  transition: background .35s ease, box-shadow .35s ease, padding .35s ease, backdrop-filter .35s ease;
 }
-.header-brand { display: flex; align-items: center; gap: 10px; }
-.header-brand img { height: 28px; width: 28px; border-radius: 6px; }
-.header-brand span {
-  font-family: 'Syne', 'Arial Black', sans-serif;
-  font-size: 17px; font-weight: 700; color: #0f172a;
-  letter-spacing: -.02em;
+header.scrolled {
+  background: rgba(245,245,240,.78); backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  box-shadow: 0 1px 0 rgba(20,20,15,.07);
+  padding: 12px 0;
 }
-header .hs { flex: 1; }
-header a {
-  font-size: 13px; color: #64748b; text-decoration: none;
-  border: 1px solid #e2e8f0; border-radius: 6px;
-  padding: 6px 14px; transition: all .2s;
-  font-weight: 500;
+.nav-inner {
+  width: 100%; max-width: 1160px; margin: 0 auto; padding: 0 32px;
+  display: flex; align-items: center; gap: 32px;
 }
-header a:hover { border-color: #3b82f6; color: #3b82f6; background: #eff6ff; }
+.header-brand { display: flex; align-items: center; gap: 9px; text-decoration: none; }
+.header-brand img { height: 26px; width: 26px; border-radius: 6px; }
+.header-brand span { font-size: 17px; font-weight: 800; color: var(--hero-fg); transition: color .35s ease; }
+header.scrolled .header-brand span { color: var(--text); }
 
-/* ── Hero ── */
+.nav-links { display: flex; align-items: center; gap: 28px; flex: 1; }
+.nav-links a {
+  font-size: 13.5px; font-weight: 500; text-decoration: none;
+  color: rgba(255,255,255,.72); transition: color .35s ease;
+}
+header.scrolled .nav-links a { color: var(--text2); }
+.nav-links a:hover { color: var(--yellow); }
+header.scrolled .nav-links a:hover { color: var(--accent); }
+
+.nav-actions { display: flex; align-items: center; gap: 10px; }
+.btn-nav-ghost {
+  font-size: 13px; font-weight: 600; text-decoration: none;
+  color: rgba(255,255,255,.85); padding: 8px 14px; border-radius: 7px;
+  border: 1px solid rgba(255,255,255,.22); transition: all .35s ease;
+  white-space: nowrap;
+}
+header.scrolled .btn-nav-ghost { color: var(--text); border-color: var(--border2); }
+.btn-nav-ghost:hover { background: rgba(255,255,255,.1); }
+header.scrolled .btn-nav-ghost:hover { background: var(--surf2); }
+.btn-nav-primary {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 700; text-decoration: none;
+  color: #0f172a; background: var(--yellow);
+  padding: 8px 15px; border-radius: 7px;
+  box-shadow: 0 2px 10px rgba(251,191,36,.35);
+  transition: transform .2s ease, box-shadow .2s ease;
+  white-space: nowrap;
+}
+.btn-nav-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(251,191,36,.45); }
+
+/* ════════════════════════ HERO ════════════════════════ */
 .hero {
-  max-width: 720px; width: 100%;
-  padding: 80px 24px 48px;
-  text-align: center;
-  display: flex; flex-direction: column; align-items: center; gap: 24px;
+  background: radial-gradient(ellipse 90% 60% at 50% -10%, #16224a 0%, #0a0e1c 55%), #070a14;
+  color: var(--hero-fg);
+  padding: 150px 0 0;
+  overflow: hidden;
+}
+.hero-bg { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+.blob { position: absolute; border-radius: 50%; filter: blur(90px); opacity: .55; }
+.blob-1 { width: 480px; height: 480px; top: -160px; left: 8%; background: radial-gradient(circle, #2563eb, transparent 70%); animation: drift1 22s ease-in-out infinite alternate; }
+.blob-2 { width: 380px; height: 380px; top: 40px; right: 4%; background: radial-gradient(circle, #fbbf24, transparent 70%); opacity: .28; animation: drift2 26s ease-in-out infinite alternate; }
+.blob-3 { width: 420px; height: 420px; bottom: -220px; left: 40%; background: radial-gradient(circle, #1d4ed8, transparent 70%); opacity: .4; animation: drift1 30s ease-in-out infinite alternate-reverse; }
+@keyframes drift1 { from { transform: translate(0,0); } to { transform: translate(40px,30px); } }
+@keyframes drift2 { from { transform: translate(0,0); } to { transform: translate(-30px,40px); } }
+.hero-grid {
+  position: absolute; inset: 0; opacity: .25;
+  background-image: linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 20%, #000 30%, transparent 75%);
+}
+
+.hero-inner {
+  position: relative; z-index: 1;
+  max-width: 780px; margin: 0 auto; padding: 0 24px;
+  text-align: center; display: flex; flex-direction: column; align-items: center; gap: 26px;
 }
 
 .badge {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: #eff6ff; color: #3b82f6;
-  border: 1px solid #bfdbfe; border-radius: 20px;
-  padding: 5px 14px; font-size: 12px; font-weight: 600;
-  letter-spacing: .03em;
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,.06); color: rgba(255,255,255,.85);
+  border: 1px solid rgba(255,255,255,.14); border-radius: 20px;
+  padding: 6px 16px 6px 8px; font-size: 12.5px; font-weight: 600;
 }
+.badge .dot { width: 7px; height: 7px; border-radius: 50%; background: #34d399; box-shadow: 0 0 0 3px rgba(52,211,153,.2); }
 
 h1 {
-  font-size: clamp(2rem, 5vw, 3.2rem);
-  font-weight: 800; color: #0f172a;
-  letter-spacing: -.03em; line-height: 1.1;
+  font-size: clamp(2.3rem, 5.4vw, 3.8rem);
+  font-weight: 800; line-height: 1.08;
+  color: #fff;
 }
-h1 span { color: #3b82f6; }
+h1 span { color: var(--yellow); }
 
-.subtitle {
-  font-size: 1.1rem; color: #64748b;
-  line-height: 1.7; max-width: 540px;
+.hero .subtitle {
+  font-size: 1.14rem; color: rgba(255,255,255,.62);
+  line-height: 1.7; max-width: 560px; font-weight: 400;
 }
 
-.cta-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; }
-.cta-or {
-  font-size: 12px; color: #94a3b8; font-weight: 500;
-}
+.cta-group { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.cta-or { font-size: 12px; color: rgba(255,255,255,.4); font-weight: 500; }
 
 .btn-cta {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 14px 28px; border-radius: 8px;
-  font-size: 15px; font-weight: 600; cursor: pointer;
-  text-decoration: none; transition: all .2s;
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 15px 26px; border-radius: 10px;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  text-decoration: none; transition: all .2s cubic-bezier(.16,1,.3,1);
   border: none;
 }
 .btn-cta-primary {
-  background: #3b82f6; color: #fff;
-  box-shadow: 0 4px 14px rgba(59,130,246,.4);
+  background: #fff; color: #0f172a;
+  box-shadow: 0 8px 24px rgba(255,255,255,.15);
 }
-.btn-cta-primary:hover { background: #2563eb; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(59,130,246,.5); }
+.btn-cta-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(255,255,255,.22); }
 .btn-cta-secondary {
-  background: #fff; color: #374151;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  background: rgba(255,255,255,.06); color: #fff;
+  border: 1px solid rgba(255,255,255,.18);
 }
-.btn-cta-secondary:hover { border-color: #3b82f6; color: #3b82f6; transform: translateY(-1px); }
-
-/* Chrome logo inline */
+.btn-cta-secondary:hover { background: rgba(255,255,255,.12); transform: translateY(-2px); }
 .chrome-icon { width: 20px; height: 20px; }
 
-/* ── Extension not found notice ── */
-.notice {
-  background: #fffbeb; border: 1px solid #fde68a;
-  border-radius: 10px; padding: 16px 20px;
-  display: flex; align-items: flex-start; gap: 12px;
-  max-width: 480px; text-align: left; font-size: 13px;
-  color: #92400e; line-height: 1.6;
+.trust-row {
+  display: flex; align-items: center; justify-content: center; gap: 22px;
+  flex-wrap: wrap; margin-top: 4px;
 }
-.notice-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px; }
-.notice strong { color: #78350f; }
-
-/* ── Features ── */
-.features {
-  max-width: 860px; width: 100%;
-  padding: 0 24px 80px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
+.trust-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12.5px; color: rgba(255,255,255,.5); font-weight: 500;
 }
+.trust-item svg { width: 15px; height: 15px; stroke: #34d399; flex-shrink: 0; }
 
+/* ── App mockup ── */
+.mockup-wrap {
+  position: relative; z-index: 1;
+  padding: 76px 24px 0; display: flex; justify-content: center;
+  perspective: 1800px;
+}
+.mockup-glow {
+  position: absolute; bottom: -40px; left: 50%; transform: translateX(-50%);
+  width: 70%; height: 140px; background: radial-gradient(ellipse, rgba(37,99,235,.5), transparent 70%);
+  filter: blur(40px); z-index: 0;
+}
+.mockup-window {
+  position: relative; z-index: 1;
+  width: 100%; max-width: 980px;
+  background: #fdfdfb; border-radius: 14px 14px 0 0;
+  border: 1px solid rgba(255,255,255,.12); border-bottom: none;
+  box-shadow: 0 40px 90px rgba(0,0,0,.55), 0 10px 30px rgba(0,0,0,.4);
+  overflow: hidden;
+  transform: rotateX(9deg) scale(.97);
+  animation: floaty 7s ease-in-out infinite alternate;
+}
+@keyframes floaty { from { transform: rotateX(9deg) scale(.97) translateY(0); } to { transform: rotateX(9deg) scale(.97) translateY(-10px); } }
+
+.mockup-titlebar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 11px 16px; background: #f1f1ec; border-bottom: 1px solid #e8e8e3;
+}
+.mockup-titlebar .tdot { width: 10px; height: 10px; border-radius: 50%; }
+.td-r { background: #ff5f57; } .td-y { background: #febc2e; } .td-g { background: #28c840; }
+.mockup-url {
+  margin: 0 auto; display: flex; align-items: center; gap: 6px;
+  background: #fff; border: 1px solid #e5e5e0; border-radius: 6px;
+  padding: 4px 14px; font-size: 11.5px; color: #8a8a80; font-family: 'Inter', sans-serif;
+}
+.mockup-url svg { width: 11px; height: 11px; stroke: #8a8a80; }
+
+.mockup-body { display: flex; height: 440px; }
+.mockup-sidebar {
+  width: 190px; background: #fff; border-right: 1px solid #e8e8e3;
+  padding: 16px 12px; flex-shrink: 0; display: none;
+}
+.ms-title { font-size: 10.5px; font-weight: 700; color: #a8a8a0; text-transform: uppercase; letter-spacing: .06em; padding: 0 8px 10px; }
+.ms-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 10px; border-radius: 7px; font-size: 12.5px; font-weight: 600; color: #4a4a44;
+  margin-bottom: 3px;
+}
+.ms-item .msdot { width: 8px; height: 8px; border-radius: 3px; flex-shrink: 0; }
+.ms-item.active { background: #eff6ff; color: #1d4ed8; }
+
+.mockup-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.mockup-topbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 20px; border-bottom: 1px solid #eeeeE8;
+}
+.mockup-search {
+  flex: 1; display: flex; align-items: center; gap: 8px;
+  background: #f1f1ec; border-radius: 8px; padding: 8px 12px; max-width: 280px;
+}
+.mockup-search svg { width: 14px; height: 14px; stroke: #a8a8a0; flex-shrink: 0; }
+.mockup-search span { font-size: 12px; color: #a8a8a0; }
+.mockup-viewtoggle { display: flex; gap: 4px; margin-left: auto; }
+.mvt { width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+.mvt.active { background: #eff6ff; }
+.mvt svg { width: 14px; height: 14px; stroke: #8a8a80; }
+.mvt.active svg { stroke: #2563eb; }
+
+.mockup-grid {
+  flex: 1; padding: 18px 20px; overflow: hidden;
+  column-count: 3; column-gap: 14px;
+}
+.mcard {
+  break-inside: avoid; border-radius: 10px; border: 1px solid;
+  padding: 13px 14px; margin-bottom: 14px; position: relative;
+}
+.mcard .mline { height: 7px; border-radius: 4px; opacity: .5; margin-bottom: 6px; }
+.mcard .mline:last-child { margin-bottom: 0; }
+.mcard .mpin { position: absolute; top: 9px; right: 9px; width: 13px; height: 13px; opacity: .55; }
+
+/* ════════════════════════ USE-CASE BAR ════════════════════════ */
+.usecases {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 34px 0;
+}
+.usecases .wrap { display: flex; align-items: center; gap: 36px; flex-wrap: wrap; justify-content: center; }
+.usecases-label { font-size: 12px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .07em; }
+.usecase-item { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; color: var(--text2); }
+.usecase-item svg { width: 17px; height: 17px; stroke: var(--text3); }
+
+/* ════════════════════════ SECTION HEAD ════════════════════════ */
+.section-head { max-width: 620px; margin: 0 auto 52px; text-align: center; }
+.eyebrow {
+  display: inline-block; font-size: 12px; font-weight: 700; color: var(--accent);
+  background: var(--accent-l); border: 1px solid var(--accent-b);
+  padding: 5px 13px; border-radius: 20px; letter-spacing: .03em; margin-bottom: 16px;
+}
+.section-head h2 { font-size: clamp(1.7rem, 3.4vw, 2.3rem); font-weight: 800; color: var(--text); margin-bottom: 14px; }
+.section-head p { font-size: 1.02rem; color: var(--text2); line-height: 1.7; }
+
+/* ════════════════════════ FEATURES ════════════════════════ */
+.features { padding: 110px 0 100px; }
+.feature-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 18px;
+}
 .feature-card {
-  background: #fff; border: 1px solid #e2e8f0;
-  border-radius: 10px; padding: 24px;
-  box-shadow: 0 1px 3px rgba(0,0,0,.04);
-  transition: all .2s;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 26px;
+  box-shadow: var(--s-sm); transition: all .3s cubic-bezier(.16,1,.3,1);
 }
-.feature-card:hover { border-color: #bfdbfe; box-shadow: 0 4px 12px rgba(59,130,246,.1); transform: translateY(-2px); }
-
+.feature-card:hover { border-color: var(--accent-b); box-shadow: var(--s-md); transform: translateY(-4px); }
 .feature-icon {
-  width: 42px; height: 42px; border-radius: 10px;
+  width: 44px; height: 44px; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.3rem; margin-bottom: 14px;
-  background: #eff6ff;
+  margin-bottom: 16px; background: var(--accent-l);
 }
-.feature-card h3 { font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
-.feature-card p { font-size: 13px; color: #64748b; line-height: 1.65; }
+.feature-icon svg { width: 21px; height: 21px; stroke: var(--accent); }
+.feature-card h3 { font-size: 15.5px; font-weight: 700; color: var(--text); margin-bottom: 7px; letter-spacing: -.01em; }
+.feature-card p { font-size: 13.5px; color: var(--text2); line-height: 1.65; }
 
-/* ── Steps ── */
-.steps-section {
-  max-width: 720px; width: 100%;
-  padding: 0 24px 80px; text-align: center;
+/* ════════════════════════ SPOTLIGHT ════════════════════════ */
+.spotlight { padding: 90px 0; }
+.spotlight.alt { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.spotlight-inner {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;
 }
-.steps-section h2 { font-size: 1.6rem; font-weight: 700; color: #0f172a; margin-bottom: 32px; letter-spacing: -.02em; }
+.spotlight-inner.reverse .sp-visual { order: 2; }
+.spotlight-inner.reverse .sp-text { order: 1; }
+.sp-text h2 { font-size: clamp(1.5rem, 2.8vw, 2rem); font-weight: 800; margin-bottom: 16px; }
+.sp-text p { font-size: 15px; color: var(--text2); line-height: 1.75; margin-bottom: 22px; }
+.sp-list { display: flex; flex-direction: column; gap: 13px; }
+.sp-list li { display: flex; align-items: flex-start; gap: 11px; font-size: 14.5px; color: var(--text); font-weight: 500; list-style: none; }
+.sp-list svg { width: 19px; height: 19px; stroke: #16a34a; flex-shrink: 0; margin-top: 1px; }
 
-.steps { display: flex; flex-direction: column; gap: 0; }
-.step {
-  display: flex; align-items: flex-start; gap: 20px;
-  padding: 20px 0; border-bottom: 1px solid #f1f5f9;
-  text-align: left;
+.sp-visual { display: flex; align-items: center; justify-content: center; }
+.privacy-diagram {
+  width: 100%; max-width: 340px; background: var(--surf2);
+  border: 1px solid var(--border); border-radius: var(--r2);
+  padding: 36px 24px; display: flex; flex-direction: column; align-items: center; gap: 18px;
+  box-shadow: var(--s-md);
 }
-.step:last-child { border-bottom: none; }
+.pd-device {
+  width: 108px; height: 108px; border-radius: 22px;
+  background: linear-gradient(155deg, var(--accent), var(--accent-h));
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 14px 34px rgba(37,99,235,.35);
+}
+.pd-device svg { width: 46px; height: 46px; stroke: #fff; }
+.pd-label { font-size: 13px; font-weight: 700; color: var(--text); }
+.pd-sub { font-size: 12px; color: var(--text3); text-align: center; max-width: 220px; line-height: 1.6; }
+.pd-cross {
+  display: flex; align-items: center; gap: 10px; font-size: 11.5px; font-weight: 600;
+  color: var(--text3); border-top: 1px dashed var(--border2); padding-top: 16px; width: 100%; justify-content: center;
+}
+.pd-cross svg { width: 15px; height: 15px; stroke: #dc2626; }
+
+.p2p-diagram {
+  width: 100%; max-width: 380px; display: flex; align-items: center; justify-content: center;
+  gap: 0; position: relative;
+}
+.p2p-node {
+  width: 92px; height: 92px; border-radius: 18px; background: var(--surface);
+  border: 1px solid var(--border); box-shadow: var(--s-md);
+  display: flex; align-items: center; justify-content: center; position: relative; z-index: 1;
+}
+.p2p-node svg { width: 38px; height: 38px; stroke: var(--text2); }
+.p2p-line {
+  flex: 1; height: 2px; max-width: 130px; margin: 0 -4px; position: relative; z-index: 0;
+  background: repeating-linear-gradient(90deg, var(--accent) 0 8px, transparent 8px 16px);
+  background-size: 200% 100%;
+  animation: dashmove 1.2s linear infinite;
+}
+@keyframes dashmove { from { background-position: 0 0; } to { background-position: -32px 0; } }
+.p2p-lock {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: 40px; height: 40px; border-radius: 50%; background: var(--yellow);
+  display: flex; align-items: center; justify-content: center; z-index: 2;
+  box-shadow: 0 6px 18px rgba(251,191,36,.5);
+}
+.p2p-lock svg { width: 18px; height: 18px; stroke: #78350f; }
+
+/* ════════════════════════ STEPS ════════════════════════ */
+.steps-section { padding: 100px 0 110px; }
+.steps {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px;
+  position: relative;
+}
+.steps::before {
+  content: ''; position: absolute; top: 21px; left: 12.5%; right: 12.5%; height: 2px;
+  background: repeating-linear-gradient(90deg, var(--border2) 0 8px, transparent 8px 14px);
+  z-index: 0;
+}
+.step { text-align: left; position: relative; z-index: 1; }
 .step-num {
-  width: 36px; height: 36px; border-radius: 50%;
-  background: #3b82f6; color: #fff;
+  width: 42px; height: 42px; border-radius: 50%;
+  background: var(--accent); color: #fff;
   display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 700; flex-shrink: 0;
+  font-size: 15px; font-weight: 800; margin-bottom: 18px;
+  box-shadow: 0 6px 16px rgba(37,99,235,.3); border: 4px solid var(--bg);
 }
-.step-content h4 { font-size: 14px; font-weight: 600; color: #0f172a; margin-bottom: 3px; }
-.step-content p { font-size: 13px; color: #64748b; line-height: 1.6; }
-.step-content code {
-  background: #f1f5f9; color: #3b82f6; padding: 1px 6px;
-  border-radius: 4px; font-family: monospace; font-size: 12px;
+.step h4 { font-size: 14.5px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.step p { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+/* ════════════════════════ CTA BANNER ════════════════════════ */
+.cta-banner {
+  margin: 0 32px 90px; border-radius: 28px; overflow: hidden;
+  background: radial-gradient(ellipse 120% 140% at 30% 0%, #2f5ff0 0%, #16224a 60%, #0a0e1c 100%);
+  padding: 78px 32px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 22px;
+  position: relative;
+}
+.cta-banner::before {
+  content: ''; position: absolute; inset: 0;
+  background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 60% 100% at 50% 0%, #000, transparent 75%);
+}
+.cta-banner > * { position: relative; z-index: 1; }
+.cta-banner h2 { font-size: clamp(1.7rem, 3.6vw, 2.5rem); font-weight: 800; color: #fff; max-width: 560px; }
+.cta-banner p { font-size: 15px; color: rgba(255,255,255,.6); max-width: 460px; }
+
+/* ════════════════════════ FOOTER ════════════════════════ */
+footer { background: var(--surface); border-top: 1px solid var(--border); padding: 56px 0 28px; }
+.footer-top { display: flex; justify-content: space-between; gap: 40px; flex-wrap: wrap; margin-bottom: 44px; }
+.footer-brand { display: flex; flex-direction: column; gap: 12px; max-width: 300px; }
+.footer-brand .header-brand span { color: var(--text); }
+.footer-brand p { font-size: 13px; color: var(--text2); line-height: 1.6; }
+.footer-cols { display: flex; gap: 56px; flex-wrap: wrap; }
+.footer-col h5 { font-size: 12px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px; }
+.footer-col a { display: block; font-size: 13.5px; color: var(--text2); text-decoration: none; margin-bottom: 10px; transition: color .2s; }
+.footer-col a:hover { color: var(--accent); }
+.footer-bottom {
+  border-top: 1px solid var(--border); padding-top: 22px;
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  font-size: 12px; color: var(--text3);
 }
 
-/* ── Footer ── */
-footer {
-  width: 100%; text-align: center;
-  padding: 24px; border-top: 1px solid #e2e8f0;
-  font-size: 12px; color: #94a3b8; background: #fff;
+/* ════════════════════════ RESPONSIVE ════════════════════════ */
+@media (min-width: 760px) { .mockup-sidebar { display: block; } }
+@media (max-width: 900px) {
+  .nav-links { display: none; }
+  .spotlight-inner, .spotlight-inner.reverse { grid-template-columns: 1fr; gap: 40px; }
+  .spotlight-inner.reverse .sp-visual, .spotlight-inner.reverse .sp-text { order: initial; }
+  .steps { grid-template-columns: 1fr 1fr; }
+  .steps::before { display: none; }
+}
+@media (max-width: 560px) {
+  .mockup-grid { column-count: 2; }
+  .steps { grid-template-columns: 1fr; }
+  .cta-banner { margin: 0 16px 60px; padding: 56px 22px; }
+  .trust-row { gap: 12px 18px; }
 }
 </style>
 </head>
 <body>
 
-<header>
-  <div class="header-brand">
-    <img src="icon1024.png" alt="Query"/>
-    <span>Query</span>
+<header id="siteHeader">
+  <div class="nav-inner">
+    <a class="header-brand" href="#top">
+      <img src="icon1024.png" alt="Query"/>
+      <span>Query</span>
+    </a>
+    <nav class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#privacy">Privacy</a>
+      <a href="#p2p">Sharing</a>
+      <a href="#how">How it works</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn-nav-ghost" href="import.html">Web App</a>
+      <a class="btn-nav-primary" href="https://chromewebstore.google.com/detail/query/ejfjhpgngmaidniobgokmphlcbgfnofg" target="_blank" rel="noopener noreferrer">Add to Chrome</a>
+    </div>
   </div>
-  <div class="hs"></div>
 </header>
 
-<div class="hero">
-  <div class="badge">⚡ Chrome Extension</div>
+<section class="hero" id="top">
+  <div class="hero-bg">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="hero-grid"></div>
+  </div>
 
-  <h1>Your personal<br><span>knowledge base</span>,<br>always at hand.</h1>
+  <div class="hero-inner">
+    <div class="badge"><span class="dot"></span> Chrome Extension &amp; Web App — 100% local</div>
 
-  <p class="subtitle">
-    Query lets you save, organize, and instantly search any text from the web —
-    directly in your browser, no account required, fully local.
-  </p>
+    <h1>Save anything.<br>Find it <span>instantly.</span></h1>
 
+    <p class="subtitle">
+      Query is the fastest way to capture, organize and search everything you read —
+      right inside your browser. No account, no server, no subscription.
+      Just your knowledge, always local.
+    </p>
+
+    <div class="cta-group">
+      <a class="btn-cta btn-cta-primary"
+         href="https://chromewebstore.google.com/detail/query/ejfjhpgngmaidniobgokmphlcbgfnofg"
+         target="_blank" rel="noopener noreferrer">
+        <svg class="chrome-icon" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" fill="#fff" stroke="#e2e8f0" stroke-width=".5"/>
+          <circle cx="12" cy="12" r="4.2" fill="#4285F4"/>
+          <path d="M12 7.8h8.66a10 10 0 0 0-17.32 0H12z" fill="#EA4335"/>
+          <path d="M7.8 12a4.2 4.2 0 0 0 2.1 3.64L5.57 7.8A10 10 0 0 0 12 22l4.33-7.5A4.2 4.2 0 0 0 12 16.2" fill="#34A853"/>
+          <path d="M16.2 12a4.2 4.2 0 0 1-2.1 3.64L18.43 7.8A10 10 0 0 1 12 22l-4.33-7.5A4.2 4.2 0 0 0 12 7.8h8.66" fill="#FBBC04"/>
+        </svg>
+        Add to Chrome — It's free
+      </a>
+      <span class="cta-or">or</span>
+      <a class="btn-cta btn-cta-secondary" href="import.html">Try the Web App</a>
+    </div>
+
+    <div class="trust-row">
+      <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> No account required</div>
+      <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> 100% local storage</div>
+      <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Free forever</div>
+      <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Open JSON export</div>
+    </div>
+  </div>
+
+  <div class="mockup-wrap">
+    <div class="mockup-glow"></div>
+    <div class="mockup-window">
+      <div class="mockup-titlebar">
+        <span class="tdot td-r"></span><span class="tdot td-y"></span><span class="tdot td-g"></span>
+        <div class="mockup-url">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          query — local &amp; private
+        </div>
+      </div>
+      <div class="mockup-body">
+        <div class="mockup-sidebar">
+          <div class="ms-title">Profiles</div>
+          <div class="ms-item active"><span class="msdot" style="background:#2563eb"></span> Work</div>
+          <div class="ms-item"><span class="msdot" style="background:#f59e0b"></span> Studies</div>
+          <div class="ms-item"><span class="msdot" style="background:#16a34a"></span> Personal</div>
+          <div class="ms-item"><span class="msdot" style="background:#a855f7"></span> Reading list</div>
+        </div>
+        <div class="mockup-main">
+          <div class="mockup-topbar">
+            <div class="mockup-search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+              <span>Search everything…</span>
+            </div>
+            <div class="mockup-viewtoggle">
+              <div class="mvt active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="7" height="16" rx="1.5"/><rect x="14" y="4" width="7" height="10" rx="1.5"/></svg></div>
+              <div class="mvt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+            </div>
+          </div>
+          <div class="mockup-grid">
+            <div class="mcard" style="background:#dbeafe;border-color:#bfdbfe">
+              <svg class="mpin" viewBox="0 0 24 24" fill="#1e40af"><path d="M12 2 4 22l8-4 8 4z"/></svg>
+              <div class="mline" style="background:#1e40af;width:70%"></div>
+              <div class="mline" style="background:#1e40af;width:92%"></div>
+              <div class="mline" style="background:#1e40af;width:55%"></div>
+            </div>
+            <div class="mcard" style="background:#fef9c3;border-color:#fde68a">
+              <div class="mline" style="background:#854d0e;width:80%"></div>
+              <div class="mline" style="background:#854d0e;width:60%"></div>
+            </div>
+            <div class="mcard" style="background:#fff;border-color:#e8e8e3">
+              <div class="mline" style="background:#4a4a44;width:88%"></div>
+              <div class="mline" style="background:#4a4a44;width:75%"></div>
+              <div class="mline" style="background:#4a4a44;width:64%"></div>
+              <div class="mline" style="background:#4a4a44;width:40%"></div>
+            </div>
+            <div class="mcard" style="background:#dcfce7;border-color:#bbf7d0">
+              <div class="mline" style="background:#166534;width:65%"></div>
+              <div class="mline" style="background:#166534;width:90%"></div>
+            </div>
+            <div class="mcard" style="background:#f3e8ff;border-color:#e9d5ff">
+              <div class="mline" style="background:#6b21a8;width:78%"></div>
+              <div class="mline" style="background:#6b21a8;width:50%"></div>
+              <div class="mline" style="background:#6b21a8;width:68%"></div>
+            </div>
+            <div class="mcard" style="background:#fce7f3;border-color:#fbcfe8">
+              <div class="mline" style="background:#9d174d;width:85%"></div>
+              <div class="mline" style="background:#9d174d;width:62%"></div>
+            </div>
+            <div class="mcard" style="background:#fff;border-color:#e8e8e3">
+              <div class="mline" style="background:#4a4a44;width:70%"></div>
+              <div class="mline" style="background:#4a4a44;width:55%"></div>
+            </div>
+            <div class="mcard" style="background:#ffedd5;border-color:#fed7aa">
+              <div class="mline" style="background:#9a3412;width:60%"></div>
+              <div class="mline" style="background:#9a3412;width:82%"></div>
+              <div class="mline" style="background:#9a3412;width:45%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="usecases">
+  <div class="wrap">
+    <span class="usecases-label">Built for</span>
+    <div class="usecase-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.5 2.5 3 6 3s6-1.5 6-3v-5"/></svg> Students</div>
+    <div class="usecase-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg> Researchers</div>
+    <div class="usecase-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4M6 8l-4 4 4 4M14.5 4l-5 16"/></svg> Developers</div>
+    <div class="usecase-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg> Writers</div>
+    <div class="usecase-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> Teams</div>
+  </div>
+</section>
+
+<section class="features" id="features">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Features</span>
+      <h2>Everything you need. Nothing you don't.</h2>
+      <p>Query keeps the whole flow — capture, organize, search, share — right where you already work: your browser.</p>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card reveal">
+        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg></div>
+        <h3>Instant capture</h3>
+        <p>Select any text on any page, right-click, and save it to your knowledge base in one click. No copy-paste, no friction.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+        <h3>100% local &amp; private</h3>
+        <p>Everything lives on your device via IndexedDB. No account, no server, no company reading your notes.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-2">
+        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></div>
+        <h3>Instant full-text search</h3>
+        <p>Find any card across every profile in real time, with support for exact phrases and multi-term filters.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5 15.4 17.5M15.4 6.5 8.6 10.5"/></svg></div>
+        <h3>P2P sharing</h3>
+        <p>Send a full profile to another device via direct WebRTC — end-to-end, no middleman, no cloud storage.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2"/></svg></div>
+        <h3>Live Rooms</h3>
+        <p>Collaborate on a profile in real time with end-to-end AES-GCM encryption. Everyone stays in sync instantly.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-2">
+        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg></div>
+        <h3>Profiles</h3>
+        <p>Organize your cards into profiles — one for work, one for studies, one personal — and switch instantly.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+        <h3>Canvas mode</h3>
+        <p>Break free from lists. Drag and arrange your cards freely on an infinite 2D board.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></div>
+        <h3>Rich formatting</h3>
+        <p>Bold, italic, highlights, colors — your notes keep the formatting you gave them, exactly as written.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="spotlight alt" id="privacy">
+  <div class="wrap">
+    <div class="spotlight-inner">
+      <div class="sp-text reveal">
+        <span class="eyebrow">Privacy by design</span>
+        <h2>Your data never leaves your device.</h2>
+        <p>No servers to trust, no accounts to leak, no analytics tracking what you save. Query stores everything locally and only ever talks to another device when you explicitly ask it to.</p>
+        <ul class="sp-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> No account, no sign-up, no email required</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> No servers — everything is stored locally via IndexedDB</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> No analytics, no trackers, no telemetry</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Export your entire knowledge base to JSON, anytime</li>
+        </ul>
+      </div>
+      <div class="sp-visual reveal reveal-delay-2">
+        <div class="privacy-diagram">
+          <div class="pd-device"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+          <div class="pd-label">Your device only</div>
+          <div class="pd-sub">Cards, profiles and settings are written straight to IndexedDB on this machine.</div>
+          <div class="pd-cross"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20M9.9 4.24A9.5 9.5 0 0 1 12 4a9 9 0 0 1 9 9c0 .48-.03.95-.1 1.4M5 8.35A9 9 0 0 0 3 13a9 9 0 0 0 9 9c1.51 0 2.93-.39 4.16-1.08"/></svg> No cloud server involved</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="spotlight" id="p2p">
+  <div class="wrap">
+    <div class="spotlight-inner reverse">
+      <div class="sp-visual reveal">
+        <div class="p2p-diagram">
+          <div class="p2p-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div>
+          <div class="p2p-line"></div>
+          <div class="p2p-lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+          <div class="p2p-line"></div>
+          <div class="p2p-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M11 18h2"/></svg></div>
+        </div>
+      </div>
+      <div class="sp-text reveal reveal-delay-2">
+        <span class="eyebrow">Direct &amp; encrypted</span>
+        <h2>Share instantly. Collaborate live. Still no cloud.</h2>
+        <p>Query moves data directly between devices over WebRTC — no account, no upload to a server. Send a one-time snapshot with <strong>P2P Share</strong>, or open a <strong>Live Room</strong> to co-edit a profile in real time, with its own end-to-end AES-GCM encryption on top.</p>
+        <ul class="sp-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Direct WebRTC connection, peer to peer — no server in the middle</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Live Rooms add end-to-end AES-GCM encryption — even the signaling server only ever sees ciphertext</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Real-time sync across every connected member</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="steps-section" id="how">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">How it works</span>
+      <h2>Up and running in under a minute</h2>
+    </div>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-num">1</div>
+        <h4>Install Query</h4>
+        <p>Add the extension from the Chrome Web Store, or open the web app — no sign-up needed.</p>
+      </div>
+      <div class="step reveal reveal-delay-1">
+        <div class="step-num">2</div>
+        <h4>Add what matters</h4>
+        <p>Type or paste notes, code snippets, favorite links — anything worth keeping — straight into a new card.</p>
+      </div>
+      <div class="step reveal reveal-delay-2">
+        <div class="step-num">3</div>
+        <h4>Organize your way</h4>
+        <p>Sort cards into profiles, pin the important ones, color-code, or arrange them on the canvas.</p>
+      </div>
+      <div class="step reveal reveal-delay-3">
+        <div class="step-num">4</div>
+        <h4>Find it in seconds</h4>
+        <p>Search across everything you've saved with instant full-text search.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-banner reveal">
+  <h2>Start building your knowledge base today.</h2>
+  <p>Free forever. No account. Your data, your device.</p>
   <div class="cta-group">
     <a class="btn-cta btn-cta-primary"
        href="https://chromewebstore.google.com/detail/query/ejfjhpgngmaidniobgokmphlcbgfnofg"
@@ -207,48 +756,66 @@ footer {
       Add to Chrome — It's free
     </a>
     <span class="cta-or">or</span>
-    <a class="btn-cta btn-cta-secondary" href="import.html">
-      Web version 
-    </a>
+    <a class="btn-cta btn-cta-secondary" href="import.html">Try the Web App</a>
   </div>
-</div>
-
-<div class="features">
-  <div class="feature-card">
-    <div class="feature-icon">⚡</div>
-    <h3>Instant capture</h3>
-    <p>Select any text on any page, right-click, and save it to your knowledge base in one click.</p>
-  </div>
-  <div class="feature-card">
-    <div class="feature-icon">🔒</div>
-    <h3>100% local</h3>
-    <p>All your data stays on your device. No account, no server, no subscription.</p>
-  </div>
-  <div class="feature-card">
-    <div class="feature-icon">🔍</div>
-    <h3>Lightning search</h3>
-    <p>Find any card instantly across all your profiles with real-time full-text search.</p>
-  </div>
-  <div class="feature-card">
-    <div class="feature-icon">🔗</div>
-    <h3>P2P sharing</h3>
-    <p>Share profiles with others via direct WebRTC connection — no middleman, no cloud.</p>
-  </div>
-  <div class="feature-card">
-    <div class="feature-icon">🗂️</div>
-    <h3>Profiles</h3>
-    <p>Organize your cards into profiles — one for work, one for studies, one personal.</p>
-  </div>
-  <div class="feature-card">
-    <div class="feature-icon">✏️</div>
-    <h3>Rich formatting</h3>
-    <p>Bold, italic, colors, highlights — your cards look exactly as you wrote them.</p>
-  </div>
-</div>
+</section>
 
 <footer>
-  Query — Your local knowledge base. No account. No cloud. By fabiocm
+  <div class="wrap">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a class="header-brand" href="#top">
+          <img src="icon1024.png" alt="Query"/>
+          <span>Query</span>
+        </a>
+        <p>Your personal knowledge base. No account. No cloud. 100% local, always yours.</p>
+      </div>
+      <div class="footer-cols">
+        <div class="footer-col">
+          <h5>Product</h5>
+          <a href="https://chromewebstore.google.com/detail/query/ejfjhpgngmaidniobgokmphlcbgfnofg" target="_blank" rel="noopener noreferrer">Chrome Extension</a>
+          <a href="import.html">Web App</a>
+        </div>
+        <div class="footer-col">
+          <h5>Learn more</h5>
+          <a href="#features">Features</a>
+          <a href="#privacy">Privacy</a>
+          <a href="#p2p">Sharing &amp; Live Rooms</a>
+          <a href="#how">How it works</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Query. Built by fabiocm.</span>
+      <span>No account · No cloud · No tracking</span>
+    </div>
+  </div>
 </footer>
+
+<script>
+  var header = document.getElementById('siteHeader');
+  var onScroll = function () {
+    if (window.scrollY > 40) header.classList.add('scrolled');
+    else header.classList.remove('scrolled');
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  var revealEls = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+    revealEls.forEach(function (el) { io.observe(el); });
+  } else {
+    revealEls.forEach(function (el) { el.classList.add('in'); });
+  }
+</script>
 
 </body>
 </html>
