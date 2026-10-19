@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<!-- Sécurité : bloque plugins, iframes, détournement de <base> et envoi de formulaires vers l'extérieur. -->
+<meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Query — Knowledge Base</title>
 <link rel="manifest" href="manifest.json">
@@ -2460,6 +2462,7 @@ body.dark .share-status.notice  { background: rgba(234,179,8,.12); color: #fbbf2
   </div>
 </div>
 
+<script src="purify.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
@@ -2758,10 +2761,21 @@ const addClass=(el,...c)=>el.classList.add(...c);
 const remClass=(el,...c)=>el.classList.remove(...c);
 const toggleClass=(el,c,v)=>el.classList.toggle(c,v);
 const isRich=s=>/<[a-z][\s\S]*>/i.test(s);
+// SÉCURITÉ (anti-XSS) : tout HTML de fiche passe par DOMPurify avant d'être affiché ou stocké.
+// Retire <script>, les attributs on*=, les liens javascript:, <iframe>, etc. Garde la mise en forme.
+const PURIFY_CFG={ADD_ATTR:['target','contenteditable'],FORBID_TAGS:['style','form','input','button','textarea','select','iframe','frame','object','embed','base','meta','link']};
+if(window.DOMPurify)DOMPurify.addHook('afterSanitizeAttributes',n=>{
+  if(n.tagName==='A'&&n.getAttribute('target'))n.setAttribute('rel','noopener noreferrer');
+  if(n.hasAttribute&&n.hasAttribute('contenteditable')&&n.getAttribute('contenteditable')!=='false')n.removeAttribute('contenteditable');
+});
+// Si purify.min.js n'a pas chargé, on échappe tout (texte brut) plutôt que d'afficher du HTML non vérifié.
+const cleanHtml=s=>{s=typeof s==='string'?s:'';return window.DOMPurify?DOMPurify.sanitize(s,PURIFY_CFG):s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');};
+// Nettoie le contenu d'une fiche seulement s'il contient du HTML (le texte brut est échappé à l'affichage).
+const cleanContent=s=>{s=typeof s==='string'?s:'';return isRich(s)?cleanHtml(s):s;};
 function isImageOnly(ct){
   if(!isRich(ct))return false;
   const tmp=document.createElement('div');
-  tmp.innerHTML=ct;
+  tmp.innerHTML=cleanHtml(ct);
   if(tmp.querySelectorAll('img').length!==1)return false;
   tmp.querySelectorAll('img').forEach(i=>i.remove());
   return tmp.textContent.trim()===''&&tmp.querySelector('video,audio,iframe')==null;
@@ -2912,7 +2926,7 @@ function findEntryById(pid,id){
 function cardPreviewLabel(entry){
   const ct=(entry&&entry.content)||'';
   const tmp=document.createElement('div');
-  tmp.innerHTML=isRich(ct)?ct:esc(ct).replace(/\n/g,' ');
+  tmp.innerHTML=isRich(ct)?cleanHtml(ct):esc(ct).replace(/\n/g,' ');
   const txt=(tmp.textContent||'').replace(/\s+/g,' ').trim();
   if(!txt)return t('mentionUntitled');
   const words=txt.split(' ').slice(0,6).join(' ');
@@ -2920,7 +2934,7 @@ function cardPreviewLabel(entry){
 }
 function processContent(content,filterTerms){
   const el=document.createElement('div');
-  if(isRich(content)){el.innerHTML=content;linkify(el);}
+  if(isRich(content)){el.innerHTML=cleanHtml(content);linkify(el);}
   else{const urls=[];let tmp=content.replace(/(https?:\/\/[^\s]+)/g,m=>{urls.push(m);return`[[U${urls.length-1}]]`;});tmp=esc(tmp).replace(/\[\[U(\d+)\]\]/g,(m,id)=>{const u=urls[+id];return`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer" class="link">${esc(u)}</a>`;}).replace(/\n/g,'<br>');el.innerHTML=tmp;}
   highlightTags(el);
   // Accept legacy string filter or new array of terms
@@ -2938,7 +2952,7 @@ function renderSidebar(){
   const list=$('profileList');list.innerHTML='';
   Object.entries(profiles).forEach(([pid,p])=>{
     const row=document.createElement('div');row.className='p-row'+(pid===currentPid?' active':'');row.dataset.pid=pid;
-    row.innerHTML=`<span class="p-row-drag" title="Réordonner"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></span><span class="p-row-icon">${p.icon||'📁'}</span><span class="p-row-name">${esc(p.name)}</span><span class="p-row-count">${p.entries.length}</span><button class="p-row-live" data-pid="${pid}" title="${t('liveRowTip')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49"/><path d="M7.76 16.24a6 6 0 0 1 0-8.49"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 19.07a10 10 0 0 1 0-14.14"/></svg></button><button class="p-row-del" data-pid="${pid}" title="Delete profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
+    row.innerHTML=`<span class="p-row-drag" title="Réordonner"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></span><span class="p-row-icon">${esc(String(p.icon||'📁'))}</span><span class="p-row-name">${esc(p.name)}</span><span class="p-row-count">${p.entries.length}</span><button class="p-row-live" data-pid="${esc(pid)}" title="${t('liveRowTip')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49"/><path d="M7.76 16.24a6 6 0 0 1 0-8.49"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 19.07a10 10 0 0 1 0-14.14"/></svg></button><button class="p-row-del" data-pid="${esc(pid)}" title="Delete profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
     row.querySelector('.p-row-live').addEventListener('click',e=>{e.stopPropagation();if(window._openLiveShare)window._openLiveShare(pid);});
     row.querySelector('.p-row-del').addEventListener('click',e=>{e.stopPropagation();deleteProfile(pid);});
     row.querySelector('.p-row-drag').addEventListener('pointerdown',e=>{e.stopPropagation();startProfileDrag(e,pid,row);});
@@ -3602,7 +3616,7 @@ function buildClipboardHtml(content){
   // Apply inline styles via DOM so that broken CRM editors (e.g. Dynamics) don't
   // render the <style> block as visible text.
   const tmp=document.createElement('div');
-  tmp.innerHTML=content;
+  tmp.innerHTML=cleanHtml(content);
   tmp.querySelectorAll('h1').forEach(el=>el.style.cssText='font-size:1.5em;font-weight:700;margin:.6em 0 .3em;');
   tmp.querySelectorAll('h2').forEach(el=>el.style.cssText='font-size:1.25em;font-weight:700;margin:.6em 0 .3em;');
   tmp.querySelectorAll('h3').forEach(el=>el.style.cssText='font-size:1.1em;font-weight:700;margin:.6em 0 .3em;');
@@ -3620,7 +3634,7 @@ function buildClipboardHtml(content){
 
 function writeCardToClipboard(entry,onDone){
   const tmp=document.createElement('div');
-  tmp.innerHTML=entry.content||'';
+  tmp.innerHTML=cleanHtml(entry.content||'');
   const plain=tmp.innerText;
   const html=isRich(entry.content)?entry.content:'';
 
@@ -4025,7 +4039,7 @@ function editCard(idx){
   editIdx=idx;const e=entries[idx];
   editColor=e.color||'';syncColorPicker();
   $('addModal-title').textContent='✏️ '+t('editCardTitle');const ed=$('newEntry');
-  if(isRich(e.content))ed.innerHTML=e.content;else ed.textContent=e.content;
+  if(isRich(e.content))ed.innerHTML=cleanHtml(e.content);else ed.textContent=e.content;
   $('saveEntry').textContent=t('modify');remClass($('deleteEntry'),'off');
   openCardModal();
   setTimeout(()=>{ed.focus();const r=document.createRange();r.selectNodeContents(ed);r.collapse(false);const s=window.getSelection();s.removeAllRanges();s.addRange(r);},100);
@@ -4199,7 +4213,7 @@ function updateStats(){
   Object.values(profiles).forEach(p=>{tot+=p.entries.length;ps.push({icon:p.icon||'📁',name:p.name,count:p.entries.length});});
   ps.sort((a,b)=>b.count-a.count);
   let h=`<div class="stat-hero"><span class="stat-hero-lbl">${t('totalCards')}</span><span class="stat-hero-val">${tot}</span></div><div class="stat-list">`;
-  ps.forEach(s=>{h+=`<div class="stat-row"><span class="stat-row-n">${s.icon} ${esc(s.name)}</span><span class="stat-row-c">${s.count}</span></div>`;});
+  ps.forEach(s=>{h+=`<div class="stat-row"><span class="stat-row-n">${esc(String(s.icon))} ${esc(s.name)}</span><span class="stat-row-c">${s.count}</span></div>`;});
   sc.innerHTML=h+'</div>';
 }
 
@@ -4268,7 +4282,7 @@ $('resetAllSizesBtn').addEventListener('click',resetAllCardSizes);
 $('cancelEntry').addEventListener('click',closeCardModal);
 $('cancelEntry2').addEventListener('click',closeCardModal);
 $('saveEntry').addEventListener('click',()=>{
-  const ed=$('newEntry'),val=ed.innerHTML.trim(),plain=ed.textContent.replace(/\u00A0/g,' ').trim();
+  const ed=$('newEntry'),val=cleanHtml(ed.innerHTML).trim(),plain=ed.textContent.replace(/\u00A0/g,' ').trim();
   if(!plain && !ed.querySelector('img')){alert(t('errEmpty'));return;}
   if(editIdx>=0){
     entries[editIdx].content=val;
@@ -4361,9 +4375,9 @@ $('importFile').addEventListener('change',async e=>{
   // Normalize a single entry (string or object) into the canonical entry shape
   const normalizeEntry=(x,i)=>{
     if(x==null)return null;
-    if(typeof x==='string')return{id:genId(),content:x,isPinned:false,createdAt:now+i};
+    if(typeof x==='string')return{id:genId(),content:cleanContent(x),isPinned:false,createdAt:now+i};
     if(typeof x!=='object')return null;
-    const o={id:x.id||genId(),content:x.content||'',isPinned:x.isPinned||false,createdAt:x.createdAt||now+i};
+    const o={id:x.id||genId(),content:cleanContent(x.content),isPinned:x.isPinned||false,createdAt:x.createdAt||now+i};
     if(typeof x.w==='number'&&x.w>0)o.w=x.w;
     if(typeof x.h==='number'&&x.h>0)o.h=x.h;
     if(typeof x.color==='string'&&x.color)o.color=x.color;
@@ -5157,9 +5171,9 @@ document.addEventListener('keydown',e=>{
           if(msg.type!=='query-profile')throw new Error('bad type');
           const rec=msg.payload,now=Date.now();
           const safe=(Array.isArray(rec.entries)?rec.entries:[]).map((e,i)=>{
-            if(typeof e==='string')return{id:genId(),content:e,isPinned:false,createdAt:now+i};
+            if(typeof e==='string')return{id:genId(),content:cleanContent(e),isPinned:false,createdAt:now+i};
             if(!e||typeof e!=='object')return null;
-            const o={id:e.id||genId(),content:e.content||'',isPinned:!!e.isPinned,createdAt:e.createdAt||now+i};
+            const o={id:e.id||genId(),content:cleanContent(e.content),isPinned:!!e.isPinned,createdAt:e.createdAt||now+i};
             if(typeof e.w==='number'&&e.w>0)o.w=e.w;
             if(typeof e.h==='number'&&e.h>0)o.h=e.h;
             if(typeof e.color==='string'&&e.color)o.color=e.color;
@@ -5533,7 +5547,7 @@ function searchTag(tag){
   const fp=e=>JSON.stringify([e.content,!!e.isPinned,e.color||'',e.w||0,e.h||0,e.x??null,e.y??null]);
   function sanitizeCard(e){
     if(!e||typeof e!=='object'||typeof e.id!=='string')return null;
-    const o={id:e.id,content:typeof e.content==='string'?e.content:'',isPinned:!!e.isPinned,
+    const o={id:e.id,content:cleanContent(e.content),isPinned:!!e.isPinned,
              createdAt:typeof e.createdAt==='number'?e.createdAt:Date.now()};
     o.updatedAt=typeof e.updatedAt==='number'?e.updatedAt:o.createdAt;
     if(typeof e.updatedBy==='string')o.updatedBy=e.updatedBy;
