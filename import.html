@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <!-- Sécurité : bloque plugins, iframes, détournement de <base> et envoi de formulaires vers l'extérieur. -->
-<meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cloud.umami.is">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Query — Knowledge Base</title>
 <link rel="manifest" href="manifest.json">
@@ -1967,8 +1967,6 @@ body.dark .share-status.notice  { background: rgba(234,179,8,.12); color: #fbbf2
 .tour-arrow:disabled { opacity: .35; cursor: default; }
 .tour-arrow:disabled:hover { background: var(--c-surf2); color: var(--c-text3); transform: none; }
 </style>
-<script data-goatcounter="https://queryapp.goatcounter.com/count"
-        async src="//gc.zgo.at/count.js"></script>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="2ee77e98-b60b-4040-9e8a-dcb181661d1a"></script>
 </head>
 <body>
@@ -2256,13 +2254,13 @@ body.dark .share-status.notice  { background: rgba(234,179,8,.12); color: #fbbf2
 
   <!-- Tab bar -->
   <div class="s-tab-bar" id="settingsTabBar">
-    <button class="stab on" data-tab="general">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      <span id="lbl-stab-general">General</span>
-    </button>
-    <button class="stab" data-tab="stats">
+    <button class="stab on" data-tab="stats">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       <span id="lbl-stab-stats">Stats</span>
+    </button>
+    <button class="stab" data-tab="general">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span id="lbl-stab-general">General</span>
     </button>
     <button class="stab" data-tab="export">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -2278,8 +2276,14 @@ body.dark .share-status.notice  { background: rgba(234,179,8,.12); color: #fbbf2
     </button>
   </div>
 
-  <!-- ① General -->
-  <div class="s-panel on" id="spanel-general">
+  <!-- ① Statistics -->
+  <div class="s-panel on" id="spanel-stats">
+    <div class="s-group-label" id="lbl-statistics">Statistics</div>
+    <div id="statsContent"></div>
+  </div>
+
+  <!-- ② General -->
+  <div class="s-panel" id="spanel-general">
     <div class="s-group-label" id="lbl-general">General</div>
     <div class="s-section">
       <div class="s-row">
@@ -2293,12 +2297,6 @@ body.dark .share-status.notice  { background: rgba(234,179,8,.12); color: #fbbf2
         </select>
       </div>
     </div>
-  </div>
-
-  <!-- ② Statistics -->
-  <div class="s-panel" id="spanel-stats">
-    <div class="s-group-label" id="lbl-statistics">Statistics</div>
-    <div id="statsContent"></div>
   </div>
 
   <!-- ③ Export -->
