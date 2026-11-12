@@ -2396,7 +2396,7 @@ body.dark .share-status.notice  { background: rgba(234,179,8,.12); color: #fbbf2
       <div id="liveOffView">
         <p id="liveJoinInstr" class="share-instr"></p>
         <div class="ci-row">
-          <input type="text" id="liveCodeInput" class="peer-input" placeholder="ABC123-XYZ456" maxlength="17">
+          <input type="text" id="liveCodeInput" class="peer-input" placeholder="ABC123-XYZ456…" maxlength="41">
           <button id="liveJoinBtn" class="share-pbtn"></button>
         </div>
         <div id="liveErr" class="share-status error off"></div>
@@ -2549,7 +2549,12 @@ async function bootStorage(){
   let fromLS=null;
   try{const r=localStorage.getItem(SK);if(r)fromLS=JSON.parse(r);}catch(_){}
 
-  if(fromIdb){
+  if(fromIdb&&fromLS&&(fromLS._ts||0)>(fromIdb._ts||0)){
+    // Le miroir localStorage est plus récent : la dernière écriture IDB (asynchrone)
+    // n'a pas abouti avant la fermeture de la page. On repart du plus récent.
+    _cache=fromLS;
+    await _idbPut(fromLS);
+  }else if(fromIdb){
     _cache=fromIdb;
     // Si localStorage est vide mais IDB plein (utilisateur sur nouvel appareil
     // ayant restauré IDB via une autre voie), réécrire le snapshot LS best-effort.
@@ -2575,27 +2580,48 @@ const load=()=>_cache;
  * en arrière-plan (debounce 150ms pour éviter le spam d'I/O).
  * Compatible avec l'ancien save() — retourne true si la donnée est en mémoire.
  */
+let _lsOk=true;            // le dernier miroir localStorage a-t-il réussi ?
+let _storageWarned=false;  // évite de répéter l'alerte « stockage plein »
+let _persistAsked=false;   // navigator.storage.persist() demandé une fois
+let _bc=null;              // canal entre onglets : « j'ai écrit, rechargez »
+try{_bc=new BroadcastChannel('query-storage');}catch(_){}
+
+// Les deux supports ont échoué → la modification n'existe qu'en mémoire : on le DIT.
+function _warnStorage(){
+  if(_storageWarned)return;
+  _storageWarned=true;
+  try{showToast(t('errQuota'),{error:true,duration:9000});}catch(_){}
+}
+function _flushIdb(){
+  const snapshot=_cache;
+  _writePending=false;
+  return _idbPut(snapshot).then(ok=>{
+    if(ok){
+      _storageWarned=false;
+      if(_bc){try{_bc.postMessage({ts:(snapshot&&snapshot._ts)||0});}catch(_){}}
+    }else if(!_lsOk)_warnStorage();
+    return ok;
+  });
+}
 const save=d=>{
+  // Horodatage : permet au démarrage (et aux autres onglets) de savoir quelle copie est la plus récente.
+  if(d&&typeof d==='object')d._ts=Date.now();
   _cache=d;
-  // Best-effort localStorage immédiat — si quota dépassé, on l'ignore.
-  // IDB est la vraie source de vérité maintenant.
-  try{localStorage.setItem(SK,JSON.stringify(d));}catch(e){
-    if(e&&e.name==='QuotaExceededError'){
-      // Quota localStorage dépassé. On ne montre PLUS d'alerte car IDB couvre.
-      // On vide juste le LS pour libérer la mémoire navigateur — IDB tient le coup.
-      try{localStorage.removeItem(SK);}catch(_){}
-    }
+  // Miroir localStorage best-effort. En cas de quota dépassé on GARDE l'ancienne
+  // copie (plus vieille, mais mieux que rien si IDB échoue aussi) : son _ts plus
+  // ancien garantit qu'elle ne prendra jamais le pas sur IDB.
+  try{localStorage.setItem(SK,JSON.stringify(d));_lsOk=true;}catch(e){_lsOk=false;}
+  // Demande au navigateur de ne pas purger nos données (une seule fois).
+  if(!_persistAsked){
+    _persistAsked=true;
+    try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});}catch(_){}
   }
   // Flush IDB debouncé
   if(_idbDb){
     _writePending=true;
     if(_writeTimer)clearTimeout(_writeTimer);
-    _writeTimer=setTimeout(()=>{
-      const snapshot=_cache;
-      _writePending=false;
-      _idbPut(snapshot);
-    },150);
-  }
+    _writeTimer=setTimeout(()=>{_writeTimer=null;_flushIdb();},150);
+  }else if(!_lsOk)_warnStorage();
   return true;
 };
 
@@ -2605,8 +2631,17 @@ const save=d=>{
  */
 function flushStorage(){
   if(_writeTimer){clearTimeout(_writeTimer);_writeTimer=null;}
-  if(_writePending&&_idbDb&&_cache){_writePending=false;_idbPut(_cache);}
+  if(_writePending&&_idbDb&&_cache)_flushIdb();
 }
+// Un autre onglet a écrit : on recharge sa version au lieu de l'écraser à notre
+// prochaine sauvegarde. Ignoré si nous avons nous-mêmes une écriture en attente.
+async function reloadFromOtherTab(){
+  if(_writePending||!_idbDb)return;
+  const d=await _idbGet();
+  if(!d||(d._ts||0)<=((_cache&&_cache._ts)||0))return;
+  if(typeof applyExternalData==='function')applyExternalData(d);
+}
+if(_bc)_bc.onmessage=()=>{reloadFromOtherTab();};
 window.addEventListener('beforeunload',flushStorage);
 window.addEventListener('pagehide',flushStorage);
 
@@ -2840,44 +2875,200 @@ function saveSearch(){const d=load()||{};if(!d.searches)d.searches={};d.searches
 ════════════════════════════════════════════════════════ */
 // Parse a search query into { globalSearch: bool, terms: string[] }
 // Leading "/" → search across all profiles. Whitespace-separated words → OR-match.
+// Syntax: words are AND-matched; "quoted phrase" matches exactly; -word / -"phrase"
+// excludes; #tag matches a whole tag. Matching ignores case and accents.
+// Returns { globalSearch, tokens:[{text,neg,tag,re?,alts?}], terms:string[] } where
+// `terms` are the positive (folded) strings, used for highlighting.
+const _DIACRITICS=/[̀-ͯ]/g;
+const _RE_ESC=/[.*+?^${}()|[\]\\]/g;
+// Lowercase + strip accents ("Élève" → "eleve"). ASCII fast path skips normalize().
+function foldText(s){
+  s=s.toLowerCase();
+  return /[^\x00-\x7f]/.test(s)?s.normalize('NFD').replace(_DIACRITICS,''):s;
+}
 function parseSearchQuery(raw){
-  const r={globalSearch:false,terms:[]};
+  const r={globalSearch:false,terms:[],tokens:[]};
   if(!raw)return r;
   let q=raw;
   if(q.charAt(0)==='/'){r.globalSearch=true;q=q.slice(1);}
-  r.terms=q.split(/\s+/).filter(w=>w.length>0).map(w=>w.toLowerCase());
+  const re=/(-?)"([^"]*)"?|(\S+)/g;let m;
+  while((m=re.exec(q))){
+    let neg=m[1]==='-',text;
+    if(m[2]!==undefined)text=m[2];
+    else{text=m[3];if(text.length>1&&text.charAt(0)==='-'){neg=true;text=text.slice(1);}}
+    text=foldText(text).replace(/\s+/g,' ').trim();
+    if(!text)continue;
+    const tk={text,neg,tag:false};
+    // A term starting with "#" is a tag lookup — matched as a whole word so
+    // "#js" doesn't also match "#js2" or "objs", unlike the general substring search.
+    if(text.charAt(0)==='#'&&text.length>1&&m[2]===undefined){
+      tk.tag=true;
+      tk.re=new RegExp(`(^|[^\\p{L}\\p{N}_])#${text.slice(1).replace(_RE_ESC,'\\$&')}(?![\\p{L}\\p{N}_])`,'u');
+    }
+    r.tokens.push(tk);
+    if(!neg)r.terms.push(text);
+  }
   return r;
 }
-// A term starting with "#" is a tag lookup — matched as a whole word so
-// "#js" doesn't also match "#js2" or "objs", unlike the general substring search.
-function matchesTerm(targetLower,term){
-  if(term.charAt(0)!=='#')return targetLower.includes(term);
-  const word=term.slice(1).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-  if(!word)return targetLower.includes('#');
-  return new RegExp(`(^|[^\\p{L}\\p{N}_])#${word}(?![\\p{L}\\p{N}_])`,'u').test(targetLower);
+const _WORD_CH=/[\p{L}\p{N}_]/u;
+// Relevance of one needle inside folded text `s`; 0 = absent.
+// Rewards whole-word and word-start hits, early position (≈ title) and repeats.
+function scoreNeedle(s,needle){
+  let idx=s.indexOf(needle);
+  if(idx<0)return 0;
+  const first=idx,nl=needle.length;
+  let count=0,best=0;
+  while(idx>=0&&count<6){
+    count++;
+    if(best<2){
+      const startOk=idx===0||!_WORD_CH.test(s.charAt(idx-1));
+      if(startOk){
+        const endOk=idx+nl>=s.length||!_WORD_CH.test(s.charAt(idx+nl));
+        best=endOk?2:Math.max(best,1);
+      }
+    }
+    idx=s.indexOf(needle,idx+nl);
+  }
+  return 10+(best===2?10:best===1?6:0)+(count-1)*.5+(first===0?3:0)+6*(1-Math.min(first,240)/240);
 }
+// Score an entry's folded text against the parsed tokens. 0 = no match.
+function scoreText(s,tokens){
+  let total=0,positives=0,covered=0,phrase='';
+  for(let i=0;i<tokens.length;i++){
+    const tk=tokens[i];
+    if(tk.neg){
+      if(tk.tag?tk.re.test(s):s.includes(tk.text))return 0;
+      continue;
+    }
+    let sc=0;
+    if(tk.tag){const m=tk.re.exec(s);if(m)sc=20+5*(1-Math.min(m.index,240)/240);}
+    else if(tk.alts){
+      // Typo-tolerant fallback: any close spelling counts, at a discount.
+      for(let a=0;a<tk.alts.length;a++){const v=scoreNeedle(s,tk.alts[a]);if(v>sc)sc=v;}
+      sc*=.6;
+    }else sc=scoreNeedle(s,tk.text);
+    if(!sc)return 0;
+    total+=sc;positives++;covered+=tk.text.length;
+    if(!tk.alts)phrase+=(phrase?' ':'')+tk.text;
+  }
+  if(!positives)return 1; // only exclusions, and none hit
+  // A short card that is mostly the query beats a long one that merely mentions it.
+  if(s.length)total+=14*Math.min(1,covered/s.length);
+  // Words typed together and found together, in order → strong signal.
+  if(positives>1&&phrase&&s.includes(phrase))total+=18;
+  return total;
+}
+// Edit distance (with transpositions), bailing out as soon as it exceeds `max`.
+function editDistMax(a,b,max){
+  const al=a.length,bl=b.length;
+  if(Math.abs(al-bl)>max)return max+1;
+  let pp=null,p=new Array(bl+1),c=new Array(bl+1);
+  for(let j=0;j<=bl;j++)p[j]=j;
+  for(let i=1;i<=al;i++){
+    c[0]=i;let rowMin=i;const ai=a.charCodeAt(i-1);
+    for(let j=1;j<=bl;j++){
+      const cost=ai===b.charCodeAt(j-1)?0:1;
+      let v=Math.min(p[j]+1,c[j-1]+1,p[j-1]+cost);
+      if(pp&&i>1&&j>1&&ai===b.charCodeAt(j-2)&&a.charCodeAt(i-2)===b.charCodeAt(j-1))v=Math.min(v,pp[j-2]+1);
+      c[j]=v;if(v<rowMin)rowMin=v;
+    }
+    if(rowMin>max)return max+1;
+    const tmp=pp||new Array(bl+1);pp=p;p=c;c=tmp;
+  }
+  return p[bl];
+}
+// Called only when the exact search found nothing: for each word that exists nowhere
+// in the pool, look for close spellings in the pool's vocabulary ("recherhce" → "recherche").
+// Returns new tokens carrying `alts`, or null if no correction is possible.
+function fuzzyExpandTokens(pool,tokens){
+  const dead=[];
+  for(let i=0;i<tokens.length;i++){
+    const tk=tokens[i];
+    if(tk.neg||tk.tag||tk.text.length<4||tk.text.includes(' '))continue;
+    let found=false;
+    for(let p=0;p<pool.length;p++)if(getSearchText(pool[p].entry).includes(tk.text)){found=true;break;}
+    if(!found)dead.push(i);
+  }
+  if(!dead.length)return null;
+  const vocab=new Set(),wre=/[\p{L}\p{N}]{3,40}/gu;
+  for(let p=0;p<pool.length;p++){
+    const ws=getSearchText(pool[p].entry).match(wre);
+    if(ws)for(let k=0;k<ws.length;k++)vocab.add(ws[k]);
+  }
+  const out=tokens.slice();
+  for(let d=0;d<dead.length;d++){
+    const tk=tokens[dead[d]],q=tk.text,ql=q.length,max=ql>=8?2:1,cands=[];
+    vocab.forEach(w=>{
+      if(w.length<ql-max)return;
+      // Longer word → compare against its beginning, so a typo still matches while typing.
+      const isPrefix=w.length>ql+max;
+      const dist=editDistMax(q,isPrefix?w.slice(0,ql):w,max);
+      if(dist<=max)cands.push({w,rank:dist+(isPrefix?.5:0)});
+    });
+    if(!cands.length)return null;
+    cands.sort((a,b)=>a.rank-b.rank);
+    out[dead[d]]={text:q,neg:false,tag:false,alts:cands.slice(0,6).map(c=>c.w)};
+  }
+  return out;
+}
+// Filter + rank a pool of {entry,…} items. Stable: equal scores keep the user's order.
+function rankPool(pool,tokens){
+  const hits=[];
+  for(let i=0;i<pool.length;i++){
+    const e=pool[i].entry;
+    let sc=scoreText(getSearchText(e),tokens);
+    if(!sc)continue;
+    if(e.isPinned)sc+=3;
+    hits.push({item:pool[i],sc,i});
+  }
+  hits.sort((a,b)=>b.sc-a.sc||a.i-b.i);
+  const out=new Array(hits.length);
+  for(let i=0;i<hits.length;i++)out[i]=hits[i].item;
+  return out;
+}
+// Kept for callers that only need a yes/no on plain term strings.
 function matchesAllTerms(targetLower,terms){
   if(!terms||terms.length===0)return true;
-  for(let i=0;i<terms.length;i++)if(!matchesTerm(targetLower,terms[i]))return false;
-  return true;
+  return scoreText(targetLower,parseSearchQuery(terms.join(' ')).tokens)>0;
 }
+// The regex runs on *folded* text (see walkMark), so it is accent/case-insensitive.
+// Memoised on the terms array: one compile per render instead of one per card.
+let _hlTerms=null,_hlRe=null;
 function buildHighlightRegex(terms){
   if(!terms||terms.length===0)return null;
-  const esc=terms.slice().sort((a,b)=>b.length-a.length).map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
-  return new RegExp(`(${esc.join('|')})`,'gi');
+  if(terms===_hlTerms)return _hlRe;
+  const src=terms.map(t=>foldText(t)).filter(Boolean).sort((a,b)=>b.length-a.length)
+    .map(t=>t.replace(_RE_ESC,'\\$&').replace(/ /g,'\\s+'));
+  _hlTerms=terms;_hlRe=src.length?new RegExp(src.join('|'),'g'):null;
+  return _hlRe;
 }
 function walkMark(node,re){
   if(node.nodeType===3){
-    const local=new RegExp(re.source,'gi');
-    if(!local.test(node.textContent))return;
+    const txt=node.textContent;
+    // Fold the text; `map` gives, for each folded char, its index in the original
+    // (folding can drop combining marks or expand a char, so lengths may differ).
+    let folded,map=null;
+    if(!/[^\x00-\x7f]/.test(txt))folded=txt.toLowerCase();
+    else{
+      folded='';map=[];
+      for(let i=0;i<txt.length;i++){const f=foldText(txt.charAt(i));for(let k=0;k<f.length;k++)map.push(i);folded+=f;}
+      map.push(txt.length);
+    }
+    re.lastIndex=0;
+    let m=re.exec(folded);
+    if(!m)return;
     const f=document.createDocumentFragment();let li=0;
-    node.textContent.replace(new RegExp(re.source,'gi'),(m,...args)=>{
-      const off=args[args.length-2];
-      if(off>li)f.appendChild(document.createTextNode(node.textContent.slice(li,off)));
-      const mk=document.createElement('mark');mk.textContent=m;f.appendChild(mk);
-      li=off+m.length;
-    });
-    if(li<node.textContent.length)f.appendChild(document.createTextNode(node.textContent.slice(li)));
+    while(m){
+      if(!m[0].length){re.lastIndex++;m=re.exec(folded);continue;}
+      const a=map?map[m.index]:m.index,b=map?map[m.index+m[0].length]:m.index+m[0].length;
+      if(b>a&&a>=li){
+        if(a>li)f.appendChild(document.createTextNode(txt.slice(li,a)));
+        const mk=document.createElement('mark');mk.textContent=txt.slice(a,b);f.appendChild(mk);
+        li=b;
+      }
+      m=re.exec(folded);
+    }
+    if(li<txt.length)f.appendChild(document.createTextNode(txt.slice(li)));
     node.parentNode.replaceChild(f,node);
     return;
   }
@@ -2930,15 +3121,30 @@ function cardPreviewLabel(entry){
   const words=txt.split(' ').slice(0,6).join(' ');
   return (words.length<txt.length?words+'…':words).slice(0,64);
 }
+// Sanitised + linkified + tag-chipped HTML, cached per content string so that typing
+// in the search box doesn't re-run DOMPurify on every card at every keystroke.
+// Only the (cheap) highlight pass runs per query. Values are cleanHtml() output.
+const _baseHtmlCache=new Map();
+const BASE_HTML_CACHE_MAX=3000,BASE_HTML_CACHE_MAXLEN=60000;
 function processContent(content,filterTerms){
+  // Accept legacy string filter or new array of terms
+  let terms=filterTerms;
+  if(typeof filterTerms==='string')terms=filterTerms?[filterTerms]:[];
+  const re=buildHighlightRegex(terms);
   const el=document.createElement('div');
+  const base=_baseHtmlCache.get(content);
+  if(base!==undefined){
+    if(!re)return base;
+    el.innerHTML=base;walkMark(el,re);
+    return el.innerHTML;
+  }
   if(isRich(content)){el.innerHTML=cleanHtml(content);linkify(el);}
   else{const urls=[];let tmp=content.replace(/(https?:\/\/[^\s]+)/g,m=>{urls.push(m);return`[[U${urls.length-1}]]`;});tmp=esc(tmp).replace(/\[\[U(\d+)\]\]/g,(m,id)=>{const u=urls[+id];return`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer" class="link">${esc(u)}</a>`;}).replace(/\n/g,'<br>');el.innerHTML=tmp;}
   highlightTags(el);
-  // Accept legacy string filter or new array of terms
-  let terms=filterTerms;
-  if(typeof filterTerms==='string')terms=filterTerms?[filterTerms.toLowerCase()]:[];
-  const re=buildHighlightRegex(terms);
+  if(content.length<=BASE_HTML_CACHE_MAXLEN){
+    if(_baseHtmlCache.size>=BASE_HTML_CACHE_MAX)_baseHtmlCache.clear();
+    _baseHtmlCache.set(content,el.innerHTML);
+  }
   if(re)walkMark(el,re);
   return el.innerHTML;
 }
@@ -3260,15 +3466,24 @@ function pullFromExtension() {
             console.warn('[Query sync] Réponse invalide:', response);
             return resolve(false);
           }
-          const extProfiles = response.data && response.data.profiles;
-          if (!extProfiles || !Object.keys(extProfiles).length) {
+          // Données externes : on valide la forme et on nettoie le HTML avant tout.
+          const extProfiles = normalizeProfiles(response.data && response.data.profiles, true);
+          const d = load() || {};
+          const cur = d.profiles || {};
+          // Garde-fou : une copie VIDE côté extension (réinstallation, profil par
+          // défaut…) ne doit pas effacer un profil web qui contient des fiches.
+          Object.keys(extProfiles).forEach(pid => {
+            const mine = cur[pid];
+            if (mine && Array.isArray(mine.entries) && mine.entries.length && !extProfiles[pid].entries.length) delete extProfiles[pid];
+          });
+          if (!Object.keys(extProfiles).length) {
             console.log('[Query sync] Aucun profil dans l\'extension');
             return resolve(false);
           }
           // Fusionner avec les profils existants (l'extension gagne)
-          const d = load() || {};
-          d.profiles = Object.assign({}, d.profiles || {}, extProfiles);
-          if (response.data.currentProfile) d.currentPid = response.data.currentProfile;
+          d.profiles = Object.assign({}, cur, extProfiles);
+          const cp = response.data.currentProfile;
+          if (typeof cp === 'string' && d.profiles[cp]) d.currentPid = cp;
           save(d);
           console.log('[Query sync]', Object.keys(extProfiles).length, 'profil(s) synchronisé(s)');
           resolve(true);
@@ -3301,11 +3516,19 @@ window.addEventListener('message', (event) => {
   if (!event.data || event.data.source !== 'query-extension') return;
   if (event.data.type === 'PROFILES_UPDATED' && event.data.profiles) {
     console.log('[Query sync] Mise à jour reçue de l\'extension');
-    profiles = event.data.profiles;
-    // Normaliser les entries
+    // Valider + nettoyer : un profil mal formé ne doit ni planter l'affichage ni injecter de HTML.
+    const incoming = normalizeProfiles(event.data.profiles, true);
+    // Garde-fou : ne jamais tout effacer sur un message vide ou invalide.
+    if (!Object.keys(incoming).length && Object.keys(profiles).length) {
+      console.warn('[Query sync] Mise à jour vide ignorée');
+      return;
+    }
+    // Les profils de salons live n'existent que côté web : on les conserve.
+    const liveRooms = (load() || {}).liveRooms || {};
     Object.keys(profiles).forEach(pid => {
-      if (!Array.isArray(profiles[pid].entries)) profiles[pid].entries = [];
+      if (!incoming[pid] && (liveRooms[pid] || profiles[pid].liveRoom)) incoming[pid] = profiles[pid];
     });
+    profiles = incoming;
     if (profiles[currentPid]) {
       entries = profiles[currentPid].entries;
     } else {
@@ -3325,6 +3548,54 @@ window.addEventListener('message', (event) => {
 /* ════════════════════════════════════════════════════════
    INIT
 ════════════════════════════════════════════════════════ */
+// Met une liste de fiches à la forme canonique. `clean` = passer le HTML par
+// DOMPurify (obligatoire pour toute donnée venant de l'extérieur).
+function normalizeEntryList(list,clean){
+  if(!Array.isArray(list))return [];
+  const now=Date.now();
+  return list.map((e,i)=>{
+    if(typeof e==='string')return{id:genId(),content:clean?cleanContent(e):e,isPinned:false,createdAt:now+i};
+    if(!e||typeof e!=='object')return null;
+    const ct=typeof e.content==='string'?e.content:'';
+    const o={id:typeof e.id==='string'&&e.id?e.id:genId(),content:clean?cleanContent(ct):ct,isPinned:!!e.isPinned,createdAt:typeof e.createdAt==='number'?e.createdAt:now};
+    if(typeof e.updatedAt==='number')o.updatedAt=e.updatedAt;
+    if(typeof e.updatedBy==='string')o.updatedBy=e.updatedBy;
+    if(typeof e.w==='number'&&e.w>0)o.w=e.w;
+    if(typeof e.h==='number'&&e.h>0)o.h=e.h;
+    if(typeof e.color==='string'&&e.color)o.color=e.color;
+    if(typeof e.x==='number')o.x=e.x;
+    if(typeof e.y==='number')o.y=e.y;
+    return o;
+  }).filter(Boolean);
+}
+// Valide une table de profils : écarte ce qui n'est pas un objet, garantit un nom
+// (chaîne) et une liste de fiches saine. Les autres champs du profil sont conservés.
+function normalizeProfiles(profs,clean){
+  const out={};
+  if(!profs||typeof profs!=='object'||Array.isArray(profs))return out;
+  Object.keys(profs).forEach(pid=>{
+    const p=profs[pid];
+    if(!p||typeof p!=='object'||Array.isArray(p))return;
+    if(typeof p.name!=='string'||!p.name)p.name=String(p.name||pid);
+    p.entries=normalizeEntryList(p.entries,clean);
+    out[pid]=p;
+  });
+  return out;
+}
+// Un autre onglet a enregistré une version plus récente : on l'adopte.
+// Reporté tant que l'éditeur de fiche est ouvert (les index bougeraient sous lui).
+let _pendingExternal=false;
+function applyExternalData(d){
+  if(!d||!d.profiles||!Object.keys(d.profiles).length)return;
+  if(!$('addModal').classList.contains('off')){_pendingExternal=true;return;}
+  _pendingExternal=false;
+  _cache=d;
+  profiles=normalizeProfiles(d.profiles,false);
+  if(!profiles[currentPid])currentPid=Object.keys(profiles)[0]||'';
+  entries=profiles[currentPid]?profiles[currentPid].entries:[];
+  renderSidebar();updateTopbar();render($('search').value);
+}
+
 async function init(){
   // CRITICAL: storage layer must be ready before any load()/save() call.
   // Loads from IndexedDB (or migrates from localStorage if first run on this version).
@@ -3341,23 +3612,7 @@ async function init(){
     lang=d.language||'en';themeMode=d.themeMode||'light';customColor=d.customColor||'#2563eb';tourSeen=!!(d.tourSeen||d.tutorialAdded);
     $('colorPicker').value=customColor;applyTheme(themeMode);applyTr();$('langSelect').value=lang;
     if(d.profiles){
-      profiles=d.profiles;
-      Object.keys(profiles).forEach(pid=>{
-        if(!Array.isArray(profiles[pid].entries))profiles[pid].entries=[];
-        else profiles[pid].entries=profiles[pid].entries.map((e,i)=>{
-          if(typeof e==='string')return{id:genId(),content:e,isPinned:false,createdAt:Date.now()+i};
-          if(!e||typeof e!=='object')return null;
-          const o={id:e.id||genId(),content:e.content||'',isPinned:!!e.isPinned,createdAt:e.createdAt||Date.now()};
-          if(typeof e.updatedAt==='number')o.updatedAt=e.updatedAt;
-          if(typeof e.updatedBy==='string')o.updatedBy=e.updatedBy;
-          if(typeof e.w==='number'&&e.w>0)o.w=e.w;
-          if(typeof e.h==='number'&&e.h>0)o.h=e.h;
-          if(typeof e.color==='string'&&e.color)o.color=e.color;
-          if(typeof e.x==='number')o.x=e.x;
-          if(typeof e.y==='number')o.y=e.y;
-          return o;
-        }).filter(Boolean);
-      });
+      profiles=normalizeProfiles(d.profiles,false);
     }else{startFirstProfile();document.dispatchEvent(new Event('query-ready'));return;}
     currentPid=d.currentPid||Object.keys(profiles)[0];
     renderApp();
@@ -3399,20 +3654,41 @@ function updateCanvasHeight(){
 
 // Pre-compute lowercased plain-text version of an entry's content, lazily.
 // Cached directly on the entry object (non-enumerable so it doesn't get persisted).
+// The text is folded (lowercase, no accents), entity-decoded and whitespace-collapsed.
+// The cache remembers which content it was built from, so it can never go stale —
+// whatever path changed the card (edit, import, live room, extension sync).
+const _BLOCK_TAGS=/<\/?(?:div|p|br|li|ul|ol|h[1-6]|tr|td|th|table|pre|blockquote|hr|section|article|header|footer|img)\b[^>]*>/gi;
+const _ENTITIES={nbsp:' ',amp:'&',lt:'<',gt:'>',quot:'"',apos:"'"};
+function decodeEntities(s){
+  if(s.indexOf('&')<0)return s;
+  return s.replace(/&(?:#(\d+)|#x([0-9a-f]+)|([a-z]+));/gi,(m,dec,hex,name)=>{
+    if(name){const v=_ENTITIES[name.toLowerCase()];return v===undefined?m:v;}
+    const code=dec?parseInt(dec,10):parseInt(hex,16);
+    try{return String.fromCodePoint(code);}catch(_){return m;}
+  });
+}
 function getSearchText(entry){
-  if(entry._searchText!==undefined)return entry._searchText;
   const ct=entry.content||'';
-  const plain=isRich(ct)?ct.replace(/<[^>]+>/g,' '):ct;
-  Object.defineProperty(entry,'_searchText',{value:plain.toLowerCase(),writable:true,enumerable:false,configurable:true});
-  return entry._searchText;
+  if(entry._searchText!==undefined&&entry._searchSrc===ct)return entry._searchText;
+  // Block tags separate words; inline tags (<b>, <span>…) don't: "re<b>cherche</b>" is one word.
+  const plain=isRich(ct)?decodeEntities(ct.replace(_BLOCK_TAGS,' ').replace(/<[^>]+>/g,'')):ct;
+  const text=foldText(plain).replace(/\s+/g,' ').trim();
+  Object.defineProperty(entry,'_searchText',{value:text,writable:true,enumerable:false,configurable:true});
+  Object.defineProperty(entry,'_searchSrc',{value:ct,writable:true,enumerable:false,configurable:true});
+  return text;
 }
 // Invalidate the cache for an entry whose content changed.
-function invalidateSearchText(entry){if(entry&&entry._searchText!==undefined){try{delete entry._searchText;}catch(_){entry._searchText=undefined;}}}
+function invalidateSearchText(entry){if(entry&&entry._searchText!==undefined){try{delete entry._searchText;delete entry._searchSrc;}catch(_){entry._searchText=undefined;}}}
 
-// Cap on rendered cards in global mode to keep the DOM responsive.
+// Cap on rendered cards (global mode, or any active search) to keep the DOM responsive.
+// Results are ranked, so the best ones come first; "show more" raises the limit.
 const GLOBAL_RENDER_CAP=200;
+let renderLimit=GLOBAL_RENDER_CAP,renderLimitFilter=null,lastRenderMs=0;
 
 function render(filter=''){
+  const _t0=performance.now();
+  // A new query starts again from the default number of rendered cards.
+  if(filter!==renderLimitFilter){renderLimitFilter=filter;renderLimit=GLOBAL_RENDER_CAP;}
   const res=$('results'),ctr=$('resultsCounter');
   // Preserve edit-mode class on results container
   if(editMode)res.classList.add('edit-mode');else res.classList.remove('edit-mode');
@@ -3424,8 +3700,8 @@ function render(filter=''){
   // Parse the search query
   const parsed=parseSearchQuery(filter);
   const isGlobal=parsed.globalSearch;
-  const terms=parsed.terms;
-  const hasFilter=terms.length>0;
+  let terms=parsed.terms;
+  const hasFilter=parsed.tokens.length>0;
 
   // Suspend canvas absolute positioning when a filter is active
   if(hasFilter&&!isGlobal)res.classList.add('filter-active');
@@ -3449,17 +3725,27 @@ function render(filter=''){
   if(pool.length===0){res.innerHTML=`<div class="empty-state"><div class="empty-state-icon">🗒️</div><div class="empty-state-title">${t('emptyTitle')}</div><div class="empty-state-sub">${t('emptySub')}</div></div>`;addClass(ctr,'off');updateCount();return;}
 
   // First pass: filter — fast, no DOM touched.
-  const matched=[];
-  for(let i=0;i<pool.length;i++){
-    const entry=pool[i].entry;
-    if(hasFilter&&!matchesAllTerms(getSearchText(entry),terms))continue;
-    matched.push(pool[i]);
+  // With a query, results are ranked by relevance (ties keep the user's order).
+  let matched=pool,fuzzy=false;
+  if(hasFilter){
+    matched=rankPool(pool,parsed.tokens);
+    if(!matched.length){
+      // Nothing found: retry tolerating typos on the words that exist nowhere.
+      const ft=fuzzyExpandTokens(pool,parsed.tokens);
+      if(ft){
+        matched=rankPool(pool,ft);
+        if(matched.length){
+          fuzzy=true;terms=[];
+          for(let i=0;i<ft.length;i++){const tk=ft[i];if(tk.neg)continue;if(tk.alts)terms.push(...tk.alts);else terms.push(tk.text);}
+        }
+      }
+    }
   }
 
   const totalMatched=matched.length;
-  // Cap the number of cards we render in global mode for responsiveness.
-  const willRender=(isGlobal&&totalMatched>GLOBAL_RENDER_CAP)?matched.slice(0,GLOBAL_RENDER_CAP):matched;
-  const truncated=isGlobal&&totalMatched>GLOBAL_RENDER_CAP;
+  // Cap the number of cards we render (global mode or active search) for responsiveness.
+  const truncated=(isGlobal||hasFilter)&&totalMatched>renderLimit;
+  const willRender=truncated?matched.slice(0,renderLimit):matched;
 
   // Second pass: build all cards into a fragment (single reflow).
   const frag=document.createDocumentFragment();
@@ -3516,11 +3802,18 @@ function render(filter=''){
     const more=document.createElement('div');
     more.className='empty-state';
     more.style.padding='16px';
-    more.innerHTML=`<div class="empty-state-sub">… +${totalMatched-GLOBAL_RENDER_CAP} ${t('resultsN',totalMatched-GLOBAL_RENDER_CAP).replace(/^\d+\s*/,'')}</div>`;
+    const rest=totalMatched-renderLimit;
+    more.innerHTML=`<button type="button" class="empty-state-sub" style="cursor:pointer;font:inherit;color:inherit;background:var(--c-surf2);border:0;border-radius:var(--r-full);padding:8px 16px">… +${rest} ${t('resultsN',rest).replace(/^\d+\s*/,'')}</button>`;
+    more.firstChild.addEventListener('click',()=>{
+      const y=window.scrollY;
+      renderLimit+=GLOBAL_RENDER_CAP*2;render(filter);
+      window.scrollTo(0,y);
+    });
     res.appendChild(more);
   }
 
-  if(hasFilter){remClass(ctr,'off');ctr.textContent=t('resultsN',totalMatched);}else{addClass(ctr,'off');}
+  // "≈" flags approximate (typo-corrected) results.
+  if(hasFilter){remClass(ctr,'off');ctr.textContent=(fuzzy?'≈ ':'')+t('resultsN',totalMatched);}else{addClass(ctr,'off');}
   updateCount();
   if(totalMatched===0&&hasFilter)res.innerHTML=`<div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-title">${t('noResultTitle')}</div><div class="empty-state-sub">${t('noResultSub')}</div></div>`;
   // Auto-activate canvas if entries have stored positions (handles page reload)
@@ -3528,6 +3821,7 @@ function render(filter=''){
   if(isCanvasActive()&&!hasFilter)ensureCanvasPositions();else updateCanvasHeight();
   // Inject header+copy button into code blocks
   injectPreCopyButtons(res);
+  lastRenderMs=performance.now()-_t0;
 }
 
 function injectPreCopyButtons(container){
@@ -4030,7 +4324,7 @@ function syncColorPicker(){
   });
 }
 function openCardModal(){remClass($('addModal'),'off');showBackdrop();setTimeout(()=>{$('newEntry').focus();document.dispatchEvent(new Event('selectionchange'));},80);}
-function closeCardModal(){addClass($('addModal'),'off');hideBackdrop();resetCardModal();}
+function closeCardModal(){addClass($('addModal'),'off');hideBackdrop();resetCardModal();if(_pendingExternal){_pendingExternal=false;reloadFromOtherTab();}}
 function resetCardModal(){editIdx=-1;editColor='';syncColorPicker();$('addModal-title').textContent='✏️ '+t('newCardTitle');$('saveEntry').textContent=t('save');$('newEntry').innerHTML='';addClass($('deleteEntry'),'off');}
 
 function editCard(idx){
@@ -4261,13 +4555,10 @@ let renderTimer=null;
 $('search').addEventListener('input',e=>{
   const v=e.target.value;
   clearTimeout(renderTimer);
-  if(v.charAt(0)==='/'){
-    // Global search: many cards possible → debounce to keep typing fluid.
-    renderTimer=setTimeout(()=>render(v),120);
-  }else{
-    // Local search: small dataset, render immediately.
-    render(v);
-  }
+  // Adaptive: if the last render fit in a frame, render instantly; otherwise debounce
+  // in proportion to its cost so typing stays fluid on big profiles / global search.
+  if(lastRenderMs<14&&v.charAt(0)!=='/')render(v);
+  else renderTimer=setTimeout(()=>render(v),Math.min(220,Math.max(60,Math.round(lastRenderMs*1.2))));
   clearTimeout(searchTimer);
   searchTimer=setTimeout(saveSearch,300);
 });
@@ -5491,6 +5782,11 @@ function searchTag(tag){
   ]}};
 
   const genShort=()=>Math.random().toString(36).substring(2,8).toUpperCase().padEnd(6,'0');
+  // Secret de salle : 16 caractères tirés d'un générateur cryptographique (≈ 80 bits).
+  // Math.random() + 6 caractères (≈ 31 bits) se cassait par force brute en quelques heures.
+  // Alphabet sans caractères ambigus (0/O, 1/I) pour rester dictable.
+  const SECRET_ALPHA='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const genSecret=()=>{const a=crypto.getRandomValues(new Uint8Array(16));let s='';for(let i=0;i<a.length;i++)s+=SECRET_ALPHA[a[i]&31];return s;};
   const opId=()=>'o'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
   // Conversion par blocs — les fiches avec images base64 dépassent la
   // limite d'arguments de String.fromCharCode(...) sinon.
@@ -5888,7 +6184,7 @@ function searchTag(tag){
     // pause), on la reprend avec le même code et le même rôle — les autres
     // membres peuvent donc toujours nous retrouver. Sinon, on crée.
     if(rec)delete rec.paused;
-    else rec=rooms[pid]={room:genShort(),secret:genShort(),isHost:true,memberId:genShort(),tombs:{},peers:[],nameTs:Date.now()};
+    else rec=rooms[pid]={room:genShort(),secret:genSecret(),isHost:true,memberId:genShort(),tombs:{},peers:[],nameTs:Date.now()};
     saveRooms(rooms);
     // Marqueur durable : ce profil EST la salle <room>. Il survit à un
     // "arrêter le partage" — re-rejoindre le même code réattache ce profil
@@ -5901,7 +6197,7 @@ function searchTag(tag){
   }
 
   async function joinRoom(code){
-    const m=/^([A-Z0-9]{4,8})-([A-Z0-9]{4,8})$/.exec((code||'').trim().toUpperCase());
+    const m=/^([A-Z0-9]{4,8})-([A-Z0-9]{4,32})$/.exec((code||'').trim().toUpperCase());
     if(!m){liveErr(t('liveErrCode'));return;}
     if(!hasCrypto){liveErr(t('liveNoCrypto'));return;}
     const room=m[1],secret=m[2];
@@ -6105,7 +6401,7 @@ function searchTag(tag){
   // automatique. Le fragment est effacé aussitôt pour ne pas traîner
   // dans l'historique.
   function checkHashJoin(){
-    const m=/^#live=([A-Z0-9]{4,8}-[A-Z0-9]{4,8})$/i.exec(location.hash||'');
+    const m=/^#live=([A-Z0-9]{4,8}-[A-Z0-9]{4,32})$/i.exec(location.hash||'');
     if(!m)return;
     history.replaceState(null,'',location.pathname+location.search);
     askPseudo(()=>{
@@ -6136,6 +6432,10 @@ function searchTag(tag){
 
 // Kick off
 init().catch(console.error);
+// PWA : sans cet enregistrement, sw.js n'est jamais actif et rien ne marche hors-ligne.
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){
+  window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(e=>console.warn('[Query] SW:',e));});
+}
 </script>
 </body>
 </html>
