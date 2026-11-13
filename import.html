@@ -2396,7 +2396,7 @@ body.dark .share-status.notice  { background: rgba(234,179,8,.12); color: #fbbf2
       <div id="liveOffView">
         <p id="liveJoinInstr" class="share-instr"></p>
         <div class="ci-row">
-          <input type="text" id="liveCodeInput" class="peer-input" placeholder="ABC123-XYZ456…" maxlength="41">
+          <input type="text" id="liveCodeInput" class="peer-input" placeholder="ABC123-XYZ456" maxlength="17">
           <button id="liveJoinBtn" class="share-pbtn"></button>
         </div>
         <div id="liveErr" class="share-status error off"></div>
@@ -2433,6 +2433,7 @@ body.dark .share-status.notice  { background: rgba(234,179,8,.12); color: #fbbf2
   </div>
   <div class="link-panel-foot">
     <button class="btn btn-ghost" id="linkPanelCopy">📋 <span id="lbl-linkCopy">Copy</span></button>
+    <button class="btn btn-ghost" id="linkPanelPdf">📄 <span id="lbl-linkPdf">PDF</span></button>
     <button class="btn btn-ok" id="linkPanelEdit">✏️ <span id="lbl-linkEdit">Edit</span></button>
   </div>
 </div>
@@ -2467,7 +2468,7 @@ body.dark .share-status.notice  { background: rgba(234,179,8,.12); color: #fbbf2
 /* ════════════════════════════════════════════════════════
    i18n
 ════════════════════════════════════════════════════════ */
-const TR={en:{newCard:"New card",export:"Export",exportAll:"Export all",import:"Import",importMulti:(n,t)=>`Import ${n} profile(s) from ${t} file(s)?`,importDone:(n)=>`✅ ${n} profile(s) imported.`,importPartial:(ok,fail)=>`✅ ${ok} imported, ⚠️ ${fail} failed.`,share:"Share",settings:"Settings",newProfile:"New profile",profiles:"Profiles",searchPh:"Search... (use / for all profiles)",emptyTitle:"No cards yet",emptySub:"Click '+ New card' to get started.",noResultTitle:"No results",noResultSub:"Try different keywords.",pin:"Pin",unpin:"Unpin",edit:"Edit",view:"View",copy:"Copy",copied:"Copied!",resultsN:n=>n===1?"1 result":`${n} results`,allCards:n=>n===1?"1 card":`${n} cards`,newCardTitle:"New card",editCardTitle:"Edit card",edPh:"💡 Write your new card here...\n• # for a tag\n• ! to link another card\n• / in the search bar to look across every profile",save:"✅ Save",modify:"✅ Modify",delete:"🗑️ Delete",cancel:"Cancel",create:"✅ Create",newProfileTitle:"New profile",profilePh:"Profile name (e.g. Work, Personal…)",welcomeTitle:"Welcome! Create your first profile",firstProfilePh:"Your profile name (e.g. Personal, Work…)",settingsTitle:"Settings",general:"General",statistics:"Statistics",language:"Language",totalCards:"Total cards",errEmpty:"Please enter some content.",errProfileEmpty:"Please enter a profile name.",errDuplicate:n=>`"${n}" already exists.`,errLast:"Can't delete the only profile.",confirmCard:"Delete this card?",confirmCardTitle:"Delete card",confirmProfile:n=>`Delete "${n}" and all its cards?`,confirmImport:(c,i,p)=>`Replace ${c} entries in "${p}" with ${i} from file?`,errImport:"Import failed.",shareTitle:"Share via device",sendInstr:'Click "Generate code" to get a connection code. Keep this window open until the transfer is complete.',genCode:"🔑 Generate code",waitMsg:"⏳ Waiting for connection…",sendOk:"✅ Profile sent!",recvInstr:"Enter the code shown on the other device. ⚠️ May not work on corporate or heavily restricted networks.",connectBtn:"🔗 Connect",connecting:"⏳ Connecting…",p2pSendErr:"❌ Connection error. Try again.",p2pShort:"Code must be at least 4 characters.",p2pTimeout:"Timed out — check the code and retry.",p2pDataErr:"Error processing received profile.",p2pFail:"Connection failed. Is the code correct?",p2pNotFound:"Device not found. Make sure it's waiting.",p2pRecvOk:n=>`✅ Profile "${n}" imported!`,defaultProfile:"Imported profile",errQuota:"Storage full — delete some cards or profiles.",qrHint:"Or scan with a phone camera to open Query and import this profile",pwaNoticeTxt:"You're in the browser, not in the Query app on your home screen. Open the installed Query app, go to Share → Receive, and enter this code there so the profile ends up in the app:",pwaImportAnyway:"Import here in the browser instead",modeSend:"Send",modeRecv:"Receive",theme:"Theme",editMode:"Edit",editModeExit:"Done",listMode:"List",gridMode:"Grid",resetSize:"Reset size & position",resetAllSizes:"Reset all sizes",cardColor:"Color",dragHandle:"Drag to position freely",coverAdd:"Banner",coverChange:"Change",confirmRemoveCover:"Remove this banner image?",coverReposition:"Reposition",coverRepositionHint:"Drag to reposition",coverSavePos:"Save position",exportSection:"Export",exportFolder:"Save location",chooseFolder:"Choose folder…",changeFolder:"Change…",exportFolderHint:"Exported JSON files are saved straight to this folder instead of your browser's downloads.",exportFolderUnsupported:"This doesn't work on Firefox — your browser doesn't support choosing a folder, so files will be downloaded normally.",exportFolderReset:"Reset",exportFolderDenied:"Permission denied — files will be downloaded normally.",exportSavedTo:(f,d)=>`✅ ${f} saved to "${d}"`,exportDownloaded:(f)=>`⬇️ ${f} downloaded`,exportAllSavedTo:(n,d)=>`✅ ${n} file(s) saved to "${d}"`,exportAllDownloaded:(n)=>`⬇️ ${n} file(s) downloaded`,helpSection:"Help",guidedTour:"Guided tour",startTour:"Start",guidedTourHint:"Take a quick tour of the app's features — you can restart it anytime.",profilesSection:"Profiles",profilesHint:"Click the emoji to open the picker. Press Enter or click away to save the name.",changeEmoji:"Change emoji",currentProfile:"current",mentionHint:"Type to search a card to link…",mentionNoCards:"No other card to link to yet",mentionUntitled:"(empty card)",mentionDeleted:"Deleted card",mentionDeletedTitle:"This card no longer exists",liveTab:"Live sync",liveInstr:"Unlike Send/Receive (one-time copy), live sync keeps this profile continuously synchronized: anyone with the invite link can create, edit and delete cards, and every change appears for everyone. Data travels only between devices, end-to-end encrypted — no cloud, no account.",liveCreate:"📡 Start sharing",liveJoinInstr:"Join a shared profile with its invite code (to share one of YOUR profiles, use the 📡 icon on its row in the sidebar):",liveJoin:"🔗 Join",liveStatus:n=>n===0?"⏳ Waiting for participants… keep this tab open.":`🟢 Connected — ${n} other device(s)`,liveOffline:"🔴 Sharing unavailable (already open in another tab?)",liveErrCode:"Invalid code — expected format: ABC123-XYZ456.",liveJoined:n=>`✅ Joined shared profile "${n}"!`,liveHostHint:"Changes sync between devices that are online at the same time. When someone reconnects, everything reconciles automatically.",liveCurrent:"This profile is shared",liveBadge:n=>`SHARED · ${n}`,liveInviteLbl:"Invite code — share it privately with your collaborators:",liveNoCrypto:"Sharing needs a secure context (HTTPS).",liveResume:"📡 Resume sharing (same code)",liveStop:"⏹ Stop sharing",livePseudoAsk:"Choose your nickname (visible to the other participants):",livePseudoSet:n=>`✅ Nickname saved: ${n}`,livePseudoTitle:"Your nickname",livePseudoOk:"Join",liveRowTip:"Share this profile live",liveStopConfirm:"Stop sharing this profile? Your local copy stays, but changes will no longer sync. Restarting later will generate a new invite code.",liveStopped:"Sharing stopped.",liveCopyLink:"🔗 Copy invite link",liveLinkCopied:"✅ Invite link copied!",livePseudoLbl:"Nickname:",liveYou:"you",tourWelcomeTitle:"Welcome to Query",tourWelcomeDesc:"A quick tour of everything you can do — takes less than a minute. Restart it anytime from Settings → Help.",tourCreateTitle:"Create & format a card",tourCreateDesc:'Click "+ New card" to create one. Format it with the toolbar: bold, lists, links, colors, images…',tourOrganizeTitle:"Pin, color, organize",tourOrganizeDesc:"Pin important cards to keep them at the top, give them a color to spot them at a glance, and use the eye icon to preview a card without editing it.",tourCanvasTitle:"List or canvas layout",tourCanvasDesc:"Switch to canvas mode (Edit) to freely resize and drag cards anywhere on the board — great for moodboards and visual layouts.",tourSearchTitle:"Search everything",tourSearchDesc:"Type a word to filter cards in the current profile. Add / before your search to look across all profiles at once.",tourProfilesTitle:"Multiple profiles",tourProfilesDesc:"Create as many profiles as you like (Work, Personal, Projects…), switch between them from the sidebar, and reorder them by drag-and-drop.",tourLiveTitle:"Live collaboration",tourLiveDesc:"Share a profile live with others: everyone can create, edit and delete cards in real time, end-to-end encrypted — no server, no account.",tourExportTitle:"Export, import, back up",tourExportDesc:"Export saves the current profile as JSON, Export all saves everything. Tip: pick a folder in Settings → Export so files save there automatically.",tourShareTitle:"Send to another device",tourShareDesc:"The Share button generates a one-time code to transfer a whole profile peer-to-peer between two devices — no server, no account needed.",tourStartTitle:"You're all set!",tourStartDesc:"Everything is stored locally on your device — your data belongs to you. Go ahead and create your first card!",tourNext:"Next",tourSkip:"Skip",tourFinish:"Let's go!"},fr:{newCard:"Nouvelle fiche",export:"Exporter",exportAll:"Tout exporter",import:"Importer",importMulti:(n,t)=>`Importer ${n} profil(s) depuis ${t} fichier(s) ?`,importDone:(n)=>`✅ ${n} profil(s) importé(s).`,importPartial:(ok,fail)=>`✅ ${ok} importé(s), ⚠️ ${fail} échec(s).`,share:"Partager",settings:"Paramètres",newProfile:"Nouveau profil",profiles:"Profils",searchPh:"Rechercher… (« / » pour tous les profils)",emptyTitle:"Aucune fiche",emptySub:"Cliquez sur '+ Nouvelle fiche' pour commencer.",noResultTitle:"Aucun résultat",noResultSub:"Essayez d'autres mots-clés.",pin:"Épingler",unpin:"Désépingler",edit:"Modifier",view:"Consulter",copy:"Copier",copied:"Copié !",resultsN:n=>n===1?"1 résultat":`${n} résultats`,allCards:n=>n===1?"1 fiche":`${n} fiches`,newCardTitle:"Nouvelle fiche",editCardTitle:"Modifier la fiche",edPh:"💡 Écrivez votre nouvelle fiche ici…\n• # pour créer un tag\n• ! pour lier une autre fiche\n• / dans la recherche pour chercher dans tous les profils",save:"✅ Sauvegarder",modify:"✅ Modifier",delete:"🗑️ Supprimer",cancel:"Annuler",create:"✅ Créer",newProfileTitle:"Nouveau profil",profilePh:"Nom du profil (ex : Travail, Personnel…)",welcomeTitle:"Bienvenue ! Créez votre premier profil",firstProfilePh:"Nom de votre profil (ex : Personnel, Travail…)",settingsTitle:"Paramètres",general:"Général",statistics:"Statistiques",language:"Langue",totalCards:"Total fiches",errEmpty:"Veuillez entrer du contenu.",errProfileEmpty:"Veuillez entrer un nom de profil.",errDuplicate:n=>`« ${n} » existe déjà.`,errLast:"Impossible de supprimer le seul profil.",confirmCard:"Supprimer cette fiche ?",confirmCardTitle:"Supprimer la fiche",confirmProfile:n=>`Supprimer « ${n} » et toutes ses fiches ?`,confirmImport:(c,i,p)=>`Remplacer ${c} entrées dans « ${p} » par ${i} du fichier ?`,errImport:"Erreur d'importation.",shareTitle:"Partager via appareil",sendInstr:"Cliquez sur « Générer un code » pour obtenir un code de connexion. Gardez cette fenêtre ouverte jusqu'à la fin du transfert.",genCode:"🔑 Générer un code",waitMsg:"⏳ En attente de connexion…",sendOk:"✅ Profil envoyé !",recvInstr:"Entrez le code affiché sur l'autre appareil. ⚠️ Peut ne pas fonctionner sur les réseaux d'entreprise ou très sécurisés.",connectBtn:"🔗 Connecter",connecting:"⏳ Connexion…",p2pSendErr:"❌ Erreur de connexion.",p2pShort:"Le code doit comporter au moins 4 caractères.",p2pTimeout:"Délai dépassé — vérifiez le code.",p2pDataErr:"Erreur lors du traitement du profil.",p2pFail:"Connexion échouée. Le code est-il correct ?",p2pNotFound:"Appareil introuvable.",p2pRecvOk:n=>`✅ Profil « ${n} » importé !`,defaultProfile:"Profil importé",errQuota:"Stockage plein — supprimez des fiches ou des profils.",qrHint:"Ou scannez ce code avec l'appareil photo d'un téléphone pour ouvrir Query et importer ce profil",pwaNoticeTxt:"Tu es dans le navigateur, pas dans l'app Query de ton écran d'accueil. Ouvre l'app Query installée, va dans Partager → Recevoir, et entre ce code là-bas pour que le profil arrive dans l'app :",pwaImportAnyway:"Importer ici dans le navigateur quand même",modeSend:"Envoyer",modeRecv:"Recevoir",theme:"Thème",editMode:"Éditer",editModeExit:"Terminer",listMode:"Liste",gridMode:"Grille",resetSize:"Réinitialiser taille/position",resetAllSizes:"Réinitialiser toutes les tailles",cardColor:"Couleur",dragHandle:"Déplacer librement",coverAdd:"Bannière",coverChange:"Changer",confirmRemoveCover:"Supprimer cette image de bannière ?",coverReposition:"Repositionner",coverRepositionHint:"Glissez pour repositionner",coverSavePos:"Enregistrer la position",exportSection:"Exportation",exportFolder:"Emplacement d'enregistrement",chooseFolder:"Choisir un dossier…",changeFolder:"Changer…",exportFolderHint:"Les fichiers JSON exportés sont enregistrés directement dans ce dossier au lieu des téléchargements du navigateur.",exportFolderUnsupported:"Ne fonctionne pas sur Firefox — votre navigateur ne permet pas de choisir un dossier, les fichiers seront téléchargés normalement.",exportFolderReset:"Réinitialiser",exportFolderDenied:"Permission refusée — les fichiers seront téléchargés normalement.",exportSavedTo:(f,d)=>`✅ ${f} enregistré dans « ${d} »`,exportDownloaded:(f)=>`⬇️ ${f} téléchargé`,exportAllSavedTo:(n,d)=>`✅ ${n} fichier(s) enregistré(s) dans « ${d} »`,exportAllDownloaded:(n)=>`⬇️ ${n} fichier(s) téléchargé(s)`,helpSection:"Aide",guidedTour:"Visite guidée",startTour:"Lancer",guidedTourHint:"Fais un tour rapide des fonctionnalités de l'app — tu peux le relancer à tout moment.",profilesSection:"Profils",profilesHint:"Cliquez sur l'émoji pour ouvrir le sélecteur. Appuyez sur Entrée ou cliquez ailleurs pour enregistrer le nom.",changeEmoji:"Changer l'émoji",currentProfile:"actif",mentionHint:"Tapez pour rechercher une fiche à lier…",mentionNoCards:"Pas encore d'autre fiche à lier",mentionUntitled:"(fiche vide)",mentionDeleted:"Fiche supprimée",mentionDeletedTitle:"Cette fiche n'existe plus",liveTab:"Collaborer",liveInstr:"Contrairement à Envoyer/Recevoir (copie ponctuelle), la collaboration garde ce profil synchronisé en continu : toute personne ayant le lien d'invitation peut créer, modifier et supprimer des fiches, et chaque changement apparaît chez tout le monde. Les données circulent uniquement entre les appareils, chiffrées de bout en bout — pas de cloud, pas de compte.",liveCreate:"📡 Démarrer le partage",liveJoinInstr:"Rejoignez un profil partagé avec son code d'invitation (pour partager un de VOS profils, utilisez l'icône 📡 sur sa ligne dans la barre latérale) :",liveJoin:"🔗 Rejoindre",liveStatus:n=>n===0?"⏳ En attente de participants… gardez cet onglet ouvert.":`🟢 Connecté — ${n} autre(s) appareil(s)`,liveOffline:"🔴 Partage indisponible (déjà ouvert dans un autre onglet ?)",liveErrCode:"Code invalide — format attendu : ABC123-XYZ456.",liveJoined:n=>`✅ Profil partagé « ${n} » rejoint !`,liveHostHint:"Les modifications se synchronisent entre les appareils en ligne au même moment. À la reconnexion, tout se réconcilie automatiquement.",liveCurrent:"Ce profil est partagé",liveBadge:n=>`PARTAGÉ · ${n}`,liveInviteLbl:"Code d'invitation — partagez-le en privé avec vos collaborateurs :",liveNoCrypto:"Le partage nécessite un contexte sécurisé (HTTPS).",liveResume:"📡 Reprendre le partage (même code)",liveStop:"⏹ Arrêter le partage",livePseudoAsk:"Choisissez votre pseudo (visible par les autres participants) :",livePseudoSet:n=>`✅ Pseudo enregistré : ${n}`,livePseudoTitle:"Votre pseudo",livePseudoOk:"Rejoindre",liveRowTip:"Partager ce profil en direct",liveStopConfirm:"Arrêter le partage de ce profil ? Votre copie locale est conservée, mais les modifications ne seront plus synchronisées. Relancer plus tard générera un nouveau code d'invitation.",liveStopped:"Partage arrêté.",liveCopyLink:"🔗 Copier le lien d'invitation",liveLinkCopied:"✅ Lien d'invitation copié !",livePseudoLbl:"Pseudo :",liveYou:"vous",tourWelcomeTitle:"Bienvenue dans Query",tourWelcomeDesc:"Un rapide tour de toutes les fonctionnalités — ça prend moins d'une minute. Relance-le à tout moment depuis Paramètres → Aide.",tourCreateTitle:"Créer et mettre en forme une fiche",tourCreateDesc:'Clique sur « + Nouvelle fiche » pour en créer une. Mets-la en forme avec la barre d\'outils : gras, listes, liens, couleurs, images…',tourOrganizeTitle:"Épingler, colorer, organiser",tourOrganizeDesc:"Épingle les fiches importantes pour les garder en haut, donne-leur une couleur pour les repérer d'un coup d'œil, et utilise l'icône œil pour consulter une fiche sans la modifier.",tourCanvasTitle:"Vue liste ou canevas",tourCanvasDesc:"Passe en mode canevas (Éditer) pour redimensionner et déplacer librement tes fiches sur le tableau — parfait pour les tableaux visuels.",tourSearchTitle:"Rechercher partout",tourSearchDesc:"Tape un mot pour filtrer les fiches du profil actuel. Ajoute / avant ta recherche pour chercher dans tous les profils à la fois.",tourProfilesTitle:"Plusieurs profils",tourProfilesDesc:"Crée autant de profils que tu veux (Travail, Personnel, Projets…), passe de l'un à l'autre depuis la barre latérale, et réorganise-les par glisser-déposer.",tourLiveTitle:"Collaboration en direct",tourLiveDesc:"Partage un profil en direct avec d'autres personnes : tout le monde peut créer, modifier et supprimer des fiches en temps réel, chiffré de bout en bout — pas de serveur, pas de compte.",tourExportTitle:"Exporter, importer, sauvegarder",tourExportDesc:"Exporter enregistre le profil actuel en JSON, Tout exporter sauvegarde tout. Astuce : choisis un dossier dans Paramètres → Exportation pour un enregistrement automatique.",tourShareTitle:"Envoyer vers un autre appareil",tourShareDesc:"Le bouton Partager génère un code à usage unique pour transférer un profil entier d'appareil à appareil — pas de serveur, pas de compte.",tourStartTitle:"C'est parti !",tourStartDesc:"Tout est stocké localement sur ton appareil — tes données t'appartiennent. Crée ta première fiche !",tourNext:"Suivant",tourSkip:"Passer",tourFinish:"C'est parti !"}};
+const TR={en:{newCard:"New card",export:"Export",exportAll:"Export all",import:"Import",importMulti:(n,t)=>`Import ${n} profile(s) from ${t} file(s)?`,importDone:(n)=>`✅ ${n} profile(s) imported.`,importPartial:(ok,fail)=>`✅ ${ok} imported, ⚠️ ${fail} failed.`,share:"Share",settings:"Settings",newProfile:"New profile",profiles:"Profiles",searchPh:"Search... (use / for all profiles)",emptyTitle:"No cards yet",emptySub:"Click '+ New card' to get started.",noResultTitle:"No results",noResultSub:"Try different keywords.",pin:"Pin",unpin:"Unpin",edit:"Edit",view:"View",copy:"Copy",copied:"Copied!",exportPdf:"PDF",exportingPdf:"Generating…",pdfPopupBlocked:"❌ Allow pop-ups to export to PDF.",pdfPrintBtn:"🖨️ Print / Save as PDF",resultsN:n=>n===1?"1 result":`${n} results`,allCards:n=>n===1?"1 card":`${n} cards`,newCardTitle:"New card",editCardTitle:"Edit card",edPh:"💡 Write your new card here...\n• # for a tag\n• ! to link another card\n• / in the search bar to look across every profile",save:"✅ Save",modify:"✅ Modify",delete:"🗑️ Delete",cancel:"Cancel",create:"✅ Create",newProfileTitle:"New profile",profilePh:"Profile name (e.g. Work, Personal…)",welcomeTitle:"Welcome! Create your first profile",firstProfilePh:"Your profile name (e.g. Personal, Work…)",settingsTitle:"Settings",general:"General",statistics:"Statistics",language:"Language",totalCards:"Total cards",errEmpty:"Please enter some content.",errProfileEmpty:"Please enter a profile name.",errDuplicate:n=>`"${n}" already exists.`,errLast:"Can't delete the only profile.",confirmCard:"Delete this card?",confirmCardTitle:"Delete card",confirmProfile:n=>`Delete "${n}" and all its cards?`,confirmImport:(c,i,p)=>`Replace ${c} entries in "${p}" with ${i} from file?`,errImport:"Import failed.",shareTitle:"Share via device",sendInstr:'Click "Generate code" to get a connection code. Keep this window open until the transfer is complete.',genCode:"🔑 Generate code",waitMsg:"⏳ Waiting for connection…",sendOk:"✅ Profile sent!",recvInstr:"Enter the code shown on the other device. ⚠️ May not work on corporate or heavily restricted networks.",connectBtn:"🔗 Connect",connecting:"⏳ Connecting…",p2pSendErr:"❌ Connection error. Try again.",p2pShort:"Code must be at least 4 characters.",p2pTimeout:"Timed out — check the code and retry.",p2pDataErr:"Error processing received profile.",p2pFail:"Connection failed. Is the code correct?",p2pNotFound:"Device not found. Make sure it's waiting.",p2pRecvOk:n=>`✅ Profile "${n}" imported!`,defaultProfile:"Imported profile",errQuota:"Storage full — delete some cards or profiles.",qrHint:"Or scan with a phone camera to open Query and import this profile",pwaNoticeTxt:"You're in the browser, not in the Query app on your home screen. Open the installed Query app, go to Share → Receive, and enter this code there so the profile ends up in the app:",pwaImportAnyway:"Import here in the browser instead",modeSend:"Send",modeRecv:"Receive",theme:"Theme",editMode:"Edit",editModeExit:"Done",listMode:"List",gridMode:"Grid",resetSize:"Reset size & position",resetAllSizes:"Reset all sizes",cardColor:"Color",dragHandle:"Drag to position freely",coverAdd:"Banner",coverChange:"Change",confirmRemoveCover:"Remove this banner image?",coverReposition:"Reposition",coverRepositionHint:"Drag to reposition",coverSavePos:"Save position",exportSection:"Export",exportFolder:"Save location",chooseFolder:"Choose folder…",changeFolder:"Change…",exportFolderHint:"Exported JSON files are saved straight to this folder instead of your browser's downloads.",exportFolderUnsupported:"This doesn't work on Firefox — your browser doesn't support choosing a folder, so files will be downloaded normally.",exportFolderReset:"Reset",exportFolderDenied:"Permission denied — files will be downloaded normally.",exportSavedTo:(f,d)=>`✅ ${f} saved to "${d}"`,exportDownloaded:(f)=>`⬇️ ${f} downloaded`,exportAllSavedTo:(n,d)=>`✅ ${n} file(s) saved to "${d}"`,exportAllDownloaded:(n)=>`⬇️ ${n} file(s) downloaded`,helpSection:"Help",guidedTour:"Guided tour",startTour:"Start",guidedTourHint:"Take a quick tour of the app's features — you can restart it anytime.",profilesSection:"Profiles",profilesHint:"Click the emoji to open the picker. Press Enter or click away to save the name.",changeEmoji:"Change emoji",currentProfile:"current",mentionHint:"Type to search a card to link…",mentionNoCards:"No other card to link to yet",mentionUntitled:"(empty card)",mentionDeleted:"Deleted card",mentionDeletedTitle:"This card no longer exists",liveTab:"Live sync",liveInstr:"Unlike Send/Receive (one-time copy), live sync keeps this profile continuously synchronized: anyone with the invite link can create, edit and delete cards, and every change appears for everyone. Data travels only between devices, end-to-end encrypted — no cloud, no account.",liveCreate:"📡 Start sharing",liveJoinInstr:"Join a shared profile with its invite code (to share one of YOUR profiles, use the 📡 icon on its row in the sidebar):",liveJoin:"🔗 Join",liveStatus:n=>n===0?"⏳ Waiting for participants… keep this tab open.":`🟢 Connected — ${n} other device(s)`,liveOffline:"🔴 Sharing unavailable (already open in another tab?)",liveErrCode:"Invalid code — expected format: ABC123-XYZ456.",liveJoined:n=>`✅ Joined shared profile "${n}"!`,liveHostHint:"Changes sync between devices that are online at the same time. When someone reconnects, everything reconciles automatically.",liveCurrent:"This profile is shared",liveBadge:n=>`SHARED · ${n}`,liveInviteLbl:"Invite code — share it privately with your collaborators:",liveNoCrypto:"Sharing needs a secure context (HTTPS).",liveResume:"📡 Resume sharing (same code)",liveStop:"⏹ Stop sharing",livePseudoAsk:"Choose your nickname (visible to the other participants):",livePseudoSet:n=>`✅ Nickname saved: ${n}`,livePseudoTitle:"Your nickname",livePseudoOk:"Join",liveRowTip:"Share this profile live",liveStopConfirm:"Stop sharing this profile? Your local copy stays, but changes will no longer sync. Restarting later will generate a new invite code.",liveStopped:"Sharing stopped.",liveCopyLink:"🔗 Copy invite link",liveLinkCopied:"✅ Invite link copied!",livePseudoLbl:"Nickname:",liveYou:"you",tourWelcomeTitle:"Welcome to Query",tourWelcomeDesc:"A quick tour of everything you can do — takes less than a minute. Restart it anytime from Settings → Help.",tourCreateTitle:"Create & format a card",tourCreateDesc:'Click "+ New card" to create one. Format it with the toolbar: bold, lists, links, colors, images…',tourOrganizeTitle:"Pin, color, organize",tourOrganizeDesc:"Pin important cards to keep them at the top, give them a color to spot them at a glance, and use the eye icon to preview a card without editing it.",tourCanvasTitle:"List or canvas layout",tourCanvasDesc:"Switch to canvas mode (Edit) to freely resize and drag cards anywhere on the board — great for moodboards and visual layouts.",tourSearchTitle:"Search everything",tourSearchDesc:"Type a word to filter cards in the current profile. Add / before your search to look across all profiles at once.",tourProfilesTitle:"Multiple profiles",tourProfilesDesc:"Create as many profiles as you like (Work, Personal, Projects…), switch between them from the sidebar, and reorder them by drag-and-drop.",tourLiveTitle:"Live collaboration",tourLiveDesc:"Share a profile live with others: everyone can create, edit and delete cards in real time, end-to-end encrypted — no server, no account.",tourExportTitle:"Export, import, back up",tourExportDesc:"Export saves the current profile as JSON, Export all saves everything. Tip: pick a folder in Settings → Export so files save there automatically.",tourShareTitle:"Send to another device",tourShareDesc:"The Share button generates a one-time code to transfer a whole profile peer-to-peer between two devices — no server, no account needed.",tourStartTitle:"You're all set!",tourStartDesc:"Everything is stored locally on your device — your data belongs to you. Go ahead and create your first card!",tourNext:"Next",tourSkip:"Skip",tourFinish:"Let's go!"},fr:{newCard:"Nouvelle fiche",export:"Exporter",exportAll:"Tout exporter",import:"Importer",importMulti:(n,t)=>`Importer ${n} profil(s) depuis ${t} fichier(s) ?`,importDone:(n)=>`✅ ${n} profil(s) importé(s).`,importPartial:(ok,fail)=>`✅ ${ok} importé(s), ⚠️ ${fail} échec(s).`,share:"Partager",settings:"Paramètres",newProfile:"Nouveau profil",profiles:"Profils",searchPh:"Rechercher… (« / » pour tous les profils)",emptyTitle:"Aucune fiche",emptySub:"Cliquez sur '+ Nouvelle fiche' pour commencer.",noResultTitle:"Aucun résultat",noResultSub:"Essayez d'autres mots-clés.",pin:"Épingler",unpin:"Désépingler",edit:"Modifier",view:"Consulter",copy:"Copier",copied:"Copié !",exportPdf:"PDF",exportingPdf:"Génération…",pdfPopupBlocked:"❌ Autorise les fenêtres pop-up pour exporter en PDF.",pdfPrintBtn:"🖨️ Imprimer / Enregistrer en PDF",resultsN:n=>n===1?"1 résultat":`${n} résultats`,allCards:n=>n===1?"1 fiche":`${n} fiches`,newCardTitle:"Nouvelle fiche",editCardTitle:"Modifier la fiche",edPh:"💡 Écrivez votre nouvelle fiche ici…\n• # pour créer un tag\n• ! pour lier une autre fiche\n• / dans la recherche pour chercher dans tous les profils",save:"✅ Sauvegarder",modify:"✅ Modifier",delete:"🗑️ Supprimer",cancel:"Annuler",create:"✅ Créer",newProfileTitle:"Nouveau profil",profilePh:"Nom du profil (ex : Travail, Personnel…)",welcomeTitle:"Bienvenue ! Créez votre premier profil",firstProfilePh:"Nom de votre profil (ex : Personnel, Travail…)",settingsTitle:"Paramètres",general:"Général",statistics:"Statistiques",language:"Langue",totalCards:"Total fiches",errEmpty:"Veuillez entrer du contenu.",errProfileEmpty:"Veuillez entrer un nom de profil.",errDuplicate:n=>`« ${n} » existe déjà.`,errLast:"Impossible de supprimer le seul profil.",confirmCard:"Supprimer cette fiche ?",confirmCardTitle:"Supprimer la fiche",confirmProfile:n=>`Supprimer « ${n} » et toutes ses fiches ?`,confirmImport:(c,i,p)=>`Remplacer ${c} entrées dans « ${p} » par ${i} du fichier ?`,errImport:"Erreur d'importation.",shareTitle:"Partager via appareil",sendInstr:"Cliquez sur « Générer un code » pour obtenir un code de connexion. Gardez cette fenêtre ouverte jusqu'à la fin du transfert.",genCode:"🔑 Générer un code",waitMsg:"⏳ En attente de connexion…",sendOk:"✅ Profil envoyé !",recvInstr:"Entrez le code affiché sur l'autre appareil. ⚠️ Peut ne pas fonctionner sur les réseaux d'entreprise ou très sécurisés.",connectBtn:"🔗 Connecter",connecting:"⏳ Connexion…",p2pSendErr:"❌ Erreur de connexion.",p2pShort:"Le code doit comporter au moins 4 caractères.",p2pTimeout:"Délai dépassé — vérifiez le code.",p2pDataErr:"Erreur lors du traitement du profil.",p2pFail:"Connexion échouée. Le code est-il correct ?",p2pNotFound:"Appareil introuvable.",p2pRecvOk:n=>`✅ Profil « ${n} » importé !`,defaultProfile:"Profil importé",errQuota:"Stockage plein — supprimez des fiches ou des profils.",qrHint:"Ou scannez ce code avec l'appareil photo d'un téléphone pour ouvrir Query et importer ce profil",pwaNoticeTxt:"Tu es dans le navigateur, pas dans l'app Query de ton écran d'accueil. Ouvre l'app Query installée, va dans Partager → Recevoir, et entre ce code là-bas pour que le profil arrive dans l'app :",pwaImportAnyway:"Importer ici dans le navigateur quand même",modeSend:"Envoyer",modeRecv:"Recevoir",theme:"Thème",editMode:"Éditer",editModeExit:"Terminer",listMode:"Liste",gridMode:"Grille",resetSize:"Réinitialiser taille/position",resetAllSizes:"Réinitialiser toutes les tailles",cardColor:"Couleur",dragHandle:"Déplacer librement",coverAdd:"Bannière",coverChange:"Changer",confirmRemoveCover:"Supprimer cette image de bannière ?",coverReposition:"Repositionner",coverRepositionHint:"Glissez pour repositionner",coverSavePos:"Enregistrer la position",exportSection:"Exportation",exportFolder:"Emplacement d'enregistrement",chooseFolder:"Choisir un dossier…",changeFolder:"Changer…",exportFolderHint:"Les fichiers JSON exportés sont enregistrés directement dans ce dossier au lieu des téléchargements du navigateur.",exportFolderUnsupported:"Ne fonctionne pas sur Firefox — votre navigateur ne permet pas de choisir un dossier, les fichiers seront téléchargés normalement.",exportFolderReset:"Réinitialiser",exportFolderDenied:"Permission refusée — les fichiers seront téléchargés normalement.",exportSavedTo:(f,d)=>`✅ ${f} enregistré dans « ${d} »`,exportDownloaded:(f)=>`⬇️ ${f} téléchargé`,exportAllSavedTo:(n,d)=>`✅ ${n} fichier(s) enregistré(s) dans « ${d} »`,exportAllDownloaded:(n)=>`⬇️ ${n} fichier(s) téléchargé(s)`,helpSection:"Aide",guidedTour:"Visite guidée",startTour:"Lancer",guidedTourHint:"Fais un tour rapide des fonctionnalités de l'app — tu peux le relancer à tout moment.",profilesSection:"Profils",profilesHint:"Cliquez sur l'émoji pour ouvrir le sélecteur. Appuyez sur Entrée ou cliquez ailleurs pour enregistrer le nom.",changeEmoji:"Changer l'émoji",currentProfile:"actif",mentionHint:"Tapez pour rechercher une fiche à lier…",mentionNoCards:"Pas encore d'autre fiche à lier",mentionUntitled:"(fiche vide)",mentionDeleted:"Fiche supprimée",mentionDeletedTitle:"Cette fiche n'existe plus",liveTab:"Collaborer",liveInstr:"Contrairement à Envoyer/Recevoir (copie ponctuelle), la collaboration garde ce profil synchronisé en continu : toute personne ayant le lien d'invitation peut créer, modifier et supprimer des fiches, et chaque changement apparaît chez tout le monde. Les données circulent uniquement entre les appareils, chiffrées de bout en bout — pas de cloud, pas de compte.",liveCreate:"📡 Démarrer le partage",liveJoinInstr:"Rejoignez un profil partagé avec son code d'invitation (pour partager un de VOS profils, utilisez l'icône 📡 sur sa ligne dans la barre latérale) :",liveJoin:"🔗 Rejoindre",liveStatus:n=>n===0?"⏳ En attente de participants… gardez cet onglet ouvert.":`🟢 Connecté — ${n} autre(s) appareil(s)`,liveOffline:"🔴 Partage indisponible (déjà ouvert dans un autre onglet ?)",liveErrCode:"Code invalide — format attendu : ABC123-XYZ456.",liveJoined:n=>`✅ Profil partagé « ${n} » rejoint !`,liveHostHint:"Les modifications se synchronisent entre les appareils en ligne au même moment. À la reconnexion, tout se réconcilie automatiquement.",liveCurrent:"Ce profil est partagé",liveBadge:n=>`PARTAGÉ · ${n}`,liveInviteLbl:"Code d'invitation — partagez-le en privé avec vos collaborateurs :",liveNoCrypto:"Le partage nécessite un contexte sécurisé (HTTPS).",liveResume:"📡 Reprendre le partage (même code)",liveStop:"⏹ Arrêter le partage",livePseudoAsk:"Choisissez votre pseudo (visible par les autres participants) :",livePseudoSet:n=>`✅ Pseudo enregistré : ${n}`,livePseudoTitle:"Votre pseudo",livePseudoOk:"Rejoindre",liveRowTip:"Partager ce profil en direct",liveStopConfirm:"Arrêter le partage de ce profil ? Votre copie locale est conservée, mais les modifications ne seront plus synchronisées. Relancer plus tard générera un nouveau code d'invitation.",liveStopped:"Partage arrêté.",liveCopyLink:"🔗 Copier le lien d'invitation",liveLinkCopied:"✅ Lien d'invitation copié !",livePseudoLbl:"Pseudo :",liveYou:"vous",tourWelcomeTitle:"Bienvenue dans Query",tourWelcomeDesc:"Un rapide tour de toutes les fonctionnalités — ça prend moins d'une minute. Relance-le à tout moment depuis Paramètres → Aide.",tourCreateTitle:"Créer et mettre en forme une fiche",tourCreateDesc:'Clique sur « + Nouvelle fiche » pour en créer une. Mets-la en forme avec la barre d\'outils : gras, listes, liens, couleurs, images…',tourOrganizeTitle:"Épingler, colorer, organiser",tourOrganizeDesc:"Épingle les fiches importantes pour les garder en haut, donne-leur une couleur pour les repérer d'un coup d'œil, et utilise l'icône œil pour consulter une fiche sans la modifier.",tourCanvasTitle:"Vue liste ou canevas",tourCanvasDesc:"Passe en mode canevas (Éditer) pour redimensionner et déplacer librement tes fiches sur le tableau — parfait pour les tableaux visuels.",tourSearchTitle:"Rechercher partout",tourSearchDesc:"Tape un mot pour filtrer les fiches du profil actuel. Ajoute / avant ta recherche pour chercher dans tous les profils à la fois.",tourProfilesTitle:"Plusieurs profils",tourProfilesDesc:"Crée autant de profils que tu veux (Travail, Personnel, Projets…), passe de l'un à l'autre depuis la barre latérale, et réorganise-les par glisser-déposer.",tourLiveTitle:"Collaboration en direct",tourLiveDesc:"Partage un profil en direct avec d'autres personnes : tout le monde peut créer, modifier et supprimer des fiches en temps réel, chiffré de bout en bout — pas de serveur, pas de compte.",tourExportTitle:"Exporter, importer, sauvegarder",tourExportDesc:"Exporter enregistre le profil actuel en JSON, Tout exporter sauvegarde tout. Astuce : choisis un dossier dans Paramètres → Exportation pour un enregistrement automatique.",tourShareTitle:"Envoyer vers un autre appareil",tourShareDesc:"Le bouton Partager génère un code à usage unique pour transférer un profil entier d'appareil à appareil — pas de serveur, pas de compte.",tourStartTitle:"C'est parti !",tourStartDesc:"Tout est stocké localement sur ton appareil — tes données t'appartiennent. Crée ta première fiche !",tourNext:"Suivant",tourSkip:"Passer",tourFinish:"C'est parti !"}};
 let lang='en';
 const t=(k,...a)=>{const v=TR[lang]?.[k]??TR.en[k];return typeof v==='function'?v(...a):v??k;};
 
@@ -2549,12 +2550,7 @@ async function bootStorage(){
   let fromLS=null;
   try{const r=localStorage.getItem(SK);if(r)fromLS=JSON.parse(r);}catch(_){}
 
-  if(fromIdb&&fromLS&&(fromLS._ts||0)>(fromIdb._ts||0)){
-    // Le miroir localStorage est plus récent : la dernière écriture IDB (asynchrone)
-    // n'a pas abouti avant la fermeture de la page. On repart du plus récent.
-    _cache=fromLS;
-    await _idbPut(fromLS);
-  }else if(fromIdb){
+  if(fromIdb){
     _cache=fromIdb;
     // Si localStorage est vide mais IDB plein (utilisateur sur nouvel appareil
     // ayant restauré IDB via une autre voie), réécrire le snapshot LS best-effort.
@@ -2580,48 +2576,27 @@ const load=()=>_cache;
  * en arrière-plan (debounce 150ms pour éviter le spam d'I/O).
  * Compatible avec l'ancien save() — retourne true si la donnée est en mémoire.
  */
-let _lsOk=true;            // le dernier miroir localStorage a-t-il réussi ?
-let _storageWarned=false;  // évite de répéter l'alerte « stockage plein »
-let _persistAsked=false;   // navigator.storage.persist() demandé une fois
-let _bc=null;              // canal entre onglets : « j'ai écrit, rechargez »
-try{_bc=new BroadcastChannel('query-storage');}catch(_){}
-
-// Les deux supports ont échoué → la modification n'existe qu'en mémoire : on le DIT.
-function _warnStorage(){
-  if(_storageWarned)return;
-  _storageWarned=true;
-  try{showToast(t('errQuota'),{error:true,duration:9000});}catch(_){}
-}
-function _flushIdb(){
-  const snapshot=_cache;
-  _writePending=false;
-  return _idbPut(snapshot).then(ok=>{
-    if(ok){
-      _storageWarned=false;
-      if(_bc){try{_bc.postMessage({ts:(snapshot&&snapshot._ts)||0});}catch(_){}}
-    }else if(!_lsOk)_warnStorage();
-    return ok;
-  });
-}
 const save=d=>{
-  // Horodatage : permet au démarrage (et aux autres onglets) de savoir quelle copie est la plus récente.
-  if(d&&typeof d==='object')d._ts=Date.now();
   _cache=d;
-  // Miroir localStorage best-effort. En cas de quota dépassé on GARDE l'ancienne
-  // copie (plus vieille, mais mieux que rien si IDB échoue aussi) : son _ts plus
-  // ancien garantit qu'elle ne prendra jamais le pas sur IDB.
-  try{localStorage.setItem(SK,JSON.stringify(d));_lsOk=true;}catch(e){_lsOk=false;}
-  // Demande au navigateur de ne pas purger nos données (une seule fois).
-  if(!_persistAsked){
-    _persistAsked=true;
-    try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});}catch(_){}
+  // Best-effort localStorage immédiat — si quota dépassé, on l'ignore.
+  // IDB est la vraie source de vérité maintenant.
+  try{localStorage.setItem(SK,JSON.stringify(d));}catch(e){
+    if(e&&e.name==='QuotaExceededError'){
+      // Quota localStorage dépassé. On ne montre PLUS d'alerte car IDB couvre.
+      // On vide juste le LS pour libérer la mémoire navigateur — IDB tient le coup.
+      try{localStorage.removeItem(SK);}catch(_){}
+    }
   }
   // Flush IDB debouncé
   if(_idbDb){
     _writePending=true;
     if(_writeTimer)clearTimeout(_writeTimer);
-    _writeTimer=setTimeout(()=>{_writeTimer=null;_flushIdb();},150);
-  }else if(!_lsOk)_warnStorage();
+    _writeTimer=setTimeout(()=>{
+      const snapshot=_cache;
+      _writePending=false;
+      _idbPut(snapshot);
+    },150);
+  }
   return true;
 };
 
@@ -2631,17 +2606,8 @@ const save=d=>{
  */
 function flushStorage(){
   if(_writeTimer){clearTimeout(_writeTimer);_writeTimer=null;}
-  if(_writePending&&_idbDb&&_cache)_flushIdb();
+  if(_writePending&&_idbDb&&_cache){_writePending=false;_idbPut(_cache);}
 }
-// Un autre onglet a écrit : on recharge sa version au lieu de l'écraser à notre
-// prochaine sauvegarde. Ignoré si nous avons nous-mêmes une écriture en attente.
-async function reloadFromOtherTab(){
-  if(_writePending||!_idbDb)return;
-  const d=await _idbGet();
-  if(!d||(d._ts||0)<=((_cache&&_cache._ts)||0))return;
-  if(typeof applyExternalData==='function')applyExternalData(d);
-}
-if(_bc)_bc.onmessage=()=>{reloadFromOtherTab();};
 window.addEventListener('beforeunload',flushStorage);
 window.addEventListener('pagehide',flushStorage);
 
@@ -2805,10 +2771,12 @@ if(window.DOMPurify)DOMPurify.addHook('afterSanitizeAttributes',n=>{
 const cleanHtml=s=>{s=typeof s==='string'?s:'';return window.DOMPurify?DOMPurify.sanitize(s,PURIFY_CFG):s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');};
 // Nettoie le contenu d'une fiche seulement s'il contient du HTML (le texte brut est échappé à l'affichage).
 const cleanContent=s=>{s=typeof s==='string'?s:'';return isRich(s)?cleanHtml(s):s;};
-function isImageOnly(ct){
-  if(!isRich(ct))return false;
+// RECHERCHE — insensible aux accents : "cafe" doit retrouver "café" et inversement.
+// NFD décompose les lettres accentuées en (lettre de base + accent), puis on retire les accents.
+const foldAccents=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/œ/g,'oe').replace(/æ/g,'ae');
+function isImageOnlyHtml(html){
   const tmp=document.createElement('div');
-  tmp.innerHTML=cleanHtml(ct);
+  tmp.innerHTML=html;
   if(tmp.querySelectorAll('img').length!==1)return false;
   tmp.querySelectorAll('img').forEach(i=>i.remove());
   return tmp.textContent.trim()===''&&tmp.querySelector('video,audio,iframe')==null;
@@ -2875,200 +2843,50 @@ function saveSearch(){const d=load()||{};if(!d.searches)d.searches={};d.searches
 ════════════════════════════════════════════════════════ */
 // Parse a search query into { globalSearch: bool, terms: string[] }
 // Leading "/" → search across all profiles. Whitespace-separated words → OR-match.
-// Syntax: words are AND-matched; "quoted phrase" matches exactly; -word / -"phrase"
-// excludes; #tag matches a whole tag. Matching ignores case and accents.
-// Returns { globalSearch, tokens:[{text,neg,tag,re?,alts?}], terms:string[] } where
-// `terms` are the positive (folded) strings, used for highlighting.
-const _DIACRITICS=/[̀-ͯ]/g;
-const _RE_ESC=/[.*+?^${}()|[\]\\]/g;
-// Lowercase + strip accents ("Élève" → "eleve"). ASCII fast path skips normalize().
-function foldText(s){
-  s=s.toLowerCase();
-  return /[^\x00-\x7f]/.test(s)?s.normalize('NFD').replace(_DIACRITICS,''):s;
-}
 function parseSearchQuery(raw){
-  const r={globalSearch:false,terms:[],tokens:[]};
+  const r={globalSearch:false,terms:[]};
   if(!raw)return r;
   let q=raw;
   if(q.charAt(0)==='/'){r.globalSearch=true;q=q.slice(1);}
-  const re=/(-?)"([^"]*)"?|(\S+)/g;let m;
-  while((m=re.exec(q))){
-    let neg=m[1]==='-',text;
-    if(m[2]!==undefined)text=m[2];
-    else{text=m[3];if(text.length>1&&text.charAt(0)==='-'){neg=true;text=text.slice(1);}}
-    text=foldText(text).replace(/\s+/g,' ').trim();
-    if(!text)continue;
-    const tk={text,neg,tag:false};
-    // A term starting with "#" is a tag lookup — matched as a whole word so
-    // "#js" doesn't also match "#js2" or "objs", unlike the general substring search.
-    if(text.charAt(0)==='#'&&text.length>1&&m[2]===undefined){
-      tk.tag=true;
-      tk.re=new RegExp(`(^|[^\\p{L}\\p{N}_])#${text.slice(1).replace(_RE_ESC,'\\$&')}(?![\\p{L}\\p{N}_])`,'u');
-    }
-    r.tokens.push(tk);
-    if(!neg)r.terms.push(text);
-  }
+  r.terms=q.split(/\s+/).filter(w=>w.length>0).map(w=>foldAccents(w.toLowerCase()));
   return r;
 }
-const _WORD_CH=/[\p{L}\p{N}_]/u;
-// Relevance of one needle inside folded text `s`; 0 = absent.
-// Rewards whole-word and word-start hits, early position (≈ title) and repeats.
-function scoreNeedle(s,needle){
-  let idx=s.indexOf(needle);
-  if(idx<0)return 0;
-  const first=idx,nl=needle.length;
-  let count=0,best=0;
-  while(idx>=0&&count<6){
-    count++;
-    if(best<2){
-      const startOk=idx===0||!_WORD_CH.test(s.charAt(idx-1));
-      if(startOk){
-        const endOk=idx+nl>=s.length||!_WORD_CH.test(s.charAt(idx+nl));
-        best=endOk?2:Math.max(best,1);
-      }
-    }
-    idx=s.indexOf(needle,idx+nl);
-  }
-  return 10+(best===2?10:best===1?6:0)+(count-1)*.5+(first===0?3:0)+6*(1-Math.min(first,240)/240);
+// A term starting with "#" is a tag lookup — matched as a whole word so
+// "#js" doesn't also match "#js2" or "objs", unlike the general substring search.
+function matchesTerm(targetLower,term){
+  if(term.charAt(0)!=='#')return targetLower.includes(term);
+  const word=term.slice(1).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  if(!word)return targetLower.includes('#');
+  return new RegExp(`(^|[^\\p{L}\\p{N}_])#${word}(?![\\p{L}\\p{N}_])`,'u').test(targetLower);
 }
-// Score an entry's folded text against the parsed tokens. 0 = no match.
-function scoreText(s,tokens){
-  let total=0,positives=0,covered=0,phrase='';
-  for(let i=0;i<tokens.length;i++){
-    const tk=tokens[i];
-    if(tk.neg){
-      if(tk.tag?tk.re.test(s):s.includes(tk.text))return 0;
-      continue;
-    }
-    let sc=0;
-    if(tk.tag){const m=tk.re.exec(s);if(m)sc=20+5*(1-Math.min(m.index,240)/240);}
-    else if(tk.alts){
-      // Typo-tolerant fallback: any close spelling counts, at a discount.
-      for(let a=0;a<tk.alts.length;a++){const v=scoreNeedle(s,tk.alts[a]);if(v>sc)sc=v;}
-      sc*=.6;
-    }else sc=scoreNeedle(s,tk.text);
-    if(!sc)return 0;
-    total+=sc;positives++;covered+=tk.text.length;
-    if(!tk.alts)phrase+=(phrase?' ':'')+tk.text;
-  }
-  if(!positives)return 1; // only exclusions, and none hit
-  // A short card that is mostly the query beats a long one that merely mentions it.
-  if(s.length)total+=14*Math.min(1,covered/s.length);
-  // Words typed together and found together, in order → strong signal.
-  if(positives>1&&phrase&&s.includes(phrase))total+=18;
-  return total;
-}
-// Edit distance (with transpositions), bailing out as soon as it exceeds `max`.
-function editDistMax(a,b,max){
-  const al=a.length,bl=b.length;
-  if(Math.abs(al-bl)>max)return max+1;
-  let pp=null,p=new Array(bl+1),c=new Array(bl+1);
-  for(let j=0;j<=bl;j++)p[j]=j;
-  for(let i=1;i<=al;i++){
-    c[0]=i;let rowMin=i;const ai=a.charCodeAt(i-1);
-    for(let j=1;j<=bl;j++){
-      const cost=ai===b.charCodeAt(j-1)?0:1;
-      let v=Math.min(p[j]+1,c[j-1]+1,p[j-1]+cost);
-      if(pp&&i>1&&j>1&&ai===b.charCodeAt(j-2)&&a.charCodeAt(i-2)===b.charCodeAt(j-1))v=Math.min(v,pp[j-2]+1);
-      c[j]=v;if(v<rowMin)rowMin=v;
-    }
-    if(rowMin>max)return max+1;
-    const tmp=pp||new Array(bl+1);pp=p;p=c;c=tmp;
-  }
-  return p[bl];
-}
-// Called only when the exact search found nothing: for each word that exists nowhere
-// in the pool, look for close spellings in the pool's vocabulary ("recherhce" → "recherche").
-// Returns new tokens carrying `alts`, or null if no correction is possible.
-function fuzzyExpandTokens(pool,tokens){
-  const dead=[];
-  for(let i=0;i<tokens.length;i++){
-    const tk=tokens[i];
-    if(tk.neg||tk.tag||tk.text.length<4||tk.text.includes(' '))continue;
-    let found=false;
-    for(let p=0;p<pool.length;p++)if(getSearchText(pool[p].entry).includes(tk.text)){found=true;break;}
-    if(!found)dead.push(i);
-  }
-  if(!dead.length)return null;
-  const vocab=new Set(),wre=/[\p{L}\p{N}]{3,40}/gu;
-  for(let p=0;p<pool.length;p++){
-    const ws=getSearchText(pool[p].entry).match(wre);
-    if(ws)for(let k=0;k<ws.length;k++)vocab.add(ws[k]);
-  }
-  const out=tokens.slice();
-  for(let d=0;d<dead.length;d++){
-    const tk=tokens[dead[d]],q=tk.text,ql=q.length,max=ql>=8?2:1,cands=[];
-    vocab.forEach(w=>{
-      if(w.length<ql-max)return;
-      // Longer word → compare against its beginning, so a typo still matches while typing.
-      const isPrefix=w.length>ql+max;
-      const dist=editDistMax(q,isPrefix?w.slice(0,ql):w,max);
-      if(dist<=max)cands.push({w,rank:dist+(isPrefix?.5:0)});
-    });
-    if(!cands.length)return null;
-    cands.sort((a,b)=>a.rank-b.rank);
-    out[dead[d]]={text:q,neg:false,tag:false,alts:cands.slice(0,6).map(c=>c.w)};
-  }
-  return out;
-}
-// Filter + rank a pool of {entry,…} items. Stable: equal scores keep the user's order.
-function rankPool(pool,tokens){
-  const hits=[];
-  for(let i=0;i<pool.length;i++){
-    const e=pool[i].entry;
-    let sc=scoreText(getSearchText(e),tokens);
-    if(!sc)continue;
-    if(e.isPinned)sc+=3;
-    hits.push({item:pool[i],sc,i});
-  }
-  hits.sort((a,b)=>b.sc-a.sc||a.i-b.i);
-  const out=new Array(hits.length);
-  for(let i=0;i<hits.length;i++)out[i]=hits[i].item;
-  return out;
-}
-// Kept for callers that only need a yes/no on plain term strings.
 function matchesAllTerms(targetLower,terms){
   if(!terms||terms.length===0)return true;
-  return scoreText(targetLower,parseSearchQuery(terms.join(' ')).tokens)>0;
+  for(let i=0;i<terms.length;i++)if(!matchesTerm(targetLower,terms[i]))return false;
+  return true;
 }
-// The regex runs on *folded* text (see walkMark), so it is accent/case-insensitive.
-// Memoised on the terms array: one compile per render instead of one per card.
-let _hlTerms=null,_hlRe=null;
+// Les termes sont déjà "foldés" (accents retirés) par parseSearchQuery. Pour que le
+// surlignage retrouve quand même "café" dans le texte réel en tapant "cafe", chaque
+// lettre de base est transformée en classe regex couvrant ses variantes accentuées.
+const ACCENT_EXP={a:'aàáâãäāăą',c:'cçćč',e:'eèéêëēĕėęě',i:'iìíîïĩīĭįı',n:'nñńņ',o:'oòóôõöøōŏő',s:'sśšş',u:'uùúûüũūŭůűų',y:'yýÿ',z:'zźżž'};
 function buildHighlightRegex(terms){
   if(!terms||terms.length===0)return null;
-  if(terms===_hlTerms)return _hlRe;
-  const src=terms.map(t=>foldText(t)).filter(Boolean).sort((a,b)=>b.length-a.length)
-    .map(t=>t.replace(_RE_ESC,'\\$&').replace(/ /g,'\\s+'));
-  _hlTerms=terms;_hlRe=src.length?new RegExp(src.join('|'),'g'):null;
-  return _hlRe;
+  const esc=terms.slice().sort((a,b)=>b.length-a.length).map(t=>
+    t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/[a-z]/g,ch=>ACCENT_EXP[ch]?`[${ACCENT_EXP[ch]}]`:ch)
+  );
+  return new RegExp(`(${esc.join('|')})`,'gi');
 }
 function walkMark(node,re){
   if(node.nodeType===3){
-    const txt=node.textContent;
-    // Fold the text; `map` gives, for each folded char, its index in the original
-    // (folding can drop combining marks or expand a char, so lengths may differ).
-    let folded,map=null;
-    if(!/[^\x00-\x7f]/.test(txt))folded=txt.toLowerCase();
-    else{
-      folded='';map=[];
-      for(let i=0;i<txt.length;i++){const f=foldText(txt.charAt(i));for(let k=0;k<f.length;k++)map.push(i);folded+=f;}
-      map.push(txt.length);
-    }
-    re.lastIndex=0;
-    let m=re.exec(folded);
-    if(!m)return;
+    const local=new RegExp(re.source,'gi');
+    if(!local.test(node.textContent))return;
     const f=document.createDocumentFragment();let li=0;
-    while(m){
-      if(!m[0].length){re.lastIndex++;m=re.exec(folded);continue;}
-      const a=map?map[m.index]:m.index,b=map?map[m.index+m[0].length]:m.index+m[0].length;
-      if(b>a&&a>=li){
-        if(a>li)f.appendChild(document.createTextNode(txt.slice(li,a)));
-        const mk=document.createElement('mark');mk.textContent=txt.slice(a,b);f.appendChild(mk);
-        li=b;
-      }
-      m=re.exec(folded);
-    }
-    if(li<txt.length)f.appendChild(document.createTextNode(txt.slice(li)));
+    node.textContent.replace(new RegExp(re.source,'gi'),(m,...args)=>{
+      const off=args[args.length-2];
+      if(off>li)f.appendChild(document.createTextNode(node.textContent.slice(li,off)));
+      const mk=document.createElement('mark');mk.textContent=m;f.appendChild(mk);
+      li=off+m.length;
+    });
+    if(li<node.textContent.length)f.appendChild(document.createTextNode(node.textContent.slice(li)));
     node.parentNode.replaceChild(f,node);
     return;
   }
@@ -3121,32 +2939,42 @@ function cardPreviewLabel(entry){
   const words=txt.split(' ').slice(0,6).join(' ');
   return (words.length<txt.length?words+'…':words).slice(0,64);
 }
-// Sanitised + linkified + tag-chipped HTML, cached per content string so that typing
-// in the search box doesn't re-run DOMPurify on every card at every keystroke.
-// Only the (cheap) highlight pass runs per query. Values are cleanHtml() output.
-const _baseHtmlCache=new Map();
-const BASE_HTML_CACHE_MAX=3000,BASE_HTML_CACHE_MAXLEN=60000;
-function processContent(content,filterTerms){
-  // Accept legacy string filter or new array of terms
-  let terms=filterTerms;
-  if(typeof filterTerms==='string')terms=filterTerms?[filterTerms]:[];
-  const re=buildHighlightRegex(terms);
+// Partie coûteuse (DOMPurify + 2 parcours du DOM) : sanitize + liens cliquables + chips #tag.
+// Ne dépend QUE de entry.content, jamais du texte recherché — donc mise en cache sur l'entrée.
+function buildProcessedHtml(content){
   const el=document.createElement('div');
-  const base=_baseHtmlCache.get(content);
-  if(base!==undefined){
-    if(!re)return base;
-    el.innerHTML=base;walkMark(el,re);
-    return el.innerHTML;
-  }
   if(isRich(content)){el.innerHTML=cleanHtml(content);linkify(el);}
   else{const urls=[];let tmp=content.replace(/(https?:\/\/[^\s]+)/g,m=>{urls.push(m);return`[[U${urls.length-1}]]`;});tmp=esc(tmp).replace(/\[\[U(\d+)\]\]/g,(m,id)=>{const u=urls[+id];return`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer" class="link">${esc(u)}</a>`;}).replace(/\n/g,'<br>');el.innerHTML=tmp;}
   highlightTags(el);
-  if(content.length<=BASE_HTML_CACHE_MAXLEN){
-    if(_baseHtmlCache.size>=BASE_HTML_CACHE_MAX)_baseHtmlCache.clear();
-    _baseHtmlCache.set(content,el.innerHTML);
-  }
-  if(re)walkMark(el,re);
   return el.innerHTML;
+}
+function getProcessedContent(entry){
+  if(entry._processedHtml!==undefined)return entry._processedHtml;
+  const html=buildProcessedHtml(entry.content||'');
+  Object.defineProperty(entry,'_processedHtml',{value:html,writable:true,enumerable:false,configurable:true});
+  return html;
+}
+// `src` est soit une fiche (objet, mise en cache possible) soit une chaîne brute (usage ponctuel).
+function processContent(src,filterTerms){
+  const isEntry=src&&typeof src==='object';
+  const html=isEntry?getProcessedContent(src):buildProcessedHtml(src||'');
+  // Accept legacy string filter or new array of terms
+  let terms=filterTerms;
+  if(typeof filterTerms==='string')terms=filterTerms?[filterTerms.toLowerCase()]:[];
+  const re=buildHighlightRegex(terms);
+  if(!re)return html; // pas de recherche active → le HTML déjà en cache est le résultat final
+  const el=document.createElement('div');
+  el.innerHTML=html;
+  walkMark(el,re);
+  return el.innerHTML;
+}
+// Même vérification que l'ancien isImageOnly(), mais réutilise le HTML déjà sanitizé/en cache
+// au lieu de rappeler DOMPurify une seconde fois à chaque rendu.
+function isImageOnlyCached(entry){
+  if(entry._imgOnly!==undefined)return entry._imgOnly;
+  const v=isRich(entry.content||'')?isImageOnlyHtml(getProcessedContent(entry)):false;
+  Object.defineProperty(entry,'_imgOnly',{value:v,writable:true,enumerable:false,configurable:true});
+  return v;
 }
 
 /* ════════════════════════════════════════════════════════
@@ -3466,24 +3294,15 @@ function pullFromExtension() {
             console.warn('[Query sync] Réponse invalide:', response);
             return resolve(false);
           }
-          // Données externes : on valide la forme et on nettoie le HTML avant tout.
-          const extProfiles = normalizeProfiles(response.data && response.data.profiles, true);
-          const d = load() || {};
-          const cur = d.profiles || {};
-          // Garde-fou : une copie VIDE côté extension (réinstallation, profil par
-          // défaut…) ne doit pas effacer un profil web qui contient des fiches.
-          Object.keys(extProfiles).forEach(pid => {
-            const mine = cur[pid];
-            if (mine && Array.isArray(mine.entries) && mine.entries.length && !extProfiles[pid].entries.length) delete extProfiles[pid];
-          });
-          if (!Object.keys(extProfiles).length) {
+          const extProfiles = response.data && response.data.profiles;
+          if (!extProfiles || !Object.keys(extProfiles).length) {
             console.log('[Query sync] Aucun profil dans l\'extension');
             return resolve(false);
           }
           // Fusionner avec les profils existants (l'extension gagne)
-          d.profiles = Object.assign({}, cur, extProfiles);
-          const cp = response.data.currentProfile;
-          if (typeof cp === 'string' && d.profiles[cp]) d.currentPid = cp;
+          const d = load() || {};
+          d.profiles = Object.assign({}, d.profiles || {}, extProfiles);
+          if (response.data.currentProfile) d.currentPid = response.data.currentProfile;
           save(d);
           console.log('[Query sync]', Object.keys(extProfiles).length, 'profil(s) synchronisé(s)');
           resolve(true);
@@ -3516,19 +3335,11 @@ window.addEventListener('message', (event) => {
   if (!event.data || event.data.source !== 'query-extension') return;
   if (event.data.type === 'PROFILES_UPDATED' && event.data.profiles) {
     console.log('[Query sync] Mise à jour reçue de l\'extension');
-    // Valider + nettoyer : un profil mal formé ne doit ni planter l'affichage ni injecter de HTML.
-    const incoming = normalizeProfiles(event.data.profiles, true);
-    // Garde-fou : ne jamais tout effacer sur un message vide ou invalide.
-    if (!Object.keys(incoming).length && Object.keys(profiles).length) {
-      console.warn('[Query sync] Mise à jour vide ignorée');
-      return;
-    }
-    // Les profils de salons live n'existent que côté web : on les conserve.
-    const liveRooms = (load() || {}).liveRooms || {};
+    profiles = event.data.profiles;
+    // Normaliser les entries
     Object.keys(profiles).forEach(pid => {
-      if (!incoming[pid] && (liveRooms[pid] || profiles[pid].liveRoom)) incoming[pid] = profiles[pid];
+      if (!Array.isArray(profiles[pid].entries)) profiles[pid].entries = [];
     });
-    profiles = incoming;
     if (profiles[currentPid]) {
       entries = profiles[currentPid].entries;
     } else {
@@ -3548,54 +3359,6 @@ window.addEventListener('message', (event) => {
 /* ════════════════════════════════════════════════════════
    INIT
 ════════════════════════════════════════════════════════ */
-// Met une liste de fiches à la forme canonique. `clean` = passer le HTML par
-// DOMPurify (obligatoire pour toute donnée venant de l'extérieur).
-function normalizeEntryList(list,clean){
-  if(!Array.isArray(list))return [];
-  const now=Date.now();
-  return list.map((e,i)=>{
-    if(typeof e==='string')return{id:genId(),content:clean?cleanContent(e):e,isPinned:false,createdAt:now+i};
-    if(!e||typeof e!=='object')return null;
-    const ct=typeof e.content==='string'?e.content:'';
-    const o={id:typeof e.id==='string'&&e.id?e.id:genId(),content:clean?cleanContent(ct):ct,isPinned:!!e.isPinned,createdAt:typeof e.createdAt==='number'?e.createdAt:now};
-    if(typeof e.updatedAt==='number')o.updatedAt=e.updatedAt;
-    if(typeof e.updatedBy==='string')o.updatedBy=e.updatedBy;
-    if(typeof e.w==='number'&&e.w>0)o.w=e.w;
-    if(typeof e.h==='number'&&e.h>0)o.h=e.h;
-    if(typeof e.color==='string'&&e.color)o.color=e.color;
-    if(typeof e.x==='number')o.x=e.x;
-    if(typeof e.y==='number')o.y=e.y;
-    return o;
-  }).filter(Boolean);
-}
-// Valide une table de profils : écarte ce qui n'est pas un objet, garantit un nom
-// (chaîne) et une liste de fiches saine. Les autres champs du profil sont conservés.
-function normalizeProfiles(profs,clean){
-  const out={};
-  if(!profs||typeof profs!=='object'||Array.isArray(profs))return out;
-  Object.keys(profs).forEach(pid=>{
-    const p=profs[pid];
-    if(!p||typeof p!=='object'||Array.isArray(p))return;
-    if(typeof p.name!=='string'||!p.name)p.name=String(p.name||pid);
-    p.entries=normalizeEntryList(p.entries,clean);
-    out[pid]=p;
-  });
-  return out;
-}
-// Un autre onglet a enregistré une version plus récente : on l'adopte.
-// Reporté tant que l'éditeur de fiche est ouvert (les index bougeraient sous lui).
-let _pendingExternal=false;
-function applyExternalData(d){
-  if(!d||!d.profiles||!Object.keys(d.profiles).length)return;
-  if(!$('addModal').classList.contains('off')){_pendingExternal=true;return;}
-  _pendingExternal=false;
-  _cache=d;
-  profiles=normalizeProfiles(d.profiles,false);
-  if(!profiles[currentPid])currentPid=Object.keys(profiles)[0]||'';
-  entries=profiles[currentPid]?profiles[currentPid].entries:[];
-  renderSidebar();updateTopbar();render($('search').value);
-}
-
 async function init(){
   // CRITICAL: storage layer must be ready before any load()/save() call.
   // Loads from IndexedDB (or migrates from localStorage if first run on this version).
@@ -3612,7 +3375,23 @@ async function init(){
     lang=d.language||'en';themeMode=d.themeMode||'light';customColor=d.customColor||'#2563eb';tourSeen=!!(d.tourSeen||d.tutorialAdded);
     $('colorPicker').value=customColor;applyTheme(themeMode);applyTr();$('langSelect').value=lang;
     if(d.profiles){
-      profiles=normalizeProfiles(d.profiles,false);
+      profiles=d.profiles;
+      Object.keys(profiles).forEach(pid=>{
+        if(!Array.isArray(profiles[pid].entries))profiles[pid].entries=[];
+        else profiles[pid].entries=profiles[pid].entries.map((e,i)=>{
+          if(typeof e==='string')return{id:genId(),content:e,isPinned:false,createdAt:Date.now()+i};
+          if(!e||typeof e!=='object')return null;
+          const o={id:e.id||genId(),content:e.content||'',isPinned:!!e.isPinned,createdAt:e.createdAt||Date.now()};
+          if(typeof e.updatedAt==='number')o.updatedAt=e.updatedAt;
+          if(typeof e.updatedBy==='string')o.updatedBy=e.updatedBy;
+          if(typeof e.w==='number'&&e.w>0)o.w=e.w;
+          if(typeof e.h==='number'&&e.h>0)o.h=e.h;
+          if(typeof e.color==='string'&&e.color)o.color=e.color;
+          if(typeof e.x==='number')o.x=e.x;
+          if(typeof e.y==='number')o.y=e.y;
+          return o;
+        }).filter(Boolean);
+      });
     }else{startFirstProfile();document.dispatchEvent(new Event('query-ready'));return;}
     currentPid=d.currentPid||Object.keys(profiles)[0];
     renderApp();
@@ -3652,43 +3431,28 @@ function updateCanvasHeight(){
   c.style.minHeight=maxY+'px';
 }
 
-// Pre-compute lowercased plain-text version of an entry's content, lazily.
+// Pre-compute a lowercased, accent-folded plain-text version of an entry's content, lazily.
 // Cached directly on the entry object (non-enumerable so it doesn't get persisted).
-// The text is folded (lowercase, no accents), entity-decoded and whitespace-collapsed.
-// The cache remembers which content it was built from, so it can never go stale —
-// whatever path changed the card (edit, import, live room, extension sync).
-const _BLOCK_TAGS=/<\/?(?:div|p|br|li|ul|ol|h[1-6]|tr|td|th|table|pre|blockquote|hr|section|article|header|footer|img)\b[^>]*>/gi;
-const _ENTITIES={nbsp:' ',amp:'&',lt:'<',gt:'>',quot:'"',apos:"'"};
-function decodeEntities(s){
-  if(s.indexOf('&')<0)return s;
-  return s.replace(/&(?:#(\d+)|#x([0-9a-f]+)|([a-z]+));/gi,(m,dec,hex,name)=>{
-    if(name){const v=_ENTITIES[name.toLowerCase()];return v===undefined?m:v;}
-    const code=dec?parseInt(dec,10):parseInt(hex,16);
-    try{return String.fromCodePoint(code);}catch(_){return m;}
-  });
-}
 function getSearchText(entry){
+  if(entry._searchText!==undefined)return entry._searchText;
   const ct=entry.content||'';
-  if(entry._searchText!==undefined&&entry._searchSrc===ct)return entry._searchText;
-  // Block tags separate words; inline tags (<b>, <span>…) don't: "re<b>cherche</b>" is one word.
-  const plain=isRich(ct)?decodeEntities(ct.replace(_BLOCK_TAGS,' ').replace(/<[^>]+>/g,'')):ct;
-  const text=foldText(plain).replace(/\s+/g,' ').trim();
-  Object.defineProperty(entry,'_searchText',{value:text,writable:true,enumerable:false,configurable:true});
-  Object.defineProperty(entry,'_searchSrc',{value:ct,writable:true,enumerable:false,configurable:true});
-  return text;
+  const plain=isRich(ct)?ct.replace(/<[^>]+>/g,' '):ct;
+  Object.defineProperty(entry,'_searchText',{value:foldAccents(plain.toLowerCase()),writable:true,enumerable:false,configurable:true});
+  return entry._searchText;
 }
-// Invalidate the cache for an entry whose content changed.
-function invalidateSearchText(entry){if(entry&&entry._searchText!==undefined){try{delete entry._searchText;delete entry._searchSrc;}catch(_){entry._searchText=undefined;}}}
+// Invalidate every render/search cache for an entry whose content just changed
+// (search text, processed HTML, image-only flag — see getProcessedContent/isImageOnlyCached).
+function invalidateSearchText(entry){
+  if(!entry)return;
+  for(const k of['_searchText','_processedHtml','_imgOnly']){
+    if(entry[k]!==undefined){try{delete entry[k];}catch(_){entry[k]=undefined;}}
+  }
+}
 
-// Cap on rendered cards (global mode, or any active search) to keep the DOM responsive.
-// Results are ranked, so the best ones come first; "show more" raises the limit.
+// Cap on rendered cards in global mode to keep the DOM responsive.
 const GLOBAL_RENDER_CAP=200;
-let renderLimit=GLOBAL_RENDER_CAP,renderLimitFilter=null,lastRenderMs=0;
 
 function render(filter=''){
-  const _t0=performance.now();
-  // A new query starts again from the default number of rendered cards.
-  if(filter!==renderLimitFilter){renderLimitFilter=filter;renderLimit=GLOBAL_RENDER_CAP;}
   const res=$('results'),ctr=$('resultsCounter');
   // Preserve edit-mode class on results container
   if(editMode)res.classList.add('edit-mode');else res.classList.remove('edit-mode');
@@ -3700,8 +3464,8 @@ function render(filter=''){
   // Parse the search query
   const parsed=parseSearchQuery(filter);
   const isGlobal=parsed.globalSearch;
-  let terms=parsed.terms;
-  const hasFilter=parsed.tokens.length>0;
+  const terms=parsed.terms;
+  const hasFilter=terms.length>0;
 
   // Suspend canvas absolute positioning when a filter is active
   if(hasFilter&&!isGlobal)res.classList.add('filter-active');
@@ -3725,27 +3489,17 @@ function render(filter=''){
   if(pool.length===0){res.innerHTML=`<div class="empty-state"><div class="empty-state-icon">🗒️</div><div class="empty-state-title">${t('emptyTitle')}</div><div class="empty-state-sub">${t('emptySub')}</div></div>`;addClass(ctr,'off');updateCount();return;}
 
   // First pass: filter — fast, no DOM touched.
-  // With a query, results are ranked by relevance (ties keep the user's order).
-  let matched=pool,fuzzy=false;
-  if(hasFilter){
-    matched=rankPool(pool,parsed.tokens);
-    if(!matched.length){
-      // Nothing found: retry tolerating typos on the words that exist nowhere.
-      const ft=fuzzyExpandTokens(pool,parsed.tokens);
-      if(ft){
-        matched=rankPool(pool,ft);
-        if(matched.length){
-          fuzzy=true;terms=[];
-          for(let i=0;i<ft.length;i++){const tk=ft[i];if(tk.neg)continue;if(tk.alts)terms.push(...tk.alts);else terms.push(tk.text);}
-        }
-      }
-    }
+  const matched=[];
+  for(let i=0;i<pool.length;i++){
+    const entry=pool[i].entry;
+    if(hasFilter&&!matchesAllTerms(getSearchText(entry),terms))continue;
+    matched.push(pool[i]);
   }
 
   const totalMatched=matched.length;
-  // Cap the number of cards we render (global mode or active search) for responsiveness.
-  const truncated=(isGlobal||hasFilter)&&totalMatched>renderLimit;
-  const willRender=truncated?matched.slice(0,renderLimit):matched;
+  // Cap the number of cards we render in global mode for responsiveness.
+  const willRender=(isGlobal&&totalMatched>GLOBAL_RENDER_CAP)?matched.slice(0,GLOBAL_RENDER_CAP):matched;
+  const truncated=isGlobal&&totalMatched>GLOBAL_RENDER_CAP;
 
   // Second pass: build all cards into a fragment (single reflow).
   const frag=document.createDocumentFragment();
@@ -3757,7 +3511,7 @@ function render(filter=''){
     const isExternal=isGlobal&&profileId!==currentPid;
     const card=document.createElement('div');
     const colorClass=entry.color?' color-'+entry.color:'';
-    const imgOnly=isImageOnly(ct);
+    const imgOnly=isImageOnlyCached(entry);
     card.className='card'+(entry.isPinned?' pinned':'')+colorClass+(imgOnly?' img-only':'');
     // Skip animation in global mode for performance (a lot of cards = a lot of paints)
     if(!isGlobal)card.style.animationDelay=`${n*.025}s`;
@@ -3782,7 +3536,7 @@ function render(filter=''){
     card.innerHTML=`<div class="card-pin-label">📌 Pinned</div>
     <button class="card-delete-btn" data-r="delete-card" title="${t('delete')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <button class="card-reset-size" data-r="reset-size" title="${t('resetSize')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 3 3 9 9 9"/></svg></button>
-    <div class="card-body rich-content${isRich(ct)?'':' plain-text'}">${processContent(ct,terms)}</div><div class="card-footer"><div class="card-footer-left">${badgeHtml}<span class="card-date">${fmtDate(entry.createdAt)}</span></div><div class="card-actions">
+    <div class="card-body rich-content${isRich(ct)?'':' plain-text'}">${processContent(entry,terms)}</div><div class="card-footer"><div class="card-footer-left">${badgeHtml}<span class="card-date">${fmtDate(entry.createdAt)}</span></div><div class="card-actions">
     <button class="card-btn${entry.isPinned?' pin-on':''}" data-r="pin" title="${entry.isPinned?t('unpin'):t('pin')}"><svg viewBox="0 0 24 24" fill="${entry.isPinned?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg></button>
     <button class="card-btn" data-r="copy" title="${t('copy')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
     <button class="card-btn" data-r="view" title="${t('view')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></button>
@@ -3802,18 +3556,11 @@ function render(filter=''){
     const more=document.createElement('div');
     more.className='empty-state';
     more.style.padding='16px';
-    const rest=totalMatched-renderLimit;
-    more.innerHTML=`<button type="button" class="empty-state-sub" style="cursor:pointer;font:inherit;color:inherit;background:var(--c-surf2);border:0;border-radius:var(--r-full);padding:8px 16px">… +${rest} ${t('resultsN',rest).replace(/^\d+\s*/,'')}</button>`;
-    more.firstChild.addEventListener('click',()=>{
-      const y=window.scrollY;
-      renderLimit+=GLOBAL_RENDER_CAP*2;render(filter);
-      window.scrollTo(0,y);
-    });
+    more.innerHTML=`<div class="empty-state-sub">… +${totalMatched-GLOBAL_RENDER_CAP} ${t('resultsN',totalMatched-GLOBAL_RENDER_CAP).replace(/^\d+\s*/,'')}</div>`;
     res.appendChild(more);
   }
 
-  // "≈" flags approximate (typo-corrected) results.
-  if(hasFilter){remClass(ctr,'off');ctr.textContent=(fuzzy?'≈ ':'')+t('resultsN',totalMatched);}else{addClass(ctr,'off');}
+  if(hasFilter){remClass(ctr,'off');ctr.textContent=t('resultsN',totalMatched);}else{addClass(ctr,'off');}
   updateCount();
   if(totalMatched===0&&hasFilter)res.innerHTML=`<div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-title">${t('noResultTitle')}</div><div class="empty-state-sub">${t('noResultSub')}</div></div>`;
   // Auto-activate canvas if entries have stored positions (handles page reload)
@@ -3821,7 +3568,6 @@ function render(filter=''){
   if(isCanvasActive()&&!hasFilter)ensureCanvasPositions();else updateCanvasHeight();
   // Inject header+copy button into code blocks
   injectPreCopyButtons(res);
-  lastRenderMs=performance.now()-_t0;
 }
 
 function injectPreCopyButtons(container){
@@ -3950,6 +3696,118 @@ function copyCard(entry,card){
       btn.classList.remove('copied');
     },1500);
   });
+}
+
+/* ════════════════════════════════════════════════════════
+   EXPORT PDF — ouvre un nouvel onglet mis en page comme un vrai document
+   (en-tête avec le logo Query, pied de page, page blanche) ; le PDF lui-même
+   est produit par "Imprimer → Enregistrer en PDF" du navigateur (pas de
+   librairie externe : le texte reste sélectionnable/recherchable dans le
+   PDF, contrairement à une capture d'écran).
+   Le logo est encodé en base64 (icon128.png) pour s'afficher instantanément,
+   sans dépendre du réseau — l'onglet peut imprimer dès son premier rendu.
+════════════════════════════════════════════════════════ */
+const QUERY_LOGO_B64='iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAABmJLR0QA/wD/AP+gvaeTAAAGmklEQVR4nO3dX2wc1RXH8e+Z3XXs2ImN4/zDNH8gpZFCBJh/kdKWAKoEEQQECKlSQ5EISZAi8dSXkKbQPyBQea5CiqqKP4oKSKFVeUClfuChFcEgxAN2RBqS4DiWcEzixNmsd/f2wRiljut4I5+52jnn8+a1fe615zczd3bunRWmEUKYA9wF3A/cDCwFFgG56X7PRTUMfAG8B7wqIn3T/bBM9WIIIQ9sAXYzvtFd/Xof2CEivVN986IAhBCWA/uBG5Q75tJTAp4Vkecmf+N/AhBCuBX4G+OHeZc9e4EnRaQy8cJ3Afh2z/8Q3/hZ94qIbJn4IoHvzvn78Y1vweMhhG0TXwhACGE78IdoXXJpKwKrReSIfHupdxgf7VvzmohslhDCRuDvsXvjUlcFrk6AB2L3xEWRAI8kQFfsnrhoNiZAZ+xeuGhWSgihjL+3b1VZQgghdi9cPEnsDri4PADGeQCM8wAY5wEwzgNgnAfAOA+AcR4A4zwAxnkAjPMAGJfXbmD0fGDf+yN094xyfKjMWNnvPU2nIS+sWFpg0/pm7l3fQjLl0p3Zo3o38JOD59n++0EGhyuX/mF3kZt+0MieXyyio1Xvbr1aAHqPlnho1wBnz1U1yptxTWeBd56/kpYmnbO12hhg556vfePPgkP9Y/z2zyfV6qsE4PMvS3x88LxGaZPe7B5hYKisUlslAD0HixplzapU4YNPz6nUVgnA0Gk/9M+2Eyd1BtIqAQhVv9SbbVWl/6m/EWScB8A4D4BxHgDjPADGeQCM8wAY5wEwzgNgnAfAOA+AcSoBKOSV5zEZpPU/VQnAiqUFjbKmLVmgM31TJQAbbmhSm8JkUSKwfm2TTm2Nos1NCTseatMobdKDt7ewpF1nYqjabrp1Uysb1zVrlTdjVWeB3Y8tUKuvOi28UoWX9g3z8l9PUa74JJFa3bOumee3ddDWonc6TeUpYQNDZd7911mODJYp+8KQaSWJ0Lkwxx1dc1m9rEG9PX9MnHE+VDfOA2CcB8A49dXBMQydqnB4YIxiqf6GNw0FYcWSAouuSOfxzZkKQE9fkRffGObA50XqeWmCCKxb08jOze2svXqObltZuQr4yz9H2PnyUKbeb8jnhJd2dHD/D1vU2shEAA70FvnpMycytfEn5HPCvmeWcPPqRpX6mRgEvvD6cCY3PkC5Eti1d0jtlFb3AThxskJPX7ZXI/ceLan9jXUfgP8cL1H/J7FL++xQSaVu3QdgtGhg6wOnz9bR8nBXPzwAxnkAjPMAGOcBMM4DYFzdByCfs7EIJVF6aHDdB+DKDhuferuwrc6mhafl+1c1sHxx9lcirVvjN4OmJAJPPZLtRSgbbmxipdJyu7oPAMCDP27h4Q1698xjap+f43dPdKjVz0QAAF54ciHbNrWSy8xfBKuXNfDWb5bSuVBv4lYmJoRcqO9oiTe7z9B3tMQ3Z+rvmcVNc4TvLc5zZ9dc7r6tWT3QmQuAq02GDpjucngAjPMAGJepdQFRVEYJpaFZKye5udCg9zyAyTwAl6M8QvXYK1QH90Oxf/br5+eTLL6PZPkOaNB7DwD8KqBmYfQw1c8eJ5w7pt9YoY3cdXuQ1i61JjwAtSiPUPloE6H4VXpt5ueR63obmbtSpbwPAmtQPfbHdDc+jJ9uDu5WK+8BqEF18J0o7YZv/k0406tS2wMwU+URnQHfDIVTH6nU9QDMVPl03PbHhlXKegDqhn9uoFPgATDOA2CcB8A4D4BxHoAZi70ARWdTeQBmqmEBSMRFKIUrVMp6AGYqmYO03hKteZl/vUpdD0ANkmVbo7Qr89Yi89ao1PYA1EDaf0TS+bN0G00aSa79NVpjEA9AjZJVvyS56uekMigstJFbuweZd51aEz4h5DKFUz1U+1+DkU8JY7N4oyjJI42dSPsGks5HodA6e7Wn4AEwzk8BxnkAjPMAGOcBMM4DYJwHwDgPgHEeAOM8AMZ5AIzzABjnATAuAcqxO+GiqSTA8di9cNGcSIDDsXvhohlIgHdj98JF86GEEFYAh/ABoUV3JyLyJfBG7J641B0Huif2+l1Atj+A1032KxEpJQAicgR4KnKHXHp6gD/BpLnNIYS9wJYYPXKpGQRuEZFjcPHAbzuwN/UuubQMAvdNbHyYFAARqYjIVuBpQOfzyl0sPYzv+QcufHHKSz8ReQ64HvhHCh1zuvqBJ4DbLtzzJ1xyfVMI4VpgM/ATYBWQ3qOsXa0qjB/m+xnf4/cD3SLyf4/m/wU/srbGsO6XCgAAAABJRU5ErkJggg==';
+function buildPdfHtml(entry,profileName){
+  const isDark=document.body.classList.contains('dark');
+  const pageBg=isDark?'#0a0a0b':'#e7e7ea'; // toile autour de la page — plus foncée/grise que la page elle-même
+  const surface=isDark?'#19191c':'#ffffff';
+  const border=isDark?'#2a2a2e':'#e4e4e7';
+  const fg=isDark?'#f5f5f5':'#09090b';
+  const fg2=isDark?'#8d8d95':'#71717a';
+  const fg3=isDark?'#6b6b73':'#a3a3aa';
+  const accent='#2563eb';
+  const accentFaint=isDark?'rgba(37,99,235,.18)':'#eff6ff';
+  const codeBg=isDark?'#2a2a2a':'#f1f5f9';
+  const codeBd=isDark?'#383838':'#e2e8f0';
+
+  // Reprend le même HTML (déjà sanitizé + liens + tags) que la carte à l'écran,
+  // mais avec des styles inline — un onglet autonome ne doit pas dépendre du CSS de l'app.
+  const tmp=document.createElement('div');
+  tmp.innerHTML=getProcessedContent(entry);
+  tmp.querySelectorAll('h1').forEach(el=>el.style.cssText='font-size:1.5em;font-weight:700;margin:.9em 0 .35em;letter-spacing:-.01em;');
+  tmp.querySelectorAll('h2').forEach(el=>el.style.cssText='font-size:1.25em;font-weight:700;margin:.8em 0 .3em;');
+  tmp.querySelectorAll('h3').forEach(el=>el.style.cssText='font-size:1.1em;font-weight:700;margin:.7em 0 .3em;');
+  tmp.querySelectorAll('h1:first-child,h2:first-child,h3:first-child').forEach(el=>el.style.marginTop='0');
+  tmp.querySelectorAll('ul').forEach(el=>el.style.cssText='padding-left:1.5em;list-style:disc;margin:.4em 0;');
+  tmp.querySelectorAll('ol').forEach(el=>el.style.cssText='padding-left:1.5em;list-style:decimal;margin:.4em 0;');
+  tmp.querySelectorAll('li').forEach(el=>el.style.cssText='margin:.2em 0;');
+  tmp.querySelectorAll('blockquote').forEach(el=>el.style.cssText=`border-left:3px solid ${accent};background:${accentFaint};padding:10px 16px;margin:.6em 0;font-style:italic;`);
+  tmp.querySelectorAll('code').forEach(el=>{if(el.parentElement.tagName!=='PRE')el.style.cssText=`font-family:'Geist Mono',ui-monospace,Menlo,monospace;font-size:.9em;background:${codeBg};border:1px solid ${codeBd};padding:1px 5px;border-radius:4px;`;});
+  tmp.querySelectorAll('pre').forEach(el=>el.style.cssText=`background:${codeBg};border:1px solid ${codeBd};border-radius:8px;padding:12px 14px;margin:.6em 0;font-family:'Geist Mono',ui-monospace,Menlo,monospace;font-size:.85em;line-height:1.55;white-space:pre-wrap;word-break:break-word;`);
+  tmp.querySelectorAll('pre code').forEach(el=>el.style.cssText='background:transparent;border:none;padding:0;');
+  tmp.querySelectorAll('hr').forEach(el=>el.style.cssText=`border:none;border-top:1px solid ${border};margin:1em 0;`);
+  tmp.querySelectorAll('img').forEach(el=>el.style.cssText='max-width:100%;border-radius:10px;display:block;margin:.5em 0;');
+  tmp.querySelectorAll('a[href]').forEach(el=>el.style.cssText=`color:${accent};text-decoration:underline;`);
+  tmp.querySelectorAll('.tag-chip').forEach(el=>el.style.cssText=`display:inline-block;background:${accentFaint};color:${accent};padding:1px 9px;border-radius:999px;font-size:.85em;font-weight:600;`);
+
+  const label=cardPreviewLabel(entry);
+  const dateStr=fmtDate(entry.createdAt);
+  const exportedStr=fmtDate(Date.now());
+  const printLabel=t('pdfPrintBtn');
+  const exportedByLabel=lang==='fr'?'Exporté avec':'Exported with';
+
+  return `<!DOCTYPE html>
+<html lang="${lang==='fr'?'fr':'en'}">
+<head>
+<meta charset="utf-8">
+<title>${esc(label)} – Query</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+@page{margin:0;}
+body{font-family:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:${pageBg};color:${fg};padding:36px 20px 56px;}
+.toolbar{max-width:720px;margin:0 auto 14px;display:flex;justify-content:flex-end;}
+.btn-print{background:${accent};color:#fff;border:none;border-radius:9px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(37,99,235,.35);}
+.btn-print:hover{opacity:.9;}
+.page{max-width:720px;margin:0 auto;background:${surface};box-shadow:0 1px 3px rgba(0,0,0,.08),0 18px 40px rgba(0,0,0,.14);padding:52px 60px 46px;}
+.letterhead{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:18px;border-bottom:1px solid ${border};}
+.letterhead .brand{display:flex;align-items:center;gap:9px;}
+.letterhead .brand img{width:22px;height:22px;display:block;}
+.letterhead .brand span{font-weight:700;font-size:16px;letter-spacing:-.01em;color:${fg};}
+.letterhead .when{font-size:12px;color:${fg2};white-space:nowrap;}
+.doc-meta{display:flex;align-items:center;gap:8px;margin:20px 0 26px;}
+.doc-meta .profile{font-size:11px;font-weight:700;color:${accent};background:${accentFaint};padding:3px 10px;border-radius:999px;letter-spacing:.02em;}
+.content{font-size:15px;line-height:1.7;word-wrap:break-word;}
+.content p{margin:.5em 0;}
+.doc-footer{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-top:40px;padding-top:16px;border-top:1px solid ${border};font-size:11px;color:${fg3};}
+.doc-footer .brand-mini{display:inline-flex;align-items:center;gap:5px;}
+.doc-footer .brand-mini img{width:12px;height:12px;display:block;opacity:.8;}
+@media print{
+  .toolbar{display:none;}
+  body{padding:0;background:${surface};}
+  .page{box-shadow:none;max-width:none;padding:14mm 16mm;}
+}
+</style>
+</head>
+<body>
+<div class="toolbar"><button class="btn-print" onclick="window.print()">${esc(printLabel)}</button></div>
+<div class="page">
+  <div class="letterhead">
+    <div class="brand"><img src="data:image/png;base64,${QUERY_LOGO_B64}" alt="Query"><span>Query</span></div>
+    <div class="when">${esc(dateStr)}</div>
+  </div>
+  <div class="doc-meta"><span class="profile">${esc(profileName||'')}</span></div>
+  <div class="content">${tmp.innerHTML}</div>
+  <div class="doc-footer">
+    <span class="brand-mini"><img src="data:image/png;base64,${QUERY_LOGO_B64}" alt="">${esc(exportedByLabel)} Query</span>
+    <span>${esc(exportedStr)}</span>
+  </div>
+</div>
+<script>window.addEventListener('load',function(){setTimeout(function(){window.print();},350);});<\/script>
+</body>
+</html>`;
+}
+// Ouvre l'export dans un nouvel onglet via une Blob URL (pas de document.write, pas de dépendance réseau
+// pour s'afficher). L'onglet déclenche lui-même l'impression ; "Enregistrer en PDF" est le choix natif du navigateur.
+function exportCardToPdf(entry,profileName){
+  const html=buildPdfHtml(entry,profileName);
+  const blob=new Blob([html],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const w=window.open(url,'_blank');
+  if(!w){showToast(t('pdfPopupBlocked'),{error:true});URL.revokeObjectURL(url);return;}
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
 
 /* ════════════════════════════════════════════════════════
@@ -4324,7 +4182,7 @@ function syncColorPicker(){
   });
 }
 function openCardModal(){remClass($('addModal'),'off');showBackdrop();setTimeout(()=>{$('newEntry').focus();document.dispatchEvent(new Event('selectionchange'));},80);}
-function closeCardModal(){addClass($('addModal'),'off');hideBackdrop();resetCardModal();if(_pendingExternal){_pendingExternal=false;reloadFromOtherTab();}}
+function closeCardModal(){addClass($('addModal'),'off');hideBackdrop();resetCardModal();}
 function resetCardModal(){editIdx=-1;editColor='';syncColorPicker();$('addModal-title').textContent='✏️ '+t('newCardTitle');$('saveEntry').textContent=t('save');$('newEntry').innerHTML='';addClass($('deleteEntry'),'off');}
 
 function editCard(idx){
@@ -4352,7 +4210,7 @@ function applyTr(){
   const cfb=$('lbl-chooseFolder');if(cfb)cfb.textContent=t(_exportDirHandle?'changeFolder':'chooseFolder');
   s('lbl-editmode',editMode?'editModeExit':'editMode');s('lbl-reset-all-sizes','resetAllSizes');
   s('lbl-coverAdd','coverAdd');s('lbl-coverChange','coverChange');s('lbl-coverReposition','coverReposition');s('lbl-coverRepositionHint','coverRepositionHint');s('lbl-coverSavePos','coverSavePos');
-  s('lbl-linkCopy','copy');s('lbl-linkEdit','edit');
+  s('lbl-linkCopy','copy');s('lbl-linkEdit','edit');s('lbl-linkPdf','exportPdf');
   $('search').placeholder=t('searchPh');
   $('profileModal-title').textContent=t('newProfileTitle');$('profileName').placeholder=t('profilePh');$('createProfile').textContent=t('create');$('cancelProfile2').textContent=t('cancel');
   if(editIdx<0){$('addModal-title').textContent='✏️ '+t('newCardTitle');$('newEntry').dataset.ph=t('edPh');$('saveEntry').textContent=t('save');}
@@ -4555,10 +4413,13 @@ let renderTimer=null;
 $('search').addEventListener('input',e=>{
   const v=e.target.value;
   clearTimeout(renderTimer);
-  // Adaptive: if the last render fit in a frame, render instantly; otherwise debounce
-  // in proportion to its cost so typing stays fluid on big profiles / global search.
-  if(lastRenderMs<14&&v.charAt(0)!=='/')render(v);
-  else renderTimer=setTimeout(()=>render(v),Math.min(220,Math.max(60,Math.round(lastRenderMs*1.2))));
+  if(v.charAt(0)==='/'){
+    // Global search: many cards possible → debounce to keep typing fluid.
+    renderTimer=setTimeout(()=>render(v),120);
+  }else{
+    // Local search: small dataset, render immediately.
+    render(v);
+  }
   clearTimeout(searchTimer);
   searchTimer=setTimeout(saveSearch,300);
 });
@@ -5611,11 +5472,11 @@ function showLinkPanelCard(){
   if(!f){
     $('linkPanelDate').textContent='';
     $('linkPanelContent').innerHTML=`<div class="empty-state"><div class="empty-state-icon">🗑️</div><div class="empty-state-title">${t('mentionDeletedTitle')}</div></div>`;
-    addClass($('linkPanelEdit'),'off');addClass($('linkPanelCopy'),'off');
+    addClass($('linkPanelEdit'),'off');addClass($('linkPanelCopy'),'off');addClass($('linkPanelPdf'),'off');
   }else{
     $('linkPanelDate').textContent=fmtDate(f.entry.createdAt);
-    $('linkPanelContent').innerHTML=processContent(f.entry.content||'',[]);
-    remClass($('linkPanelEdit'),'off');remClass($('linkPanelCopy'),'off');
+    $('linkPanelContent').innerHTML=processContent(f.entry,[]);
+    remClass($('linkPanelEdit'),'off');remClass($('linkPanelCopy'),'off');remClass($('linkPanelPdf'),'off');
   }
   $('linkPanel').querySelector('.link-panel-body').scrollTop=0;
 }
@@ -5647,6 +5508,12 @@ function searchTag(tag){
     const f=top&&findEntryById(top.pid,top.id);
     if(!f)return;
     writeCardToClipboard(f.entry,()=>showToast(t('copied')));
+  });
+  $('linkPanelPdf').addEventListener('click',()=>{
+    const top=linkNavStack[linkNavStack.length-1];
+    const f=top&&findEntryById(top.pid,top.id);
+    if(!f)return;
+    exportCardToPdf(f.entry,(profiles[top.pid]&&profiles[top.pid].name)||'');
   });
   $('linkPanelEdit').addEventListener('click',()=>{
     const top=linkNavStack[linkNavStack.length-1];
@@ -5782,11 +5649,6 @@ function searchTag(tag){
   ]}};
 
   const genShort=()=>Math.random().toString(36).substring(2,8).toUpperCase().padEnd(6,'0');
-  // Secret de salle : 16 caractères tirés d'un générateur cryptographique (≈ 80 bits).
-  // Math.random() + 6 caractères (≈ 31 bits) se cassait par force brute en quelques heures.
-  // Alphabet sans caractères ambigus (0/O, 1/I) pour rester dictable.
-  const SECRET_ALPHA='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const genSecret=()=>{const a=crypto.getRandomValues(new Uint8Array(16));let s='';for(let i=0;i<a.length;i++)s+=SECRET_ALPHA[a[i]&31];return s;};
   const opId=()=>'o'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
   // Conversion par blocs — les fiches avec images base64 dépassent la
   // limite d'arguments de String.fromCharCode(...) sinon.
@@ -6184,7 +6046,7 @@ function searchTag(tag){
     // pause), on la reprend avec le même code et le même rôle — les autres
     // membres peuvent donc toujours nous retrouver. Sinon, on crée.
     if(rec)delete rec.paused;
-    else rec=rooms[pid]={room:genShort(),secret:genSecret(),isHost:true,memberId:genShort(),tombs:{},peers:[],nameTs:Date.now()};
+    else rec=rooms[pid]={room:genShort(),secret:genShort(),isHost:true,memberId:genShort(),tombs:{},peers:[],nameTs:Date.now()};
     saveRooms(rooms);
     // Marqueur durable : ce profil EST la salle <room>. Il survit à un
     // "arrêter le partage" — re-rejoindre le même code réattache ce profil
@@ -6197,7 +6059,7 @@ function searchTag(tag){
   }
 
   async function joinRoom(code){
-    const m=/^([A-Z0-9]{4,8})-([A-Z0-9]{4,32})$/.exec((code||'').trim().toUpperCase());
+    const m=/^([A-Z0-9]{4,8})-([A-Z0-9]{4,8})$/.exec((code||'').trim().toUpperCase());
     if(!m){liveErr(t('liveErrCode'));return;}
     if(!hasCrypto){liveErr(t('liveNoCrypto'));return;}
     const room=m[1],secret=m[2];
@@ -6401,7 +6263,7 @@ function searchTag(tag){
   // automatique. Le fragment est effacé aussitôt pour ne pas traîner
   // dans l'historique.
   function checkHashJoin(){
-    const m=/^#live=([A-Z0-9]{4,8}-[A-Z0-9]{4,32})$/i.exec(location.hash||'');
+    const m=/^#live=([A-Z0-9]{4,8}-[A-Z0-9]{4,8})$/i.exec(location.hash||'');
     if(!m)return;
     history.replaceState(null,'',location.pathname+location.search);
     askPseudo(()=>{
@@ -6432,10 +6294,6 @@ function searchTag(tag){
 
 // Kick off
 init().catch(console.error);
-// PWA : sans cet enregistrement, sw.js n'est jamais actif et rien ne marche hors-ligne.
-if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){
-  window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(e=>console.warn('[Query] SW:',e));});
-}
 </script>
 </body>
 </html>
