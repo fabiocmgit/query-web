@@ -3707,6 +3707,24 @@ function copyCard(entry,card){
    Le logo est encodé en base64 (icon128.png) pour s'afficher instantanément,
    sans dépendre du réseau — l'onglet peut imprimer dès son premier rendu.
 ════════════════════════════════════════════════════════ */
+// Titre du bandeau PDF : comme cardPreviewLabel() mais insère un espace aux frontières de bloc
+// (</p>, </div>, <br>…) — sans ça "Réunion équipe" + "Points abordés" (2 lignes) devient
+// "Réunion équipePoints abordés" en un mot, invisible dans les usages existants de
+// cardPreviewLabel (petit texte de lien) mais très visible ici en gros titre.
+function pdfHeroTitle(entry){
+  const ct=(entry&&entry.content)||'';
+  const tmp=document.createElement('div');
+  tmp.innerHTML=isRich(ct)?cleanHtml(ct):esc(ct).replace(/\n/g,'<br>');
+  // beforebegin ET afterend : sur un contenteditable, seule la 1ère ligne tapée reste du texte
+  // brut (pas de <div>), donc un espace "après le bloc" seul ne séparerait pas ligne 1 / ligne 2.
+  tmp.querySelectorAll('p,div,li,h1,h2,h3,h4,blockquote,tr,br').forEach(el=>{
+    el.insertAdjacentText('beforebegin',' ');el.insertAdjacentText('afterend',' ');
+  });
+  const txt=(tmp.textContent||'').replace(/\s+/g,' ').trim();
+  if(!txt)return t('mentionUntitled');
+  const words=txt.split(' ').slice(0,10).join(' ');
+  return (words.length<txt.length?words+'…':words).slice(0,90);
+}
 const QUERY_LOGO_B64='iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAABmJLR0QA/wD/AP+gvaeTAAAGmklEQVR4nO3dX2wc1RXH8e+Z3XXs2ImN4/zDNH8gpZFCBJh/kdKWAKoEEQQECKlSQ5EISZAi8dSXkKbQPyBQea5CiqqKP4oKSKFVeUClfuChFcEgxAN2RBqS4DiWcEzixNmsd/f2wRiljut4I5+52jnn8+a1fe615zczd3bunRWmEUKYA9wF3A/cDCwFFgG56X7PRTUMfAG8B7wqIn3T/bBM9WIIIQ9sAXYzvtFd/Xof2CEivVN986IAhBCWA/uBG5Q75tJTAp4Vkecmf+N/AhBCuBX4G+OHeZc9e4EnRaQy8cJ3Afh2z/8Q3/hZ94qIbJn4IoHvzvn78Y1vweMhhG0TXwhACGE78IdoXXJpKwKrReSIfHupdxgf7VvzmohslhDCRuDvsXvjUlcFrk6AB2L3xEWRAI8kQFfsnrhoNiZAZ+xeuGhWSgihjL+3b1VZQgghdi9cPEnsDri4PADGeQCM8wAY5wEwzgNgnAfAOA+AcR4A4zwAxnkAjPMAGJfXbmD0fGDf+yN094xyfKjMWNnvPU2nIS+sWFpg0/pm7l3fQjLl0p3Zo3o38JOD59n++0EGhyuX/mF3kZt+0MieXyyio1Xvbr1aAHqPlnho1wBnz1U1yptxTWeBd56/kpYmnbO12hhg556vfePPgkP9Y/z2zyfV6qsE4PMvS3x88LxGaZPe7B5hYKisUlslAD0HixplzapU4YNPz6nUVgnA0Gk/9M+2Eyd1BtIqAQhVv9SbbVWl/6m/EWScB8A4D4BxHgDjPADGeQCM8wAY5wEwzgNgnAfAOA+AcSoBKOSV5zEZpPU/VQnAiqUFjbKmLVmgM31TJQAbbmhSm8JkUSKwfm2TTm2Nos1NCTseatMobdKDt7ewpF1nYqjabrp1Uysb1zVrlTdjVWeB3Y8tUKuvOi28UoWX9g3z8l9PUa74JJFa3bOumee3ddDWonc6TeUpYQNDZd7911mODJYp+8KQaSWJ0Lkwxx1dc1m9rEG9PX9MnHE+VDfOA2CcB8A49dXBMQydqnB4YIxiqf6GNw0FYcWSAouuSOfxzZkKQE9fkRffGObA50XqeWmCCKxb08jOze2svXqObltZuQr4yz9H2PnyUKbeb8jnhJd2dHD/D1vU2shEAA70FvnpMycytfEn5HPCvmeWcPPqRpX6mRgEvvD6cCY3PkC5Eti1d0jtlFb3AThxskJPX7ZXI/ceLan9jXUfgP8cL1H/J7FL++xQSaVu3QdgtGhg6wOnz9bR8nBXPzwAxnkAjPMAGOcBMM4DYFzdByCfs7EIJVF6aHDdB+DKDhuferuwrc6mhafl+1c1sHxx9lcirVvjN4OmJAJPPZLtRSgbbmxipdJyu7oPAMCDP27h4Q1698xjap+f43dPdKjVz0QAAF54ciHbNrWSy8xfBKuXNfDWb5bSuVBv4lYmJoRcqO9oiTe7z9B3tMQ3Z+rvmcVNc4TvLc5zZ9dc7r6tWT3QmQuAq02GDpjucngAjPMAGJepdQFRVEYJpaFZKye5udCg9zyAyTwAl6M8QvXYK1QH90Oxf/br5+eTLL6PZPkOaNB7DwD8KqBmYfQw1c8eJ5w7pt9YoY3cdXuQ1i61JjwAtSiPUPloE6H4VXpt5ueR63obmbtSpbwPAmtQPfbHdDc+jJ9uDu5WK+8BqEF18J0o7YZv/k0406tS2wMwU+URnQHfDIVTH6nU9QDMVPl03PbHhlXKegDqhn9uoFPgATDOA2CcB8A4D4BxHoAZi70ARWdTeQBmqmEBSMRFKIUrVMp6AGYqmYO03hKteZl/vUpdD0ANkmVbo7Qr89Yi89ao1PYA1EDaf0TS+bN0G00aSa79NVpjEA9AjZJVvyS56uekMigstJFbuweZd51aEz4h5DKFUz1U+1+DkU8JY7N4oyjJI42dSPsGks5HodA6e7Wn4AEwzk8BxnkAjPMAGOcBMM4DYJwHwDgPgHEeAOM8AMZ5AIzzABjnATAuAcqxO+GiqSTA8di9cNGcSIDDsXvhohlIgHdj98JF86GEEFYAh/ABoUV3JyLyJfBG7J641B0Huif2+l1Atj+A1032KxEpJQAicgR4KnKHXHp6gD/BpLnNIYS9wJYYPXKpGQRuEZFjcPHAbzuwN/UuubQMAvdNbHyYFAARqYjIVuBpQOfzyl0sPYzv+QcufHHKSz8ReQ64HvhHCh1zuvqBJ4DbLtzzJ1xyfVMI4VpgM/ATYBWQ3qOsXa0qjB/m+xnf4/cD3SLyf4/m/wU/srbGsO6XCgAAAABJRU5ErkJggg==';
 function buildPdfHtml(entry,profileName){
   const isDark=document.body.classList.contains('dark');
@@ -3738,14 +3756,18 @@ function buildPdfHtml(entry,profileName){
   tmp.querySelectorAll('pre code').forEach(el=>el.style.cssText='background:transparent;border:none;padding:0;');
   tmp.querySelectorAll('hr').forEach(el=>el.style.cssText=`border:none;border-top:1px solid ${border};margin:1em 0;`);
   tmp.querySelectorAll('img').forEach(el=>el.style.cssText='max-width:100%;border-radius:10px;display:block;margin:.5em 0;');
-  tmp.querySelectorAll('a[href]').forEach(el=>el.style.cssText=`color:${accent};text-decoration:underline;`);
-  tmp.querySelectorAll('.tag-chip').forEach(el=>el.style.cssText=`display:inline-block;background:${accentFaint};color:${accent};padding:1px 9px;border-radius:999px;font-size:.85em;font-weight:600;`);
+  tmp.querySelectorAll('a[href]').forEach(el=>el.style.cssText=`color:${accent};text-decoration:underline;text-decoration-color:${isDark?'rgba(96,165,250,.5)':'rgba(37,99,235,.35)'};text-underline-offset:2px;`);
+  tmp.querySelectorAll('.tag-chip').forEach(el=>el.style.cssText=`display:inline-block;background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;padding:2px 11px;border-radius:999px;font-size:.82em;font-weight:700;letter-spacing:.01em;`);
 
   const label=cardPreviewLabel(entry);
+  const heroTitle=pdfHeroTitle(entry);
   const dateStr=fmtDate(entry.createdAt);
   const exportedStr=fmtDate(Date.now());
   const printLabel=t('pdfPrintBtn');
   const exportedByLabel=lang==='fr'?'Exporté avec':'Exported with';
+  // Dégradé de marque (bleu → violet) + touche jaune (3ᵉ couleur du logo) pour un bandeau
+  // "hero" moderne — identique en clair/sombre, seule la carte de contenu en dessous suit le thème.
+  const hero='linear-gradient(135deg,#2563eb 0%,#4f46e5 48%,#7c3aed 100%)';
 
   return `<!DOCTYPE html>
 <html lang="${lang==='fr'?'fr':'en'}">
@@ -3753,43 +3775,55 @@ function buildPdfHtml(entry,profileName){
 <meta charset="utf-8">
 <title>${esc(label)} – Query</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
 @page{margin:0;}
 body{font-family:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:${pageBg};color:${fg};padding:36px 20px 56px;}
 .toolbar{max-width:720px;margin:0 auto 14px;display:flex;justify-content:flex-end;}
-.btn-print{background:${accent};color:#fff;border:none;border-radius:9px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(37,99,235,.35);}
+.btn-print{background:${fg};color:${surface};border:none;border-radius:9px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(0,0,0,.2);}
 .btn-print:hover{opacity:.9;}
-.page{max-width:720px;margin:0 auto;background:${surface};box-shadow:0 1px 3px rgba(0,0,0,.08),0 18px 40px rgba(0,0,0,.14);padding:52px 60px 46px;}
-.letterhead{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:18px;border-bottom:1px solid ${border};}
-.letterhead .brand{display:flex;align-items:center;gap:9px;}
-.letterhead .brand img{width:22px;height:22px;display:block;}
-.letterhead .brand span{font-weight:700;font-size:16px;letter-spacing:-.01em;color:${fg};}
-.letterhead .when{font-size:12px;color:${fg2};white-space:nowrap;}
-.doc-meta{display:flex;align-items:center;gap:8px;margin:20px 0 26px;}
-.doc-meta .profile{font-size:11px;font-weight:700;color:${accent};background:${accentFaint};padding:3px 10px;border-radius:999px;letter-spacing:.02em;}
-.content{font-size:15px;line-height:1.7;word-wrap:break-word;}
+.page{max-width:720px;margin:0 auto;background:${surface};box-shadow:0 1px 3px rgba(0,0,0,.08),0 24px 48px rgba(0,0,0,.18);border-radius:24px;overflow:hidden;}
+.hero{position:relative;overflow:hidden;background:${hero};padding:38px 48px 60px;color:#fff;}
+.hero::before{content:'';position:absolute;width:260px;height:260px;border-radius:50%;background:#fff;opacity:.14;filter:blur(55px);top:-110px;right:-70px;}
+.hero::after{content:'';position:absolute;width:200px;height:200px;border-radius:50%;background:#fbbf24;opacity:.30;filter:blur(60px);bottom:-90px;left:-50px;}
+.hero-top{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;margin-bottom:34px;}
+.hero-brand{display:flex;align-items:center;gap:10px;}
+.hero-brand img{width:26px;height:26px;border-radius:7px;display:block;box-shadow:0 3px 10px rgba(0,0,0,.3);}
+.hero-brand span{font-weight:700;font-size:15px;letter-spacing:-.01em;}
+.hero-date{font-size:12px;opacity:.85;font-weight:500;}
+.hero-title{position:relative;z-index:1;font-size:27px;font-weight:800;line-height:1.28;letter-spacing:-.02em;margin:0 0 16px;max-width:92%;}
+.hero-profile{position:relative;z-index:1;display:inline-flex;align-items:center;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:rgba(255,255,255,.2);padding:6px 13px;border-radius:999px;}
+.content-wrap{position:relative;z-index:1;margin-top:-26px;background:${surface};border-radius:22px 22px 0 0;padding:38px 48px 6px;}
+.content{font-size:15px;line-height:1.75;word-wrap:break-word;}
 .content p{margin:.5em 0;}
-.doc-footer{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-top:40px;padding-top:16px;border-top:1px solid ${border};font-size:11px;color:${fg3};}
+.doc-footer{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-top:34px;padding:16px 48px 28px;border-top:1px solid ${border};font-size:11px;color:${fg3};background:${surface};}
 .doc-footer .brand-mini{display:inline-flex;align-items:center;gap:5px;}
-.doc-footer .brand-mini img{width:12px;height:12px;display:block;opacity:.8;}
+.doc-footer .brand-mini img{width:12px;height:12px;border-radius:3px;display:block;opacity:.85;}
 @media print{
   .toolbar{display:none;}
   body{padding:0;background:${surface};}
-  .page{box-shadow:none;max-width:none;padding:14mm 16mm;}
+  .page{box-shadow:none;border-radius:0;max-width:none;}
+  .hero{padding:32px 16mm 56px;}
+  .content-wrap{padding:38px 16mm 6px;}
+  .doc-footer{padding:16px 16mm 24px;}
 }
 </style>
 </head>
 <body>
 <div class="toolbar"><button class="btn-print" onclick="window.print()">${esc(printLabel)}</button></div>
 <div class="page">
-  <div class="letterhead">
-    <div class="brand"><img src="data:image/png;base64,${QUERY_LOGO_B64}" alt="Query"><span>Query</span></div>
-    <div class="when">${esc(dateStr)}</div>
+  <div class="hero">
+    <div class="hero-top">
+      <div class="hero-brand"><img src="data:image/png;base64,${QUERY_LOGO_B64}" alt="Query"><span>Query</span></div>
+      <div class="hero-date">${esc(dateStr)}</div>
+    </div>
+    <div class="hero-title">${esc(heroTitle)}</div>
+    <div class="hero-profile">${esc(profileName||'')}</div>
   </div>
-  <div class="doc-meta"><span class="profile">${esc(profileName||'')}</span></div>
-  <div class="content">${tmp.innerHTML}</div>
+  <div class="content-wrap">
+    <div class="content">${tmp.innerHTML}</div>
+  </div>
   <div class="doc-footer">
     <span class="brand-mini"><img src="data:image/png;base64,${QUERY_LOGO_B64}" alt="">${esc(exportedByLabel)} Query</span>
     <span>${esc(exportedStr)}</span>
