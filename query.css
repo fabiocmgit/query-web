@@ -749,6 +749,26 @@ body.custom .profile-badge {
 }
 .card:hover .card-actions { opacity: 1; }
 
+/* Grid mode: float pin/copy/view/edit at the top-right so tall cards
+   don't need to be scrolled to reach them (list/image-only cards keep
+   their own inline placement). */
+#results:not(.list-mode) > .card:not(.img-only) .card-actions {
+  position: absolute;
+  top: 12px;
+  right: 10px;
+  z-index: 6;
+  gap: 4px;
+}
+#results:not(.list-mode) > .card:not(.img-only) .card-btn {
+  width: 24px;
+  height: 24px;
+}
+/* Layout edit mode already anchors delete/reset-size buttons at top:10 —
+   push our row down so the two rows don't overlap. */
+#results.edit-mode > .card:not(.img-only) .card-actions {
+  top: 40px;
+}
+
 .card-btn {
   width: 27px; height: 27px;
   border: 1px solid var(--c-border);
