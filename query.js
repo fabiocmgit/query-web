@@ -315,6 +315,24 @@ function isImageOnlyHtml(html){
   return tmp.textContent.trim()===''&&tmp.querySelector('video,audio,iframe')==null;
 }
 const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// Extrait le texte d'un noeud DOM en insérant un \n à chaque bordure de bloc
+// (P/DIV/H1-6/LI/TR/BLOCKQUOTE), avant ET après — contrairement à .innerText,
+// qui dépend de la mise en page (layout) et renvoie tout sur une seule ligne
+// pour un noeud détaché du document (cas de copyCard : le texte copié perdait
+// alors tous ses retours à la ligne, ex. une requête SQL multi-lignes).
+const BLOCK_TAGS=['P','DIV','H1','H2','H3','H4','H5','H6','LI','TR','BLOCKQUOTE'];
+function nodeToText(node){
+  if(node.nodeType===3)return node.textContent;
+  if(node.nodeName==='BR')return '\n';
+  let t='';
+  node.childNodes.forEach(c=>{
+    const ct=nodeToText(c);
+    if(BLOCK_TAGS.includes(c.nodeName)&&t&&!t.endsWith('\n')&&ct)t+='\n';
+    t+=ct;
+  });
+  if(BLOCK_TAGS.includes(node.nodeName)&&t&&!t.endsWith('\n'))t+='\n';
+  return t;
+}
 // Stable id for entries — needed so a "!mention" link survives reorders/edits/exports.
 const genId=()=>'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 const fmtDate=ts=>{if(!ts)return'';const d=new Date(ts);return`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;};
@@ -1110,17 +1128,14 @@ function render(filter=''){
   // Auto-activate canvas if entries have stored positions (handles page reload)
   if(!isCanvasActive()&&!isGlobal&&entries.some(e=>typeof e.x==='number'))res.classList.add('canvas-mode');
   if(isCanvasActive()&&!hasFilter)ensureCanvasPositions();else updateCanvasHeight();
-  // Inject header+copy button into code blocks
-  injectPreCopyButtons(res);
+  // Habille les blocs de code d'un en-tête "CODE" (pas de bouton copier ici :
+  // un seul bouton copier par fiche, celui en haut à droite de la carte).
+  wrapCodeBlocks(res);
 }
 
-function injectPreCopyButtons(container){
-  const COPY_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
-  const OK_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+function wrapCodeBlocks(container){
   container.querySelectorAll('.card-body.rich-content pre').forEach(pre=>{
     if(pre.parentElement.classList.contains('code-block'))return;
-    const code=pre.querySelector('code');
-    const text=(code||pre).textContent;
     const wrapper=document.createElement('div');
     wrapper.className='code-block';
     pre.parentNode.insertBefore(wrapper,pre);
@@ -1129,18 +1144,7 @@ function injectPreCopyButtons(container){
     const lbl=document.createElement('span');
     lbl.className='code-lang-label';
     lbl.textContent='code';
-    const btn=document.createElement('button');
-    btn.className='pre-copy-btn';
-    btn.title='Copier le code';
-    btn.innerHTML=COPY_SVG;
-    btn.addEventListener('click',e=>{
-      e.stopPropagation();
-      navigator.clipboard.writeText(text).then(()=>{
-        btn.classList.add('copied');btn.innerHTML=OK_SVG;
-        setTimeout(()=>{btn.classList.remove('copied');btn.innerHTML=COPY_SVG;},1500);
-      });
-    });
-    header.appendChild(lbl);header.appendChild(btn);
+    header.appendChild(lbl);
     wrapper.appendChild(header);wrapper.appendChild(pre);
   });
 }
@@ -1207,22 +1211,49 @@ function buildClipboardHtml(content){
   tmp.querySelectorAll('li').forEach(el=>el.style.cssText='margin:.15em 0;');
   tmp.querySelectorAll('blockquote').forEach(el=>el.style.cssText=`border-left:3px solid ${accent};background:rgba(37,99,235,.08);padding:8px 14px;margin:.5em 0;font-style:italic;`);
   tmp.querySelectorAll('code').forEach(el=>{if(el.parentElement.tagName!=='PRE')el.style.cssText=`font-family:'Consolas','Courier New',monospace;font-size:.9em;background:${codeBg};border:1px solid ${codeBd};padding:1px 5px;border-radius:4px;`;});
-  tmp.querySelectorAll('pre').forEach(el=>el.style.cssText=`background:${codeBg};border:1px solid ${codeBd};border-radius:6px;padding:10px 12px;margin:.5em 0;font-family:'Consolas','Courier New',monospace;font-size:.88em;line-height:1.55;white-space:pre;`);
-  tmp.querySelectorAll('pre code').forEach(el=>el.style.cssText='background:transparent;border:none;padding:0;');
+  // Blocs de code : on ne garde PAS <pre>/<code> + "white-space:pre" — beaucoup
+  // d'éditeurs riches (Dynamics…) suppriment ces balises au collage, et l'espacement
+  // qui ne tenait qu'à leur style disparaît avec elles. On reconstruit chaque bloc en
+  // texte "à l'épreuve des balles" : un <div> ordinaire (jamais filtré par personne)
+  // avec de vrais retours <br> et des espaces insécables &nbsp;, la même recette que
+  // le navigateur utilise déjà nativement pour le texte tapé à la main dans les
+  // fiches (c'est ce qui marche bien pour les fiches normales).
+  tmp.querySelectorAll('pre').forEach(el=>{
+    const codeText=(el.querySelector('code')||el).textContent;
+    const div=document.createElement('div');
+    div.style.cssText=`background:${codeBg};border:1px solid ${codeBd};border-radius:6px;padding:10px 12px;margin:.5em 0;font-family:'Consolas','Courier New',monospace;font-size:.88em;line-height:1.55;`;
+    div.innerHTML=esc(codeText).replace(/ /g,'&nbsp;').replace(/\n/g,'<br>');
+    el.replaceWith(div);
+  });
   tmp.querySelectorAll('hr').forEach(el=>el.style.cssText=`border:none;border-top:2px solid ${codeBd};margin:.75em 0;`);
   const body=`<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;line-height:1.65;color:${fg};">${tmp.innerHTML}</div>`;
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${body}</body></html>`;
+}
+
+// Fiche sans mise en forme (pas de balise HTML, ex. une requête SQL collée telle quelle) :
+// sans ce fallback, seul du texte brut était copié, et les éditeurs riches (Dynamics,
+// Outlook…) écrasent alors les espaces d'indentation en collant. On reproduit ici le
+// rendu écran (.card-body.plain-text { white-space: pre-wrap }) via un style inline,
+// que ces éditeurs conservent au collage contrairement à une feuille <style>.
+function buildPlainClipboardHtml(text){
+  const isDark=document.body.classList.contains('dark');
+  const fg=isDark?'#f2f2f2':'#1c1c1a';
+  const body=`<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;line-height:1.65;color:${fg};white-space:pre-wrap;">${esc(text)}</div>`;
   return `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${body}</body></html>`;
 }
 
 function writeCardToClipboard(entry,onDone){
   const tmp=document.createElement('div');
   tmp.innerHTML=cleanHtml(entry.content||'');
-  const plain=tmp.innerText;
-  const html=isRich(entry.content)?entry.content:'';
+  // tmp.innerText ne marche pas ici : tmp n'est jamais inséré dans la page (pas de mise
+  // en page), donc le navigateur ne peut pas savoir où sont les sauts de ligne entre
+  // les blocs et renvoie tout sur une seule ligne. nodeToText() ne dépend pas du layout.
+  const plain=nodeToText(tmp).replace(/\n+$/,'');
+  const html=isRich(entry.content)?buildClipboardHtml(entry.content):buildPlainClipboardHtml(plain);
 
-  if(html&&navigator.clipboard.write){
+  if(navigator.clipboard.write){
     navigator.clipboard.write([new ClipboardItem({
-      'text/html':new Blob([buildClipboardHtml(html)],{type:'text/html'}),
+      'text/html':new Blob([html],{type:'text/html'}),
       'text/plain':new Blob([plain],{type:'text/plain'}),
     })]).then(onDone).catch(()=>navigator.clipboard.writeText(plain).then(onDone));
   }else{
@@ -2308,16 +2339,8 @@ document.addEventListener('keydown',e=>{
     else{setBlock(tag);}
   };
 
-  // Extract plain text from a node, inserting \n at block element boundaries
-  const nodeToText=(node)=>{
-    if(node.nodeType===3)return node.textContent;
-    if(node.nodeName==='BR')return '\n';
-    const BLOCK=['P','DIV','H1','H2','H3','H4','H5','H6','LI','TR','BLOCKQUOTE'];
-    let t='';
-    node.childNodes.forEach(c=>{t+=nodeToText(c);});
-    if(BLOCK.includes(node.nodeName)&&t&&!t.endsWith('\n'))t+='\n';
-    return t;
-  };
+  // nodeToText() est définie plus haut dans le fichier (fonction globale, réutilisée
+  // aussi par writeCardToClipboard pour le bouton "copier" des fiches).
 
   // Smart code: inline if single-line selection, block if multi-line
   const toggleCode=()=>{

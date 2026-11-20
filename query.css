@@ -1353,23 +1353,6 @@ body.dark .code-block-header { background: #2a2a2a; border-bottom-color: #383838
   font-family: 'Geist Mono', monospace;
   flex: 1;
 }
-.pre-copy-btn {
-  width: 22px; height: 22px;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--c-text3);
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: all .12s;
-  padding: 0;
-  flex-shrink: 0;
-  opacity: 0;
-}
-.code-block:hover .pre-copy-btn { opacity: 1; }
-.pre-copy-btn:hover { background: var(--c-surface); border-color: var(--c-border2); color: var(--c-text); transform: none; box-shadow: none; }
-.pre-copy-btn.copied { opacity: 1; background: #dcfce7; border-color: var(--c-ok); color: var(--c-ok); }
-.pre-copy-btn svg { width: 11px; height: 11px; pointer-events: none; }
 /* Remove double border/margin since .code-block is the container */
 .code-block pre {
   margin: 0 !important;
